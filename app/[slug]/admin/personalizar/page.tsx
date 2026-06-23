@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { uploadImageAction, revalidateTenantPagesAction } from "../noticias/actions";
+import { saveConfigAction, saveAlertAction } from "./actions";
+import { uploadImageAction } from "../noticias/actions";
 
 const TABS = [
   { id: "identidad",     label: "👨‍⚕️ Identidad",      desc: "Logo, doctor y clínica" },
@@ -72,7 +73,7 @@ export default function PersonalizarPage({ params }: Props) {
   const [alertId, setAlertId] = useState<string | null>(null);
   const [alertTitulo, setAlertTitulo] = useState("");
   const [alertDescripcion, setAlertDescripcion] = useState("");
-  const [alertNivel, setAlertNivel] = useState<"info" | "warning" | "danger">("warning");
+  const [alertNivel, setAlertNivel] = useState<"info" | "warning" | "critical">("warning");
   const [alertActiva, setAlertActiva] = useState(false);
 
   const supabase = createClient();
@@ -119,7 +120,7 @@ export default function PersonalizarPage({ params }: Props) {
 
   const saveConfig = () => {
     startTransition(async () => {
-      // Filter payload to only update keys that exist in the DB
+      // Build payload from known DB keys (excluding reserved keys)
       const payload: Record<string, any> = {};
       const excludedKeys = ["id", "tenant_id", "created_at"];
       if (dbKeys.length > 0) {
@@ -137,7 +138,10 @@ export default function PersonalizarPage({ params }: Props) {
           "stat_anos_experiencia", "stat_publicaciones", "stat_pacientes_anio", "stat_consultorios",
           "email", "telefono", "whatsapp", "direccion", "ciudad", "pais",
           "linkedin_url", "instagram_url", "color_primario", "color_acento",
-          "meta_titulo", "meta_descripcion"
+          "meta_titulo", "meta_descripcion",
+          "habilitar_menu_vacunas", "nombre_menu_vacunas",
+          "vacunas_hero_titulo", "vacunas_hero_subtitulo", "vacunas_hero_descripcion",
+          "vacunas_mitos_titulo", "vacunas_inventario_titulo"
         ];
         safeKeys.forEach(key => {
           if (key in config && !excludedKeys.includes(key)) {
@@ -145,16 +149,13 @@ export default function PersonalizarPage({ params }: Props) {
           }
         });
       }
-      payload.updated_at = new Date().toISOString();
 
-      const { error } = await supabase
-        .from("configuracion_portal")
-        .update(payload)
-        .eq("tenant_id", tenantId);
-      if (error) showToast("Error al guardar: " + error.message, "error");
-      else {
+      // Use server action (admin client) to save — avoids RLS + client 500
+      const result = await saveConfigAction(tenantId, slug, payload);
+      if (!result.success) {
+        showToast("Error al guardar: " + result.error, "error");
+      } else {
         showToast("✅ Cambios guardados correctamente");
-        await revalidateTenantPagesAction(slug);
       }
     });
   };
@@ -170,7 +171,6 @@ export default function PersonalizarPage({ params }: Props) {
           }
         }
         showToast("✅ Líneas de investigación guardadas");
-        await revalidateTenantPagesAction(slug);
       } catch (err: any) {
         showToast("Error al guardar líneas: " + err.message, "error");
       }
@@ -188,7 +188,6 @@ export default function PersonalizarPage({ params }: Props) {
           }
         }
         showToast("✅ Trayectoria guardada");
-        await revalidateTenantPagesAction(slug);
       } catch (err: any) {
         showToast("Error al guardar trayectoria: " + err.message, "error");
       }
@@ -197,44 +196,17 @@ export default function PersonalizarPage({ params }: Props) {
 
   const saveAlert = () => {
     startTransition(async () => {
-      if (!alertTitulo.trim()) {
-        showToast("El título de la alerta es obligatorio", "error");
-        return;
-      }
-
-      let error;
-      if (alertId) {
-        const { error: err } = await supabase
-          .from("alertas_epidemiologicas")
-          .update({
-            titulo: alertTitulo,
-            descripcion: alertDescripcion,
-            nivel: alertNivel,
-            activa: alertActiva,
-            created_at: new Date().toISOString()
-          })
-          .eq("id", alertId);
-        error = err;
+      const result = await saveAlertAction(tenantId, slug, alertId, {
+        titulo: alertTitulo,
+        descripcion: alertDescripcion,
+        nivel: alertNivel,
+        activa: alertActiva,
+      });
+      if (!result.success) {
+        showToast("Error al guardar alerta: " + result.error, "error");
       } else {
-        const { data, error: err } = await supabase
-          .from("alertas_epidemiologicas")
-          .insert({
-            tenant_id: tenantId,
-            titulo: alertTitulo,
-            descripcion: alertDescripcion,
-            nivel: alertNivel,
-            activa: alertActiva
-          })
-          .select()
-          .single();
-        error = err;
-        if (data) setAlertId(data.id);
-      }
-
-      if (error) showToast("Error al guardar alerta: " + error.message, "error");
-      else {
+        if (result.alertId && !alertId) setAlertId(result.alertId);
         showToast("✅ Alerta epidemiológica guardada correctamente");
-        await revalidateTenantPagesAction(slug);
       }
     });
   };
@@ -593,7 +565,7 @@ export default function PersonalizarPage({ params }: Props) {
                       >
                         <option value="info">🔵 Informativa (Info)</option>
                         <option value="warning">🟡 Advertencia (Warning)</option>
-                        <option value="danger">🔴 Peligro Inminente (Danger)</option>
+                        <option value="critical">🔴 Peligro Inminente (Critical)</option>
                       </select>
                     </div>
                   </div>
