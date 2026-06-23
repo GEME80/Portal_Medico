@@ -484,6 +484,46 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               <KPICard icon="💉" iconClass="kpi-icon-amber"   number={dosisHoy}     label="Salidas hoy"             trend="Hoy" trendClass="kpi-trend-neu" />
             </div>
 
+            {/* ── ALERTAS DE INVENTARIO ─────────────────────────────── */}
+            {criticas > 0 && (
+              <div style={{ marginTop: "24px", marginBottom: "32px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <h3 style={{ fontFamily: "Outfit, sans-serif", fontSize: "15px", fontWeight: 800, color: "var(--slate-700)" }}>
+                  🔔 Alertas de Inventario
+                </h3>
+                {vacunas.filter(v => getStockStatus(v) !== "ok").map(v => {
+                  const status = getStockStatus(v);
+                  return (
+                    <div key={v.id} style={{
+                      display: "flex", alignItems: "center", gap: "12px",
+                      padding: "14px 20px", borderRadius: "var(--radius-lg)",
+                      background: status === "critical" ? "rgba(244,63,94,.06)" : "rgba(245,158,11,.06)",
+                      border: `1px solid ${status === "critical" ? "rgba(244,63,94,.2)" : "rgba(245,158,11,.2)"}`,
+                    }}>
+                      <span style={{ fontSize: "20px" }}>{status === "critical" ? "🔴" : "🟠"}</span>
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--slate-800)" }}>
+                          {status === "critical"
+                            ? `AGOTADO: ${v.nombre}`
+                            : `Stock bajo: ${v.nombre}`}
+                        </span>
+                        <span style={{ fontSize: "12px", color: "var(--slate-500)", marginLeft: "8px" }}>
+                          {v.stockActual} unidades restantes (mín. {v.stockMinimo})
+                        </span>
+                      </div>
+                      <button
+                        className="action-btn action-btn-ghost"
+                        type="button"
+                        style={{ color: primaryColor }}
+                        onClick={() => openLoteModal(v.id)}
+                      >
+                        ＋ Agregar lote
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* ── INVENTORY TABLE ───────────────────────────────────── */}
             <div className="section-header">
               <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Catálogo de Ítems</h2>
@@ -531,7 +571,8 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   <th scope="col">Stock</th>
                   <th scope="col">Mín.</th>
                   <th scope="col">Estado</th>
-                  <th scope="col">Precio (COP)</th>
+                  <th scope="col">P. Compra</th>
+                  <th scope="col">P. Venta</th>
                   <th scope="col">Acciones</th>
                 </tr>
               </thead>
@@ -566,6 +607,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                           {stockChipLabel[status]}
                         </span>
                       </td>
+                      <td style={{ color: "var(--slate-500)" }}>
+                        ${parseInt(v.valorMayorista || "0").toLocaleString("es-CO")}
+                      </td>
                       <td style={{ fontWeight: 700, color: primaryColor }}>
                         ${parseInt(v.precioVenta || "0").toLocaleString("es-CO")}
                       </td>
@@ -599,45 +643,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           )}
         </div>
 
-        {/* ── ALERTAS DE REORDEN ────────────────────────────────── */}
-        {criticas > 0 && (
-          <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            <h3 style={{ fontFamily: "Outfit, sans-serif", fontSize: "15px", fontWeight: 800, color: "var(--slate-700)" }}>
-              🔔 Alertas de Reorden
-            </h3>
-            {vacunas.filter(v => getStockStatus(v) !== "ok").map(v => {
-              const status = getStockStatus(v);
-              return (
-                <div key={v.id} style={{
-                  display: "flex", alignItems: "center", gap: "12px",
-                  padding: "14px 20px", borderRadius: "var(--radius-lg)",
-                  background: status === "critical" ? "rgba(244,63,94,.06)" : "rgba(245,158,11,.06)",
-                  border: `1px solid ${status === "critical" ? "rgba(244,63,94,.2)" : "rgba(245,158,11,.2)"}`,
-                }}>
-                  <span style={{ fontSize: "20px" }}>{status === "critical" ? "🔴" : "🟠"}</span>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--slate-800)" }}>
-                      {status === "critical"
-                        ? `AGOTADO: ${v.nombre}`
-                        : `Stock bajo: ${v.nombre}`}
-                    </span>
-                    <span style={{ fontSize: "12px", color: "var(--slate-500)", marginLeft: "8px" }}>
-                      {v.stockActual} dosis restantes (mín. {v.stockMinimo})
-                    </span>
-                  </div>
-                  <button
-                    className="action-btn action-btn-ghost"
-                    type="button"
-                    style={{ color: primaryColor }}
-                    onClick={() => openLoteModal(v.id)}
-                  >
-                    ＋ Agregar lote
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+
       </>
         )}
 
