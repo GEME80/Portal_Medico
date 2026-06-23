@@ -1,6 +1,14 @@
 import Link from "next/link";
 
-export default function Footer() {
+interface FooterProps {
+  tenantSlug?: string;
+  nombreDoctor?: string;
+  email?: string;
+  telefono?: string;
+}
+
+export default function Footer({ tenantSlug, nombreDoctor, email, telefono }: FooterProps = {}) {
+  const base = tenantSlug ? `/${tenantSlug}` : "";
   const year = new Date().getFullYear();
 
   return (

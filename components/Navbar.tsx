@@ -2,7 +2,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-export default function Navbar() {
+interface NavbarProps {
+  tenantSlug?: string;
+  nombreClinica?: string;
+}
+
+export default function Navbar({ tenantSlug, nombreClinica }: NavbarProps = {}) {
+  const base = tenantSlug ? `/${tenantSlug}` : "";
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -18,7 +24,7 @@ export default function Navbar() {
         <div className="container">
           <div className="navbar-inner">
             {/* Brand */}
-            <Link href="/" className="navbar-brand">
+            <Link href={base || "/"} className="navbar-brand">
               <div className="navbar-logo-icon" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -27,22 +33,21 @@ export default function Navbar() {
                 </svg>
               </div>
               <div className="navbar-brand-text">
-                <span className="navbar-brand-name">Dr. Carlos Torres</span>
-                <span className="navbar-brand-sub">Infectólogo Pediatra</span>
+                <span className="navbar-brand-name">{nombreClinica || "Dr. Carlos Torres"}</span>
+                <span className="navbar-brand-sub">Portal Médico</span>
               </div>
             </Link>
 
             {/* Desktop Links */}
             <ul className="navbar-links" id="nav-links">
-              <li><Link href="/#sobre-el-doctor">Sobre el Doctor</Link></li>
-              <li><Link href="/noticias">Publicaciones</Link></li>
-              <li><Link href="/vacunas">EcoVaccine</Link></li>
-              <li><Link href="/#contacto">Contacto</Link></li>
+              <li><Link href={`${base}/sobre-el-doctor`}>Sobre el Doctor</Link></li>
+              <li><Link href={`${base}/noticias`}>Publicaciones</Link></li>
+              <li><Link href={`${base}/vacunas`}>EcoVaccine</Link></li>
             </ul>
 
             {/* CTA */}
             <div className="navbar-cta">
-              <Link href="/admin" className="btn btn-primary" style={{ padding: "10px 20px", fontSize: "13px" }}>
+              <Link href={`${base}/admin`} className="btn btn-primary" style={{ padding: "10px 20px", fontSize: "13px" }}>
                 Panel Admin
               </Link>
             </div>
@@ -71,11 +76,10 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       <div className={`mobile-menu${menuOpen ? " open" : ""}`} id="mobile-menu" aria-hidden={!menuOpen}>
-        <Link href="/#sobre-el-doctor" onClick={() => setMenuOpen(false)}>Sobre el Doctor</Link>
-        <Link href="/noticias" onClick={() => setMenuOpen(false)}>Publicaciones</Link>
-        <Link href="/vacunas" onClick={() => setMenuOpen(false)}>EcoVaccine</Link>
-        <Link href="/#contacto" onClick={() => setMenuOpen(false)}>Contacto</Link>
-        <Link href="/admin" onClick={() => setMenuOpen(false)} style={{ marginTop: "8px" }}>
+        <Link href={`${base}/sobre-el-doctor`} onClick={() => setMenuOpen(false)}>Sobre el Doctor</Link>
+        <Link href={`${base}/noticias`} onClick={() => setMenuOpen(false)}>Publicaciones</Link>
+        <Link href={`${base}/vacunas`} onClick={() => setMenuOpen(false)}>EcoVaccine</Link>
+        <Link href={`${base}/admin`} onClick={() => setMenuOpen(false)} style={{ marginTop: "8px" }}>
           <span className="btn btn-primary" style={{ width: "100%", padding: "12px", fontSize: "14px" }}>
             Panel Admin
           </span>
