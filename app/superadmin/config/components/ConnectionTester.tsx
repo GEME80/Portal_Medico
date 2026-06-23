@@ -32,10 +32,11 @@ export default function ConnectionTester({ serviceKey }: ConnectionTesterProps) 
           msg: `Error de conexión: ${res.error || "No se pudo conectar a la base de datos."}`,
         });
       }
-    } catch (err: any) {
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Error al realizar el ping a la base de datos.";
       setStatus({
         type: "error",
-        msg: `Error inesperado: ${err.message || "Error al realizar el ping a la base de datos."}`,
+        msg: `Error inesperado: ${errorMsg}`,
       });
     } finally {
       setTesting(false);

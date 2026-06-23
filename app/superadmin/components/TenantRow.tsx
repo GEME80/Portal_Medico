@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { toggleTenantActiveAction, updateTenantPaymentStatusAction } from "../actions";
 
-interface Tenant {
+export interface Tenant {
   id: string;
   slug: string;
   nombre: string;

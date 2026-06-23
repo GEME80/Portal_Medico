@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import TenantRow from "./components/TenantRow";
+import TenantRow, { Tenant } from "./components/TenantRow";
 import CreateTenantModal from "./components/CreateTenantModal";
 import { revalidatePath } from "next/cache";
 
@@ -96,7 +96,7 @@ export default async function SuperadminDashboardPage() {
           <div style={{ padding: "60px", textAlign: "center", color: "#9ca3af" }}>
             <div style={{ fontSize: "40px", marginBottom: "16px" }}>📂</div>
             <div style={{ fontSize: "16px", fontWeight: 700, color: "#ffffff" }}>No hay clínicas registradas</div>
-            <div style={{ fontSize: "13px", marginTop: "4px" }}>Haz clic en "Crear Nueva Clínica" para iniciar el alta.</div>
+            <div style={{ fontSize: "13px", marginTop: "4px" }}>Haz clic en &quot;Crear Nueva Clínica&quot; para iniciar el alta.</div>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -114,7 +114,7 @@ export default async function SuperadminDashboardPage() {
               </thead>
               <tbody>
                 {list.map((tenant, idx) => (
-                  <TenantRow key={tenant.id} tenant={tenant as any} index={idx} />
+                  <TenantRow key={tenant.id} tenant={tenant as Tenant} index={idx} />
                 ))}
               </tbody>
             </table>

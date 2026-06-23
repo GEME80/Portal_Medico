@@ -1,4 +1,3 @@
-import { testDbConnectionAction } from "../actions";
 import ConnectionTester from "./components/ConnectionTester";
 
 export default async function SuperadminConfigPage() {

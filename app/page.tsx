@@ -63,7 +63,7 @@ export default function MarketingLandingPage() {
               Superadmin
             </Link>
             
-            <a href="/dr-torres/login" style={{
+            <Link href="/dr-torres/login" style={{
               fontSize: "14px",
               fontWeight: 700,
               color: "#0c111d",
@@ -75,7 +75,7 @@ export default function MarketingLandingPage() {
               transition: "transform 0.15s, opacity 0.15s"
             }}>
               Acceso Doctores
-            </a>
+            </Link>
           </div>
         </div>
       </header>

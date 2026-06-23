@@ -44,6 +44,7 @@ export default function PersonalizarPage({ params }: Props) {
   const [slug, setSlug] = useState("");
   const [tenantId, setTenantId] = useState("");
   const [activeTab, setActiveTab] = useState("identidad");
+  const [dbKeys, setDbKeys] = useState<string[]>([]);
   const [config, setConfig] = useState<Config>({
     nombre_doctor: "", titulo_doctor: "", especialidad: "",
     nombre_clinica: "", logo_url: "", bio_corta: "", bio_larga: "",
@@ -96,6 +97,7 @@ export default function PersonalizarPage({ params }: Props) {
       ]);
 
       if (cfgRes.data) {
+        setDbKeys(Object.keys(cfgRes.data));
         setConfig(prev => ({
           ...prev,
           ...cfgRes.data
@@ -117,9 +119,36 @@ export default function PersonalizarPage({ params }: Props) {
 
   const saveConfig = () => {
     startTransition(async () => {
+      // Filter payload to only update keys that exist in the DB
+      const payload: Record<string, any> = {};
+      if (dbKeys.length > 0) {
+        dbKeys.forEach(key => {
+          if (key in config) {
+            payload[key] = (config as any)[key];
+          }
+        });
+      } else {
+        // Fallback to safe core columns if dbKeys wasn't populated
+        const safeKeys = [
+          "nombre_doctor", "titulo_doctor", "especialidad", "foto_url",
+          "nombre_clinica", "logo_url", "bio_corta", "bio_larga",
+          "hero_titulo", "hero_subtitulo", "hero_badge_texto",
+          "stat_anos_experiencia", "stat_publicaciones", "stat_pacientes_anio", "stat_consultorios",
+          "email", "telefono", "whatsapp", "direccion", "ciudad", "pais",
+          "linkedin_url", "instagram_url", "color_primario", "color_acento",
+          "meta_titulo", "meta_descripcion"
+        ];
+        safeKeys.forEach(key => {
+          if (key in config) {
+            payload[key] = (config as any)[key];
+          }
+        });
+      }
+      payload.updated_at = new Date().toISOString();
+
       const { error } = await supabase
         .from("configuracion_portal")
-        .update({ ...config, updated_at: new Date().toISOString() })
+        .update(payload)
         .eq("tenant_id", tenantId);
       if (error) showToast("Error al guardar: " + error.message, "error");
       else {

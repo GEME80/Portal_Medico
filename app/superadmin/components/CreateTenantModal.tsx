@@ -20,19 +20,40 @@ export default function CreateTenantModal({ onSuccess }: CreateTenantModalProps)
   const [templateId, setTemplateId] = useState("standard");
   const [error, setError] = useState<string | null>(null);
 
-  // Auto-generate slug from name
-  useEffect(() => {
-    if (!slug && nombre) {
-      const generated = nombre
+  const closeModal = () => {
+    dialogRef.current?.close();
+  };
+
+  const openModal = () => {
+    setError(null);
+    setNombre("");
+    setSlug("");
+    setEmail("");
+    setPlan("starter");
+    setCustomDomain("");
+    setTemplateId("standard");
+    dialogRef.current?.showModal();
+  };
+
+  // Helper for generating slug from name without using an effect
+  const handleNombreChange = (val: string) => {
+    setNombre(val);
+    
+    const cleanSlugString = (str: string) => {
+      return str
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "") // remove accents
         .replace(/[^a-z0-9\s-]/g, "")    // remove special chars
         .trim()
         .replace(/\s+/g, "-");           // replace spaces with hyphens
-      setSlug(generated);
+    };
+
+    const generatedOld = cleanSlugString(nombre);
+    if (!slug || slug === generatedOld) {
+      setSlug(cleanSlugString(val));
     }
-  }, [nombre, slug]);
+  };
 
   // Handle fallback light-dismiss for Safari and older browsers
   useEffect(() => {
@@ -63,21 +84,6 @@ export default function CreateTenantModal({ onSuccess }: CreateTenantModalProps)
       dialog.removeEventListener("click", handleOutsideClick);
     };
   }, []);
-
-  const openModal = () => {
-    setError(null);
-    setNombre("");
-    setSlug("");
-    setEmail("");
-    setPlan("starter");
-    setCustomDomain("");
-    setTemplateId("standard");
-    dialogRef.current?.showModal();
-  };
-
-  const closeModal = () => {
-    dialogRef.current?.close();
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,7 +205,7 @@ export default function CreateTenantModal({ onSuccess }: CreateTenantModalProps)
                   required
                   placeholder="Ej. Dr. Carlos Torres"
                   value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
+                  onChange={(e) => handleNombreChange(e.target.value)}
                   disabled={isPending}
                   style={inputStyle}
                 />
@@ -252,7 +258,7 @@ export default function CreateTenantModal({ onSuccess }: CreateTenantModalProps)
                 <select
                   id="plan"
                   value={plan}
-                  onChange={(e) => setPlan(e.target.value as any)}
+                  onChange={(e) => setPlan(e.target.value as "starter" | "pro" | "enterprise")}
                   disabled={isPending}
                   style={inputStyle}
                 >

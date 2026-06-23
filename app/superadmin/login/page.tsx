@@ -38,9 +38,10 @@ export default function SuperadminLoginPage() {
       const redirectTo = searchParams.get("redirectTo") || "/superadmin";
       router.push(redirectTo);
       router.refresh();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Login error:", err);
-      setError(err.message || "Credenciales inválidas.");
+      const errorMsg = err instanceof Error ? err.message : "Credenciales inválidas.";
+      setError(errorMsg);
       setLoading(false);
     }
   };

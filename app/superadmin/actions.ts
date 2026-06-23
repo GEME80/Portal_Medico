@@ -160,7 +160,7 @@ export async function createTenantAction(input: CreateTenantInput) {
 
     revalidatePath("/superadmin");
     return { success: true };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Auto-seeding failed for new tenant:", err);
     return { 
       success: true, 
@@ -217,13 +217,14 @@ export async function testDbConnectionAction() {
 
   try {
     const start = Date.now();
-    const { data, error } = await supabase.from("tenants").select("id").limit(1);
+    const { error } = await supabase.from("tenants").select("id").limit(1);
     const latency = Date.now() - start;
 
     if (error) throw error;
     return { success: true, latency };
-  } catch (err: any) {
+  } catch (err) {
     console.error("DB connection test failed:", err);
-    return { success: false, error: err.message };
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
   }
 }
