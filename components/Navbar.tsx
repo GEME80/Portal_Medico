@@ -36,7 +36,7 @@ export default function Navbar({
             <Link href={base || "/"} className="navbar-brand">
               <div className="navbar-logo-icon" aria-hidden="true" style={logoUrl ? { background: "none", border: "none", width: "auto", height: "auto", display: "flex", alignItems: "center" } : undefined}>
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" style={{ height: "48px", width: "auto", borderRadius: "8px", objectFit: "contain" }} />
+                  <img src={logoUrl} alt="Logo" style={{ height: "56px", width: "auto", borderRadius: "8px", objectFit: "contain" }} />
                 ) : (
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

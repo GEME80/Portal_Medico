@@ -30,7 +30,7 @@ export default function Footer({
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
               {logoUrl ? (
-                <img src={logoUrl} alt="Logo" style={{ height: "32px", width: "auto", borderRadius: "6px" }} />
+                <img src={logoUrl} alt="Logo" style={{ height: "40px", width: "auto", borderRadius: "6px" }} />
               ) : (
                 <span style={{ fontSize: "24px" }}>🛡️</span>
               )}
