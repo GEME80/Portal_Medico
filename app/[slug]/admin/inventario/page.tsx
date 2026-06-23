@@ -420,6 +420,60 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     }
   };
 
+  const handleGenerarPruebas = async () => {
+    if (!confirm("¿Generar datos de prueba para los últimos 6 meses?")) return;
+    
+    const items = vacunas;
+    if (items.length === 0) {
+      alert("Debes crear al menos un ítem primero.");
+      return;
+    }
+
+    try {
+      const newMovements = [];
+      const todayDate = new Date();
+      
+      // Generar 30 salidas aleatorias
+      for (let i = 0; i < 30; i++) {
+        const randomItem = items[Math.floor(Math.random() * items.length)];
+        const randomMonthOffset = Math.floor(Math.random() * 6); // 0 a 5 meses atras
+        const testDate = new Date();
+        testDate.setMonth(todayDate.getMonth() - randomMonthOffset);
+        testDate.setDate(Math.floor(Math.random() * 28) + 1);
+        
+        newMovements.push({
+          tenant_id: tenantId,
+          item_id: randomItem.id,
+          tipo_movimiento: "SALIDA",
+          cantidad: 1,
+          notas: "Prueba generada",
+          fecha: testDate.toISOString().split("T")[0],
+          valor_unitario_cobrado: Math.random() > 0.5 ? randomItem.valorMayorista : randomItem.precioVenta
+        });
+      }
+      
+      await supabase.from("movimientos_inventario").insert(newMovements);
+      alert("Datos generados. Ve al Dashboard para ver las gráficas.");
+      await loadData(tenantId);
+    } catch (err) {
+      console.error(err);
+      alert("Error al generar pruebas.");
+    }
+  };
+
+  const handleResetearPruebas = async () => {
+    if (!confirm("⚠️ PELIGRO: Esto borrará TODOS los movimientos y dejará el stock en 0. ¿Estás seguro?")) return;
+    try {
+      await supabase.from("movimientos_inventario").delete().eq("tenant_id", tenantId);
+      await supabase.from("inventario_medico").update({ stock_actual: 0 }).eq("tenant_id", tenantId);
+      alert("Sistema reseteado a 0.");
+      await loadData(tenantId);
+    } catch (err) {
+      console.error(err);
+      alert("Error al resetear el sistema.");
+    }
+  };
+
   // ── DERIVED KPIs ──────────────────────────────────────────────────
   const totalVacunas       = vacunas.length;
   const totalDosis         = vacunas.reduce((s, v) => s + v.stockActual, 0);
@@ -633,6 +687,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                       </td>
                       <td style={{ color: "var(--slate-500)" }}>
                         ${parseInt(v.valorMayorista || "0").toLocaleString("es-CO")}
+                      </td>
+                      <td style={{ fontWeight: 700, color: "var(--slate-700)" }}>
+                        ${(v.stockActual * parseInt(v.valorMayorista || "0")).toLocaleString("es-CO")}
                       </td>
                       <td style={{ fontWeight: 700, color: primaryColor }}>
                         ${parseInt(v.precioVenta || "0").toLocaleString("es-CO")}
