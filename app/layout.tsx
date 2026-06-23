@@ -1,28 +1,27 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: {
-    default: "Dr. Carlos Torres Martínez | Infectólogo Pediatra & EcoVaccine",
-    template: "%s | Dr. Carlos Torres Martínez",
+    default: "EcoVaccine Platform | Gestión Vacunal y Portales Médicos SaaS",
+    template: "%s | EcoVaccine",
   },
   description:
-    "Portal oficial del Dr. Carlos Torres Martínez, Infectólogo Pediatra con más de 30 años de experiencia. Información científica sobre vacunación, prevención de enfermedades infecciosas y EcoVaccine POS.",
+    "EcoVaccine es la plataforma SaaS multi-tenant definitiva para consultorios y clínicas médicas. Administra inventario de vacunas, lotes, dosis aplicadas y personaliza tu marca personal con portales médicos dinámicos y dominios propios.",
   keywords: [
-    "infectólogo pediatra",
-    "vacunación",
-    "Dr. Carlos Torres",
-    "EcoVaccine",
+    "SaaS médico",
+    "gestión de vacunas",
+    "inventario vacunas",
+    "portal médico",
+    "marca personal doctores",
+    "clínica",
     "pediatría",
-    "prevención enfermedades",
-    "vacunas Colombia",
+    "prevención de enfermedades",
   ],
   openGraph: {
     type: "website",
     locale: "es_CO",
-    siteName: "Dr. Carlos Torres Martínez",
+    siteName: "EcoVaccine Platform",
   },
 };
 
@@ -36,11 +35,10 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        {children}
       </body>
     </html>
   );
