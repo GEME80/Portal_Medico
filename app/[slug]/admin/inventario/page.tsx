@@ -89,6 +89,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"catalogo" | "categorias">("catalogo");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("all");
 
   const supabase = createClient();
 
@@ -96,6 +97,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const newVacunaRef = useRef<HTMLDialogElement>(null);
   const loteRef      = useRef<HTMLDialogElement>(null);
   const usarRef      = useRef<HTMLDialogElement>(null);
+  const catRef       = useRef<HTMLDialogElement>(null);
 
   // Selected vaccine for actions
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -196,12 +198,66 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     });
   }, []);
 
+  // ── CATEGORY FORM ──────────────────────────────────────────────────
+  const [catForm, setCatForm] = useState({
+    id: "", nombre: "", color: "#0A4D5C"
+  });
+
+  const handleCatChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setCatForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const openNewCategoria = () => {
+    setCatForm({ id: "", nombre: "", color: primaryColor });
+    catRef.current?.showModal();
+  };
+
+  const openEditCategoria = (cat: Categoria) => {
+    setCatForm({ id: cat.id, nombre: cat.nombre, color: cat.color || primaryColor });
+    catRef.current?.showModal();
+  };
+
+  const handleSaveCategoria = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!catForm.nombre) return;
+    
+    try {
+      if (catForm.id) {
+        // Edit
+        const { error } = await supabase.from("categorias_inventario")
+          .update({ nombre: catForm.nombre, color: catForm.color })
+          .eq("id", catForm.id);
+        if (error) throw error;
+        addToast(`Categoría "${catForm.nombre}" actualizada.`);
+      } else {
+        // Insert
+        const { error } = await supabase.from("categorias_inventario")
+          .insert({ tenant_id: tenantId, nombre: catForm.nombre, color: catForm.color, activo: true });
+        if (error) throw error;
+        addToast(`Categoría "${catForm.nombre}" creada.`);
+      }
+      catRef.current?.close();
+      await loadData(tenantId);
+    } catch (err: any) {
+      console.error(err);
+      addToast("Error al guardar categoría: " + err.message, "error");
+    }
+  };
+
   // ── NUEVA VACUNA FORM ──────────────────────────────────────────────
   const [newForm, setNewForm] = useState({
-    nombre: "", nombreGenerico: "", laboratorio: "", enfermedad: "",
-    viaAdmin: "Intramuscular", esquemaDosis: "", stockMinimo: "5",
-    precioVenta: "", temperatura: "2-8°C", descripcion: "",
+    categoria_id: "", nombre: "", nombreGenerico: "", laboratorio: "", enfermedad: "",
+    viaAdmin: "", esquemaDosis: "", stockMinimo: "5",
+    precioVenta: "", temperatura: "Temperatura ambiente", descripcion: "",
   });
+
+  const openNewItemForCategory = (categoryId: string) => {
+    setNewForm(prev => ({ ...prev, categoria_id: categoryId }));
+    setActiveTab("catalogo");
+    // small delay to let tab switch render the button
+    setTimeout(() => {
+      newVacunaRef.current?.showModal();
+    }, 100);
+  };
 
   const handleNewFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setNewForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -213,7 +269,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
         .from("inventario_medico")
         .insert({
           tenant_id: tenantId,
-          categoria_id: categorias.length > 0 ? categorias[0].id : null, // Default to first category if available
+          categoria_id: newForm.categoria_id || (categorias.length > 0 ? categorias[0].id : null),
           nombre: newForm.nombre,
           nombre_generico: newForm.nombreGenerico,
           laboratorio: newForm.laboratorio,
@@ -231,7 +287,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       if (error) throw error;
 
       newVacunaRef.current?.close();
-      setNewForm({ nombre: "", nombreGenerico: "", laboratorio: "", enfermedad: "", viaAdmin: "Intramuscular", esquemaDosis: "", stockMinimo: "5", precioVenta: "", temperatura: "2-8°C", descripcion: "" });
+      setNewForm({ categoria_id: "", nombre: "", nombreGenerico: "", laboratorio: "", enfermedad: "", viaAdmin: "", esquemaDosis: "", stockMinimo: "5", precioVenta: "", temperatura: "Temperatura ambiente", descripcion: "" });
       addToast(`Vacuna "${newForm.nombre}" registrada correctamente.`);
       await loadData(tenantId);
     } catch (err: any) {
@@ -373,6 +429,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
   // ── FILTERED ──────────────────────────────────────────────────────
   const filtered = vacunas.filter(v =>
+    (selectedCategoryFilter === "all" || v.categoria_id === selectedCategoryFilter) &&
     v.nombre.toLowerCase().includes(search.toLowerCase()) ||
     v.laboratorio.toLowerCase().includes(search.toLowerCase())
   );
@@ -435,6 +492,16 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             {/* ── INVENTORY TABLE ───────────────────────────────────── */}
             <div className="section-header">
               <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Catálogo de Ítems</h2>
+              <div style={{ display: "flex", gap: "12px" }}>
+              <select
+                className="form-select"
+                value={selectedCategoryFilter}
+                onChange={e => setSelectedCategoryFilter(e.target.value)}
+                style={{ width: "200px", padding: "8px 12px" }}
+              >
+                <option value="all">Todas las Categorías</option>
+                {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
               <input
                 type="search"
                 id="search-vacunas"
@@ -445,6 +512,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                 style={{ width: "260px" }}
                 aria-label="Buscar ítems"
               />
+              </div>
             </div>
 
         <div className="inv-table-wrap">
@@ -583,12 +651,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           <div className="categorias-section">
             <div className="section-header">
               <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Categorías de Inventario</h2>
-              <button 
-                className="btn btn-primary"
-                onClick={() => addToast("Funcionalidad de agregar categoría en desarrollo", "info")}
-              >
-                ＋ Nueva Categoría
-              </button>
+              <button className="btn btn-primary" onClick={openNewCategoria}>＋ Nueva Categoría</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
               {categorias.length === 0 ? (
@@ -596,11 +659,19 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   No hay categorías registradas. Se usarán ítems sin clasificar.
                 </div>
               ) : categorias.map(c => (
-                <div key={c.id} className="card" style={{ padding: "20px", borderLeft: `4px solid ${c.color || primaryColor}` }}>
-                  <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--slate-900)" }}>{c.nombre}</h3>
-                  <div style={{ marginTop: "12px", fontSize: "13px", color: "var(--slate-500)" }}>
-                    {vacunas.filter(v => v.categoria_id === c.id).length} ítems en esta categoría
+                <div key={c.id} className="card" style={{ padding: "20px", borderLeft: `4px solid ${c.color || primaryColor}`, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--slate-900)" }}>{c.nombre}</h3>
+                      <button type="button" onClick={() => openEditCategoria(c)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px" }} title="Editar categoría">✏️</button>
+                    </div>
+                    <div style={{ marginTop: "12px", fontSize: "13px", color: "var(--slate-500)", marginBottom: "20px" }}>
+                      {vacunas.filter(v => v.categoria_id === c.id).length} ítems en esta categoría
+                    </div>
                   </div>
+                  <button className="btn btn-outline" style={{ width: "100%", justifyContent: "center", fontSize: "13px" }} onClick={() => openNewItemForCategory(c.id)}>
+                    ➕ Añadir Ítem
+                  </button>
                 </div>
               ))}
             </div>
@@ -624,6 +695,13 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           <div className="modal-body">
             <div className="form-grid">
 
+              <div className="form-group full-width">
+                <label className="form-label" htmlFor="categoria_id">Categoría <span className="required-mark">*</span></label>
+                <select id="categoria_id" name="categoria_id" className="form-select" value={newForm.categoria_id} onChange={handleNewFormChange} required>
+                  <option value="" disabled>Seleccione una categoría...</option>
+                  {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="nombre">Nombre comercial <span className="required-mark">*</span></label>
                 <input id="nombre" name="nombre" type="text" className="form-input"
@@ -649,17 +727,17 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="enfermedad">Enfermedad que previene <span className="required-mark">*</span></label>
+                <label className="form-label" htmlFor="enfermedad">Enfermedad que previene</label>
                 <input id="enfermedad" name="enfermedad" type="text" className="form-input"
                   value={newForm.enfermedad} onChange={handleNewFormChange}
-                  required placeholder="ej: Hepatitis B crónica"
+                  placeholder="ej: Hepatitis B crónica"
                   autoComplete="off" />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="viaAdmin">Vía de administración <span className="required-mark">*</span></label>
+                <label className="form-label" htmlFor="viaAdmin">Vía de administración</label>
                 <select id="viaAdmin" name="viaAdmin" className="form-select"
-                  value={newForm.viaAdmin} onChange={handleNewFormChange} required>
+                  value={newForm.viaAdmin} onChange={handleNewFormChange}> <option value="">No aplica</option>
                   <option value="Intramuscular">Intramuscular</option>
                   <option value="Subcutánea">Subcutánea</option>
                   <option value="Oral">Oral</option>
@@ -678,10 +756,10 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="esquemaDosis">Esquema de dosis <span className="required-mark">*</span></label>
+                <label className="form-label" htmlFor="esquemaDosis">Esquema de dosis</label>
                 <input id="esquemaDosis" name="esquemaDosis" type="text" className="form-input"
                   value={newForm.esquemaDosis} onChange={handleNewFormChange}
-                  required placeholder="ej: 3 dosis: 2, 4, 6 meses"
+                  placeholder="ej: 3 dosis: 2, 4, 6 meses"
                   autoComplete="off" />
               </div>
 
@@ -866,6 +944,49 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             💉 Confirmar — Registrar como Usada
           </button>
         </div>
+      </dialog>
+
+      
+      {/* ═══════════════════════════════════════════════════════════
+          MODAL: CATEGORÍA
+      ═══════════════════════════════════════════════════════════ */}
+      <dialog ref={catRef} id="modal-categoria" aria-labelledby="dialog-cat-title">
+        <div className="modal-header">
+          <div>
+            <div className="modal-title" id="dialog-cat-title">{catForm.id ? "✏️ Editar Categoría" : "➕ Nueva Categoría"}</div>
+            <div className="modal-subtitle">Organiza tu inventario en secciones lógicas</div>
+          </div>
+          <button className="modal-close" onClick={() => catRef.current?.close()} type="button" aria-label="Cerrar">✕</button>
+        </div>
+
+        <form onSubmit={handleSaveCategoria} noValidate>
+          <div className="modal-body">
+            <div className="form-grid">
+              <div className="form-group full-width">
+                <label className="form-label" htmlFor="cat-nombre">Nombre de la Categoría <span className="required-mark">*</span></label>
+                <input id="cat-nombre" name="nombre" type="text" className="form-input"
+                  value={catForm.nombre} onChange={handleCatChange}
+                  required placeholder="ej: Sueros, Insumos Odontológicos..."
+                  autoComplete="off" />
+              </div>
+              <div className="form-group full-width">
+                <label className="form-label" htmlFor="cat-color">Color representativo</label>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <input id="cat-color" name="color" type="color" 
+                    value={catForm.color} onChange={handleCatChange}
+                    style={{ width: "40px", height: "40px", padding: "0", border: "none", cursor: "pointer", borderRadius: "8px" }} />
+                  <span style={{ fontSize: "13px", color: "var(--slate-500)" }}>Elige un color para identificar esta categoría.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-outline" onClick={() => catRef.current?.close()}>Cancelar</button>
+            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>
+              ✓ Guardar Categoría
+            </button>
+          </div>
+        </form>
       </dialog>
 
       {/* TOASTS */}
