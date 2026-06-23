@@ -59,26 +59,27 @@ export default async function TenantHomePage({ params }: PageProps) {
       )}
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <section style={{
+      <section className="hero" id="inicio" style={{
         background: `linear-gradient(160deg, ${primaryColor}f0, ${primaryColor}cc 60%, var(--slate-900))`,
         padding: "80px 0 100px",
-        position: "relative",
-        overflow: "hidden",
+        minHeight: "calc(100vh - var(--nav-h))",
+        display: "flex",
+        alignItems: "center",
       }} aria-label="Presentación del doctor">
         <div className="hero-bg-grid" aria-hidden="true" />
         <div className="hero-glow-1" aria-hidden="true" />
+        <div className="hero-glow-2" aria-hidden="true" />
 
         <div className="container">
-          {config?.hero_badge_texto && (
-            <div className="hero-kicker animate-up" style={{ display: "inline-flex", marginBottom: "24px" }}>
-              <span className="pulse-dot" />
-              {config.hero_badge_texto}
-            </div>
-          )}
-
-          <div className="hero-grid">
+          <div className="hero-inner">
             <div className="hero-content animate-left">
-              <h1 className="hero-title" style={{ marginBottom: "20px" }}>
+              {config?.hero_badge_texto && (
+                <div className="hero-kicker">
+                  <span className="pulse-dot" />
+                  {config.hero_badge_texto}
+                </div>
+              )}
+              <h1 className="hero-title">
                 {config?.hero_titulo || config?.nombre_doctor || tenant.nombre}
                 {config?.hero_subtitulo && (
                   <><br /><span className="hero-title-accent">{config.hero_subtitulo}</span></>
@@ -86,12 +87,12 @@ export default async function TenantHomePage({ params }: PageProps) {
               </h1>
 
               {config?.bio_corta && (
-                <p style={{ fontSize: "18px", color: "rgba(255,255,255,.7)", lineHeight: 1.7, marginBottom: "32px", maxWidth: "560px" }}>
+                <p className="hero-subtitle">
                   {config.bio_corta}
                 </p>
               )}
 
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div className="hero-actions">
                 <Link href={`/${slug}/sobre-el-doctor`} className="btn btn-emerald">
                   Conocer al Doctor
                 </Link>
@@ -101,19 +102,58 @@ export default async function TenantHomePage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="hero-stats animate-right delay-300">
-              {[
-                { value: config?.stat_anos_experiencia || "30+", label: "Años de experiencia" },
-                { value: config?.stat_publicaciones || "50+", label: "Publicaciones científicas" },
-                { value: config?.stat_pacientes_anio || "2,000+", label: "Pacientes al año" },
-                { value: config?.stat_consultorios || "3", label: "Consultorios" },
-              ].map((stat, i) => (
-                <div key={i} className="stat-card">
-                  <div className="stat-number">{stat.value}</div>
-                  <div className="stat-label">{stat.label}</div>
+            <div className="hero-img-wrap animate-right delay-200">
+              <div className="hero-photo-frame">
+                <Image
+                  src={config?.foto_url || "/doctor-torres.png"}
+                  alt={config?.nombre_doctor || "Dr. Carlos Torres"}
+                  width={600}
+                  height={520}
+                  priority
+                  style={{ objectFit: "cover", objectPosition: "center top" }}
+                />
+                <div className="hero-photo-overlay" />
+              </div>
+
+              {/* Floating cards */}
+              <div className="cred-card cred-card-tl">
+                <div className="cred-card-icon" style={{ background: primaryColor }}>🏆</div>
+                <div className="cred-card-text">
+                  <div className="cred-card-title">{config?.titulo_doctor || "Pediatra Infectólogo"}</div>
+                  <div className="cred-card-sub">{config?.especialidad || "Miembro de la SCP y SLIPE"}</div>
                 </div>
-              ))}
+              </div>
+              <div className="cred-card cred-card-br">
+                <div className="cred-card-icon" style={{ background: primaryColor }}>📚</div>
+                <div className="cred-card-text">
+                  <div className="cred-card-title">{config?.nombre_clinica || "Clínica Infantil Colsubsidio"}</div>
+                  <div className="cred-card-sub">{(config?.ciudad && config?.pais) ? `${config.ciudad}, ${config.pais}` : "Bogotá, Colombia"}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── STATS ROW ─────────────────────────────────────────── */}
+      <section className="stats-strip">
+        <div className="container">
+          <div className="stats-grid">
+            <div className="stat-item">
+              <div className="stat-number" style={{ color: primaryColor }}>{config?.stat_anos_experiencia || "30+"}</div>
+              <div className="stat-label">Años de experiencia</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-number" style={{ color: primaryColor }}>{config?.stat_publicaciones || "50+"}</div>
+              <div className="stat-label">Publicaciones científicas</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-number" style={{ color: primaryColor }}>{config?.stat_pacientes_anio || "2,000+"}</div>
+              <div className="stat-label">Pacientes al año</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-number" style={{ color: primaryColor }}>{config?.stat_consultorios || "3"}</div>
+              <div className="stat-label">Consultorios</div>
             </div>
           </div>
         </div>

@@ -1,5 +1,7 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 // ─── TYPES ──────────────────────────────────────────────────────────────
 type EstadoStock = "ok" | "low" | "critical";
@@ -44,60 +46,6 @@ interface Vacuna {
   lotes: Lote[];
 }
 
-// ─── MOCK DATA ───────────────────────────────────────────────────────────
-const INITIAL_VACUNAS: Vacuna[] = [
-  {
-    id: "1", nombre: "Hepatitis B", nombreGenerico: "Vacuna recombinante HBsAg",
-    laboratorio: "GSK Biologicals", enfermedad: "Hepatitis B crónica",
-    viaAdmin: "Intramuscular", esquemaDosis: "3 dosis: RN, 2, 6 meses",
-    stockMinimo: 10, stockActual: 24, precioVenta: "45000",
-    temperatura: "2-8°C", descripcion: "Previene infección por VHB y complicaciones a largo plazo.",
-    loteActivo: "LOT-2025-HB01",
-    movimientos: [
-      { id: "m1", tipo: "ENTRADA", cantidad: 30, motivo: "Compra a proveedor", fecha: "2026-06-01" },
-      { id: "m2", tipo: "SALIDA", cantidad: 6, motivo: "Aplicación de dosis", fecha: "2026-06-15" },
-    ],
-    lotes: [{ id: "l1", numero: "LOT-2025-HB01", cantidad: 30, fechaFabricacion: "2025-01-10", fechaVencimiento: "2027-01-10", proveedor: "Tecnoquímicas S.A.", fechaRegistro: "2026-06-01" }],
-  },
-  {
-    id: "2", nombre: "Pentavalente", nombreGenerico: "DPT-HB-Hib",
-    laboratorio: "Sanofi Pasteur", enfermedad: "Difteria, Pertussis, Tétanos, HB, Hib",
-    viaAdmin: "Intramuscular", esquemaDosis: "3 dosis + refuerzos (2, 4, 6, 18 meses)",
-    stockMinimo: 15, stockActual: 8, precioVenta: "68000",
-    temperatura: "2-8°C", descripcion: "Vacuna combinada de 5 antígenos. Base del PAI colombiano.",
-    loteActivo: "PEN-2026-A2",
-    movimientos: [
-      { id: "m3", tipo: "ENTRADA", cantidad: 20, motivo: "Compra a proveedor", fecha: "2026-05-20" },
-      { id: "m4", tipo: "SALIDA", cantidad: 12, motivo: "Aplicación de dosis", fecha: "2026-06-10" },
-    ],
-    lotes: [{ id: "l2", numero: "PEN-2026-A2", cantidad: 20, fechaFabricacion: "2025-06-01", fechaVencimiento: "2027-06-01", proveedor: "Sanofi Colombia", fechaRegistro: "2026-05-20" }],
-  },
-  {
-    id: "3", nombre: "Neumococo PCV13", nombreGenerico: "Vacuna Neumocócica Conjugada 13-valente",
-    laboratorio: "Pfizer", enfermedad: "Neumonía, meningitis, otitis por S. pneumoniae",
-    viaAdmin: "Intramuscular", esquemaDosis: "3 dosis: 2, 4, 12 meses",
-    stockMinimo: 8, stockActual: 0, precioVenta: "120000",
-    temperatura: "2-8°C", descripcion: "Protección frente a 13 serotipos de neumococo.",
-    loteActivo: "—",
-    movimientos: [
-      { id: "m5", tipo: "ENTRADA", cantidad: 10, motivo: "Compra a proveedor", fecha: "2026-04-01" },
-      { id: "m6", tipo: "SALIDA", cantidad: 10, motivo: "Aplicación de dosis", fecha: "2026-06-05" },
-    ],
-    lotes: [],
-  },
-  {
-    id: "4", nombre: "MMR (SRP)", nombreGenerico: "Vacuna Sarampión-Rubéola-Paperas",
-    laboratorio: "MSD Vacunas", enfermedad: "Sarampión, Rubéola, Parotiditis",
-    viaAdmin: "Subcutánea", esquemaDosis: "2 dosis: 12 y 18 meses",
-    stockMinimo: 10, stockActual: 12, precioVenta: "55000",
-    temperatura: "2-8°C", descripcion: "Vacuna triple viral. Erradicó el sarampión endémico en las Américas.",
-    loteActivo: "MMR-26B-010",
-    movimientos: [],
-    lotes: [{ id: "l3", numero: "MMR-26B-010", cantidad: 15, fechaFabricacion: "2025-08-01", fechaVencimiento: "2027-08-01", proveedor: "MSD Colombia", fechaRegistro: "2026-05-15" }],
-  },
-];
-
-// ─── HELPERS ─────────────────────────────────────────────────────────────
 const getStockStatus = (v: Vacuna): EstadoStock => {
   if (v.stockActual === 0) return "critical";
   if (v.stockActual <= v.stockMinimo) return "low";
@@ -109,56 +57,32 @@ const stockChipLabel: Record<EstadoStock, string> = {
   low: "⚠ Stock Bajo",
   critical: "● Agotado",
 };
+
 const stockChipClass: Record<EstadoStock, string> = {
   ok: "chip-ok",
   low: "chip-low",
   critical: "chip-critical",
 };
 
-const uid = () => Math.random().toString(36).slice(2, 9);
 const today = () => new Date().toISOString().split("T")[0];
-const formatDate = (d: string) => new Date(d).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
 
-// ─── SUB-COMPONENTS ──────────────────────────────────────────────────────
-
-/** Toast system */
 interface Toast { id: string; msg: string; type: "success" | "error" | "info"; }
 
-function ToastContainer({ toasts }: { toasts: Toast[] }) {
-  return (
-    <div className="toast-container" aria-live="polite" aria-atomic="true">
-      {toasts.map(t => (
-        <div key={t.id} className={`toast toast-${t.type}`} role="status">
-          {t.type === "success" ? "✅" : t.type === "error" ? "❌" : "ℹ️"}
-          {t.msg}
-        </div>
-      ))}
-    </div>
-  );
+interface Props {
+  params: Promise<{ slug: string }>;
 }
 
-/** KPI Card */
-function KPICard({ icon, iconClass, number, label, trend, trendClass }: {
-  icon: string; iconClass: string; number: number | string;
-  label: string; trend?: string; trendClass?: string;
-}) {
-  return (
-    <div className="kpi-card">
-      <div className="kpi-card-header">
-        <div className={`kpi-icon ${iconClass}`}>{icon}</div>
-        {trend && <span className={`kpi-trend ${trendClass}`}>{trend}</span>}
-      </div>
-      <div className="kpi-number">{number}</div>
-      <div className="kpi-label">{label}</div>
-    </div>
-  );
-}
-
-// ─── MAIN PAGE ───────────────────────────────────────────────────────────
-export default function AdminVacunasPage() {
-  const [vacunas, setVacunas] = useState<Vacuna[]>(INITIAL_VACUNAS);
+export default function TenantAdminVacunasPage({ params }: Props) {
+  const [slug, setSlug] = useState("");
+  const [tenantId, setTenantId] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("#0A4D5C");
+  const [accentColor, setAccentColor] = useState("#00D4AA");
+  const [vacunas, setVacunas] = useState<Vacuna[]>([]);
+  const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [search, setSearch] = useState("");
+
+  const supabase = createClient();
 
   // Modal refs
   const newVacunaRef = useRef<HTMLDialogElement>(null);
@@ -173,9 +97,92 @@ export default function AdminVacunasPage() {
 
   // Toast helper
   const addToast = useCallback((msg: string, type: Toast["type"] = "success") => {
-    const id = uid();
+    const id = Math.random().toString(36).slice(2, 9);
     setToasts(prev => [...prev, { id, msg, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+  }, []);
+
+  const loadData = async (tId: string) => {
+    try {
+      const { data: vacs, error: vacsErr } = await supabase
+        .from("inventario_vacunas")
+        .select("*")
+        .eq("tenant_id", tId)
+        .order("nombre");
+
+      if (vacsErr) throw vacsErr;
+
+      const enrichedVacs = await Promise.all((vacs || []).map(async (v) => {
+        const [lotsRes, movsRes] = await Promise.all([
+          supabase.from("lotes_vacunas").select("*").eq("vacuna_id", v.id).order("fecha_registro", { ascending: false }),
+          supabase.from("movimientos_vacunas").select("*").eq("vacuna_id", v.id).order("fecha", { ascending: false })
+        ]);
+
+        return {
+          id: v.id,
+          nombre: v.nombre,
+          nombreGenerico: v.nombre_generico || "",
+          laboratorio: v.laboratorio || "",
+          enfermedad: v.enfermedad || "",
+          viaAdmin: v.via_admin || "Intramuscular",
+          esquemaDosis: v.esquema_dosis || "",
+          stockMinimo: v.stock_minimo || 5,
+          stockActual: v.stock_actual || 0,
+          precioVenta: v.precio_venta ? String(v.precio_venta) : "0",
+          temperatura: v.temperatura || "2-8°C",
+          descripcion: v.descripcion || "",
+          loteActivo: v.lote_activo || "—",
+          lotes: (lotsRes.data || []).map(l => ({
+            id: l.id,
+            numero: l.numero_lote,
+            cantidad: l.cantidad,
+            fechaFabricacion: l.fecha_fabricacion || "",
+            fechaVencimiento: l.fecha_vencimiento || "",
+            proveedor: l.proveedor || "",
+            precioCompra: l.precio_compra ? String(l.precio_compra) : "",
+            factura: l.numero_factura || "",
+            fechaRegistro: l.fecha_registro || ""
+          })),
+          movimientos: (movsRes.data || []).map(m => ({
+            id: m.id,
+            tipo: m.tipo_movimiento as "ENTRADA" | "SALIDA",
+            cantidad: m.cantidad,
+            motivo: m.motivo || "",
+            fecha: m.fecha || "",
+            notas: m.notas || ""
+          }))
+        };
+      }));
+
+      setVacunas(enrichedVacs);
+    } catch (err: any) {
+      console.error("Error loading vaccines:", err);
+      addToast("Error al cargar vacunas: " + err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    params.then(async (p) => {
+      setSlug(p.slug);
+      const { data: tenant } = await supabase.from("tenants").select("id").eq("slug", p.slug).single();
+      if (!tenant) return;
+      setTenantId(tenant.id);
+
+      const { data: config } = await supabase
+        .from("configuracion_portal")
+        .select("color_primario, color_acento")
+        .eq("tenant_id", tenant.id)
+        .single();
+
+      if (config) {
+        if (config.color_primario) setPrimaryColor(config.color_primario);
+        if (config.color_acento) setAccentColor(config.color_acento);
+      }
+
+      await loadData(tenant.id);
+    });
   }, []);
 
   // ── NUEVA VACUNA FORM ──────────────────────────────────────────────
@@ -188,21 +195,37 @@ export default function AdminVacunasPage() {
   const handleNewFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setNewForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleNuevaVacuna = (e: React.FormEvent) => {
+  const handleNuevaVacuna = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nueva: Vacuna = {
-      id: uid(),
-      ...newForm,
-      stockMinimo: parseInt(newForm.stockMinimo) || 5,
-      stockActual: 0,
-      loteActivo: "—",
-      movimientos: [],
-      lotes: [],
-    };
-    setVacunas(prev => [nueva, ...prev]);
-    newVacunaRef.current?.close();
-    setNewForm({ nombre: "", nombreGenerico: "", laboratorio: "", enfermedad: "", viaAdmin: "Intramuscular", esquemaDosis: "", stockMinimo: "5", precioVenta: "", temperatura: "2-8°C", descripcion: "" });
-    addToast(`Vacuna "${nueva.nombre}" registrada correctamente.`);
+    try {
+      const { error } = await supabase
+        .from("inventario_vacunas")
+        .insert({
+          tenant_id: tenantId,
+          nombre: newForm.nombre,
+          nombre_generico: newForm.nombreGenerico,
+          laboratorio: newForm.laboratorio,
+          enfermedad: newForm.enfermedad,
+          via_admin: newForm.viaAdmin,
+          esquema_dosis: newForm.esquemaDosis,
+          stock_minimo: parseInt(newForm.stockMinimo) || 5,
+          stock_actual: 0,
+          precio_venta: parseFloat(newForm.precioVenta) || 0,
+          temperatura: newForm.temperatura,
+          descripcion: newForm.descripcion,
+          lote_activo: "—"
+        });
+
+      if (error) throw error;
+
+      newVacunaRef.current?.close();
+      setNewForm({ nombre: "", nombreGenerico: "", laboratorio: "", enfermedad: "", viaAdmin: "Intramuscular", esquemaDosis: "", stockMinimo: "5", precioVenta: "", temperatura: "2-8°C", descripcion: "" });
+      addToast(`Vacuna "${newForm.nombre}" registrada correctamente.`);
+      await loadData(tenantId);
+    } catch (err: any) {
+      console.error(err);
+      addToast("Error al guardar vacuna: " + err.message, "error");
+    }
   };
 
   // ── LOTE FORM ─────────────────────────────────────────────────────
@@ -219,36 +242,64 @@ export default function AdminVacunasPage() {
     loteRef.current?.showModal();
   };
 
-  const handleAgregarLote = (e: React.FormEvent) => {
+  const handleAgregarLote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedId) return;
     const cantidad = parseInt(loteForm.cantidad);
     if (isNaN(cantidad) || cantidad < 1) return;
 
-    const nuevoLote: Lote = {
-      id: uid(), ...loteForm, cantidad,
-      fechaRegistro: today(),
-    };
-    const nuevoMov: Movimiento = {
-      id: uid(), tipo: "ENTRADA", cantidad,
-      motivo: "Compra a proveedor", fecha: today(),
-    };
+    try {
+      // 1. Insert lot
+      const { error: lotErr } = await supabase
+        .from("lotes_vacunas")
+        .insert({
+          tenant_id: tenantId,
+          vacuna_id: selectedId,
+          numero_lote: loteForm.numero,
+          cantidad: cantidad,
+          fecha_fabricacion: loteForm.fechaFabricacion || null,
+          fecha_vencimiento: loteForm.fechaVencimiento,
+          proveedor: loteForm.proveedor,
+          precio_compra: loteForm.precioCompra ? parseFloat(loteForm.precioCompra) : null,
+          numero_factura: loteForm.factura || null
+        });
 
-    setVacunas(prev => prev.map(v =>
-      v.id === selectedId
-        ? {
-          ...v,
-          stockActual: v.stockActual + cantidad,
-          loteActivo: nuevoLote.numero,
-          lotes: [nuevoLote, ...v.lotes],
-          movimientos: [nuevoMov, ...v.movimientos],
-        }
-        : v
-    ));
-    loteRef.current?.close();
-    setLoteForm({ numero: "", cantidad: "", fechaFabricacion: "", fechaVencimiento: "", proveedor: "", precioCompra: "", factura: "" });
-    const vacNombre = vacunas.find(v => v.id === selectedId)?.nombre;
-    addToast(`Lote agregado a ${vacNombre}. Stock actualizado.`);
+      if (lotErr) throw lotErr;
+
+      // 2. Insert movement
+      const { error: movErr } = await supabase
+        .from("movimientos_vacunas")
+        .insert({
+          tenant_id: tenantId,
+          vacuna_id: selectedId,
+          tipo_movimiento: "ENTRADA",
+          cantidad: cantidad,
+          motivo: "Compra a proveedor",
+          fecha: today()
+        });
+
+      if (movErr) throw movErr;
+
+      // 3. Update stock and active lot in inventario_vacunas
+      const currentStock = selectedVacuna?.stockActual || 0;
+      const { error: updErr } = await supabase
+        .from("inventario_vacunas")
+        .update({
+          stock_actual: currentStock + cantidad,
+          lote_activo: loteForm.numero
+        })
+        .eq("id", selectedId);
+
+      if (updErr) throw updErr;
+
+      loteRef.current?.close();
+      setLoteForm({ numero: "", cantidad: "", fechaFabricacion: "", fechaVencimiento: "", proveedor: "", precioCompra: "", factura: "" });
+      addToast(`Lote agregado. Stock actualizado.`);
+      await loadData(tenantId);
+    } catch (err: any) {
+      console.error(err);
+      addToast("Error al agregar lote: " + err.message, "error");
+    }
   };
 
   // ── USAR DOSIS ────────────────────────────────────────────────────
@@ -258,25 +309,46 @@ export default function AdminVacunasPage() {
     usarRef.current?.showModal();
   };
 
-  const handleUsarDosis = () => {
+  const handleUsarDosis = async () => {
     if (!selectedId) return;
-    const nuevoMov: Movimiento = {
-      id: uid(), tipo: "SALIDA", cantidad: 1,
-      motivo: "Aplicación de dosis", fecha: today(),
-      notas: dosisNotas || undefined,
-    };
-    setVacunas(prev => prev.map(v =>
-      v.id === selectedId
-        ? { ...v, stockActual: Math.max(0, v.stockActual - 1), movimientos: [nuevoMov, ...v.movimientos] }
-        : v
-    ));
-    usarRef.current?.close();
-    const vacNombre = vacunas.find(v => v.id === selectedId)?.nombre;
-    const newStock = (vacunas.find(v => v.id === selectedId)?.stockActual ?? 1) - 1;
-    if (newStock === 0) {
-      addToast(`⚠️ ${vacNombre} agotada. Solicitar lote al proveedor.`, "error");
-    } else {
-      addToast(`Dosis de ${vacNombre} registrada como aplicada.`);
+    try {
+      // 1. Insert movement
+      const { error: movErr } = await supabase
+        .from("movimientos_vacunas")
+        .insert({
+          tenant_id: tenantId,
+          vacuna_id: selectedId,
+          tipo_movimiento: "SALIDA",
+          cantidad: 1,
+          motivo: "Aplicación de dosis",
+          notas: dosisNotas || null,
+          fecha: today()
+        });
+
+      if (movErr) throw movErr;
+
+      // 2. Update stock in inventario_vacunas
+      const currentStock = selectedVacuna?.stockActual || 0;
+      const newStock = Math.max(0, currentStock - 1);
+      const { error: updErr } = await supabase
+        .from("inventario_vacunas")
+        .update({
+          stock_actual: newStock
+        })
+        .eq("id", selectedId);
+
+      if (updErr) throw updErr;
+
+      usarRef.current?.close();
+      if (newStock === 0) {
+        addToast(`⚠️ ${selectedVacuna?.nombre} agotada. Solicitar lote.`, "error");
+      } else {
+        addToast(`Dosis registrada como aplicada.`);
+      }
+      await loadData(tenantId);
+    } catch (err: any) {
+      console.error(err);
+      addToast("Error al aplicar dosis: " + err.message, "error");
     }
   };
 
@@ -293,7 +365,14 @@ export default function AdminVacunasPage() {
     v.laboratorio.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ─────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "50vh", color: "var(--slate-400)" }}>
+        Cargando inventario de vacunas...
+      </div>
+    );
+  }
+
   return (
     <>
       {/* TOP BAR */}
@@ -303,7 +382,7 @@ export default function AdminVacunasPage() {
           <button
             id="btn-nueva-vacuna"
             className="btn btn-primary"
-            style={{ padding: "10px 20px", fontSize: "13px" }}
+            style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
             onClick={() => newVacunaRef.current?.showModal()}
           >
             ＋ Nueva Vacuna
@@ -323,7 +402,7 @@ export default function AdminVacunasPage() {
 
         {/* ── INVENTORY TABLE ───────────────────────────────────── */}
         <div className="section-header">
-          <h2 className="section-title">Inventario de Vacunas</h2>
+          <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Inventario de Vacunas</h2>
           <input
             type="search"
             id="search-vacunas"
@@ -375,13 +454,13 @@ export default function AdminVacunasPage() {
                       <td>
                         {v.loteActivo === "—"
                           ? <span style={{ color: "var(--slate-400)", fontSize: "12px" }}>Sin lote</span>
-                          : <span className="lot-badge">{v.loteActivo}</span>
+                          : <span className="lot-badge" style={{ background: `${accentColor}22`, color: primaryColor }}>{v.loteActivo}</span>
                         }
                       </td>
                       <td>
                         <div className="stock-cell">
                           <span className="stock-number" style={{
-                            color: status === "critical" ? "var(--rose-500)" : status === "low" ? "#b45309" : "var(--teal-800)"
+                            color: status === "critical" ? "var(--rose-500)" : status === "low" ? "#b45309" : primaryColor
                           }}>{v.stockActual}</span>
                           <span className="stock-min">dosis</span>
                         </div>
@@ -392,7 +471,7 @@ export default function AdminVacunasPage() {
                           {stockChipLabel[status]}
                         </span>
                       </td>
-                      <td style={{ fontWeight: 700, color: "var(--teal-800)" }}>
+                      <td style={{ fontWeight: 700, color: primaryColor }}>
                         ${parseInt(v.precioVenta || "0").toLocaleString("es-CO")}
                       </td>
                       <td>
@@ -409,6 +488,7 @@ export default function AdminVacunasPage() {
                             className="action-btn action-btn-primary"
                             onClick={() => openUsarModal(v.id)}
                             disabled={v.stockActual === 0}
+                            style={v.stockActual > 0 ? { background: primaryColor } : undefined}
                             title={v.stockActual === 0 ? "Sin stock disponible" : "Registrar una dosis aplicada"}
                             type="button"
                           >
@@ -441,7 +521,7 @@ export default function AdminVacunasPage() {
                 }}>
                   <span style={{ fontSize: "20px" }}>{status === "critical" ? "🔴" : "🟠"}</span>
                   <div style={{ flex: 1 }}>
-                    <span style={{ fontWeight: 700, fontSize: "14px" }}>
+                    <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--slate-800)" }}>
                       {status === "critical"
                         ? `AGOTADO: ${v.nombre}`
                         : `Stock bajo: ${v.nombre}`}
@@ -453,6 +533,7 @@ export default function AdminVacunasPage() {
                   <button
                     className="action-btn action-btn-ghost"
                     type="button"
+                    style={{ color: primaryColor }}
                     onClick={() => openLoteModal(v.id)}
                   >
                     ＋ Agregar lote
@@ -574,7 +655,7 @@ export default function AdminVacunasPage() {
             <button type="button" className="btn btn-outline" onClick={() => newVacunaRef.current?.close()}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>
               ✓ Registrar Vacuna
             </button>
           </div>
@@ -672,10 +753,10 @@ export default function AdminVacunasPage() {
       ═══════════════════════════════════════════════════════════ */}
       <dialog ref={usarRef} id="dialog-usar-dosis" className="confirm-dialog" aria-labelledby="dialog-usar-title">
         <div className="modal-body" style={{ padding: "32px 28px" }}>
-          <div className="confirm-icon" style={{ background: "rgba(10,77,92,.10)" }}>💉</div>
+          <div className="confirm-icon" style={{ background: "rgba(10,77,92,.10)", color: primaryColor }}>💉</div>
 
-          <h2 className="confirm-title" id="dialog-usar-title">Confirmar Uso de Dosis</h2>
-          <p className="confirm-msg">
+          <h2 className="confirm-title" id="dialog-usar-title" style={{ color: "var(--slate-900)" }}>Confirmar Uso de Dosis</h2>
+          <p className="confirm-msg" style={{ color: "var(--slate-600)" }}>
             Vas a registrar una dosis aplicada de{" "}
             <strong>{selectedVacuna?.nombre}</strong>.
             Esta acción descontará 1 unidad del inventario.
@@ -684,12 +765,12 @@ export default function AdminVacunasPage() {
           {selectedVacuna && (
             <div className="stock-preview">
               <div className="stock-before">
-                <div className="stock-before-num">{selectedVacuna.stockActual}</div>
+                <div className="stock-before-num" style={{ color: primaryColor }}>{selectedVacuna.stockActual}</div>
                 <div className="stock-before-label">Stock actual</div>
               </div>
-              <div className="stock-arrow">→</div>
+              <div className="stock-arrow" style={{ color: primaryColor }}>→</div>
               <div className="stock-before">
-                <div className="stock-after-num">{Math.max(0, selectedVacuna.stockActual - 1)}</div>
+                <div className="stock-after-num" style={{ color: accentColor }}>{Math.max(0, selectedVacuna.stockActual - 1)}</div>
                 <div className="stock-before-label">Después de aplicar</div>
               </div>
             </div>
@@ -716,6 +797,7 @@ export default function AdminVacunasPage() {
           <button
             type="button"
             className="btn btn-primary"
+            style={{ background: primaryColor }}
             onClick={handleUsarDosis}
           >
             💉 Confirmar — Registrar como Usada
@@ -726,5 +808,35 @@ export default function AdminVacunasPage() {
       {/* TOASTS */}
       <ToastContainer toasts={toasts} />
     </>
+  );
+}
+
+// Helper components
+function KPICard({ icon, iconClass, number, label, trend, trendClass }: {
+  icon: string; iconClass: string; number: number | string;
+  label: string; trend?: string; trendClass?: string;
+}) {
+  return (
+    <div className="kpi-card">
+      <div className="kpi-card-header">
+        <div className={`kpi-icon ${iconClass}`}>{icon}</div>
+        {trend && <span className={`kpi-trend ${trendClass}`}>{trend}</span>}
+      </div>
+      <div className="kpi-number">{number}</div>
+      <div className="kpi-label">{label}</div>
+    </div>
+  );
+}
+
+function ToastContainer({ toasts }: { toasts: Toast[] }) {
+  return (
+    <div className="toast-container" aria-live="polite" aria-atomic="true">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast toast-${t.type}`} role="status">
+          {t.type === "success" ? "✅ " : t.type === "error" ? "❌ " : "ℹ️ "}
+          {t.msg}
+        </div>
+      ))}
+    </div>
   );
 }
