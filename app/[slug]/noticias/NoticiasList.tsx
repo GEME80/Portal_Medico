@@ -12,6 +12,7 @@ interface Post {
   title: string;
   excerpt: string;
   featured: boolean;
+  imagenPortadaUrl?: string;
 }
 
 interface NoticiasListProps {
@@ -126,7 +127,14 @@ export default function NoticiasList({
                       background: `linear-gradient(135deg, ${primaryColor}, ${accentColor}dd)`,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: "80px", padding: "48px",
-                    }} aria-hidden="true">{featuredPost.emoji}</div>
+                      position: "relative", overflow: "hidden"
+                    }} aria-hidden="true">
+                      {featuredPost.imagenPortadaUrl ? (
+                        <img src={featuredPost.imagenPortadaUrl} alt={featuredPost.title} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
+                      ) : (
+                        featuredPost.emoji
+                      )}
+                    </div>
                     <div style={{ padding: "40px" }}>
                       <div style={{ display: "flex", gap: "10px", marginBottom: "16px", alignItems: "center" }}>
                         <span className="badge badge-emerald" style={{ background: primaryColor, color: "white" }}>
@@ -154,8 +162,12 @@ export default function NoticiasList({
                 <div className="news-grid">
                   {regularPosts.map((post) => (
                     <article className="news-card" key={post.id}>
-                      <div className="news-card-img" role="img" aria-hidden="true" style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${accentColor}10)` }}>
-                        <span style={{ fontSize: "56px" }}>{post.emoji}</span>
+                      <div className="news-card-img" role="img" aria-hidden="true" style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${accentColor}10)`, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {post.imagenPortadaUrl ? (
+                          <img src={post.imagenPortadaUrl} alt={post.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <span style={{ fontSize: "56px" }}>{post.emoji}</span>
+                        )}
                       </div>
                       <div className="news-card-body">
                         <div className="news-card-meta">

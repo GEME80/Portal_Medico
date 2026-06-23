@@ -52,20 +52,15 @@ export default async function NoticiasPostDetailPage({ params }: PageProps) {
         <div className="hero-bg-grid" aria-hidden="true" />
         <div className="container" style={{ position: "relative", zIndex: 1 }}>
           <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-            <Link href={`/${slug}/noticias`} style={{
+            <Link href={`/${slug}/noticias`} className="back-to-news-link" style={{
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              color: "rgba(255, 255, 255, 0.7)",
               fontSize: "14px",
               fontWeight: 600,
               textDecoration: "none",
-              marginBottom: "32px",
-              transition: "color 0.2s"
-            }}
-              onMouseEnter={(e) => e.currentTarget.style.color = "white"}
-              onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255, 255, 255, 0.7)"}
-            >
+              marginBottom: "32px"
+            }}>
               ← Volver a publicaciones
             </Link>
 

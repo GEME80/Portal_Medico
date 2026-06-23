@@ -23,7 +23,7 @@ export default async function DynamicNoticiasPage({ params }: PageProps) {
   // Load configuration and articles
   const [configRes, postsRes] = await Promise.all([
     supabase.from("configuracion_portal").select("nombre_doctor, color_primario, color_acento").eq("tenant_id", tenant.id).single(),
-    supabase.from("noticias_posts").select("id,titulo,resumen,emoji,categoria,created_at,slug,publicado").eq("tenant_id", tenant.id).eq("publicado", true).order("created_at", { ascending: false }),
+    supabase.from("noticias_posts").select("id,titulo,resumen,emoji,categoria,created_at,slug,publicado,imagen_portada_url").eq("tenant_id", tenant.id).eq("publicado", true).order("created_at", { ascending: false }),
   ]);
 
   const config = configRes.data;
@@ -47,6 +47,7 @@ export default async function DynamicNoticiasPage({ params }: PageProps) {
         readTime: "5 min",
         title: p.titulo,
         excerpt: p.resumen || "",
+        imagenPortadaUrl: p.imagen_portada_url || "",
         featured: false
       }))}
     />

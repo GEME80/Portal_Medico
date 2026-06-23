@@ -1175,3 +1175,13 @@ h1, h2, h3, h4, h5, h6 {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
+/* ─── NEWS BACK LINK ────────────────────────────────────────────────── */
+.back-to-news-link {
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.2s;
+}
+.back-to-news-link:hover {
+  color: #ffffff !important;
+}
+
