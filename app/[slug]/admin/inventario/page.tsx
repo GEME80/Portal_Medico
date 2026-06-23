@@ -431,7 +431,18 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const filtered = vacunas.filter(v =>
     (selectedCategoryFilter === "all" || v.categoria_id === selectedCategoryFilter) &&
     (v.nombre.toLowerCase().includes(search.toLowerCase()))
-  );
+  ).sort((a, b) => {
+    const getStatusWeight = (v: any) => {
+      const status = getStockStatus(v);
+      if (status === "critical") return 0;
+      if (status === "low") return 1;
+      return 2; // ok
+    };
+    const weightA = getStatusWeight(a);
+    const weightB = getStatusWeight(b);
+    if (weightA !== weightB) return weightA - weightB;
+    return a.nombre.localeCompare(b.nombre);
+  });
 
   if (loading) {
     return (
@@ -575,8 +586,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   <th scope="col">Stock</th>
                   <th scope="col">Mín.</th>
                   <th scope="col">Estado</th>
-                  <th scope="col">P. Compra</th>
-                  <th scope="col">P. Venta</th>
+                  <th scope="col">P. Unitario Compra</th>
+                  <th scope="col">P. Total Compra</th>
+                  <th scope="col">P. Unitario Venta</th>
                   <th scope="col">Acciones</th>
                 </tr>
               </thead>
@@ -931,7 +943,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             style={{ background: primaryColor }}
             onClick={handleUsarDosis}
           >
-            💉 Confirmar — Registrar como Usada
+            💉 Registrar Aplicación
           </button>
         </div>
       </dialog>
