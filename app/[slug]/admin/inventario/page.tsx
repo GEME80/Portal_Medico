@@ -101,6 +101,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   // Selected vaccine for actions
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dosisNotas, setDosisNotas] = useState("");
+  const [cobrarMayorista, setCobrarMayorista] = useState(false);
 
   const selectedVacuna = vacunas.find(v => v.id === selectedId);
 
@@ -370,24 +371,27 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const openUsarModal = (id: string) => {
     setSelectedId(id);
     setDosisNotas("");
+    setCobrarMayorista(false);
     usarRef.current?.showModal();
   };
 
-  const handleUsarDosis = async () => {
-    if (!selectedId) return;
+  const handleUsarDosis = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedId || !selectedVacuna) return;
     try {
-      // 1. Insert movement
-      const { error: movErr } = await supabase
-        .from("movimientos_inventario")
-        .insert({
-          tenant_id: tenantId,
-          item_id: selectedId,
-          tipo_movimiento: "SALIDA",
-          cantidad: 1,
-          motivo: "Aplicación de dosis",
-          notas: dosisNotas || null,
-          fecha: today()
-        });
+      const valorUnitario = cobrarMayorista ? selectedVacuna.valorMayorista : selectedVacuna.precioVenta;
+      const notasFinales = dosisNotas + (cobrarMayorista ? " [COBRO PRECIO MAYORISTA]" : "");
+      
+      const { error: movErr } = await supabase.from("movimientos_inventario").insert({
+        tenant_id: tenantId,
+        item_id: selectedId,
+        tipo_movimiento: "SALIDA",
+        cantidad: 1,
+        motivo: "Aplicación de dosis",
+        notas: notasFinales || null,
+        fecha: today(),
+        valor_unitario_cobrado: valorUnitario
+      });
 
       if (movErr) throw movErr;
 
@@ -868,7 +872,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       {/* ═══════════════════════════════════════════════════════════
           DIALOG: CONFIRMAR USO DE DOSIS
       ═══════════════════════════════════════════════════════════ */}
-      <dialog ref={usarRef} id="dialog-usar-dosis" className="confirm-dialog" aria-labelledby="dialog-usar-title">
+      <dialog ref={usarRef} id="dialog-usar-dosis" className="confirm-dialog" aria-labelledby="dialog-usar-title" style={{ margin: "auto" }}>
         <div className="modal-body" style={{ padding: "32px 28px" }}>
           <div className="confirm-icon" style={{ background: "rgba(10,77,92,.10)", color: primaryColor }}>💉</div>
 
@@ -893,7 +897,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             </div>
           )}
 
-          <div className="form-group">
+          <div className="form-group" style={{ textAlign: "left" }}>
             <label className="form-label" htmlFor="dosis-notas">Notas del paciente (opcional)</label>
             <input
               id="dosis-notas"
@@ -904,6 +908,16 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               placeholder="ej: Paciente Juan Pérez, 6 meses, 1ª dosis"
               autoComplete="off"
             />
+          </div>
+
+          <div className="form-group" style={{ marginTop: "16px", padding: "12px", background: "var(--slate-50)", borderRadius: "8px", border: "1px solid var(--slate-200)", textAlign: "left" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", fontWeight: 600, color: "var(--slate-700)" }}>
+              <input type="checkbox" checked={cobrarMayorista} onChange={(e) => setCobrarMayorista(e.target.checked)} style={{ width: "18px", height: "18px", accentColor: primaryColor }} />
+              Cobrar precio mayorista (Costo)
+            </label>
+            <div style={{ fontSize: "12px", color: "var(--slate-500)", marginLeft: "28px", marginTop: "4px" }}>
+              Al marcar esta opción, el ingreso registrado será el valor mayorista base (${parseInt(selectedVacuna?.valorMayorista || "0").toLocaleString("es-CO")}) en lugar del precio de venta final (${parseInt(selectedVacuna?.precioVenta || "0").toLocaleString("es-CO")}).
+            </div>
           </div>
         </div>
 

@@ -43,8 +43,8 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
           const monthIndex = d.getMonth();
           // Costo total de esa salida
           data[monthIndex].costo += (item.valor_mayorista || 0) * m.cantidad;
-          // Valor cobrado total
-          data[monthIndex].cobrado += (item.precio_venta || 0) * m.cantidad;
+          // Valor cobrado total (usar el cobrado real si existe, sino fallback al precio de venta)
+          data[monthIndex].cobrado += (m.valor_unitario_cobrado !== undefined && m.valor_unitario_cobrado !== null ? Number(m.valor_unitario_cobrado) : (item.precio_venta || 0)) * m.cantidad;
         }
       }
     });
@@ -105,7 +105,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
             itemsMap[item.id] = { nombre: item.nombre, cantidad: 0, ingresos: 0, costo: 0 };
           }
           itemsMap[item.id].cantidad += m.cantidad;
-          itemsMap[item.id].ingresos += (item.precio_venta || 0) * m.cantidad;
+          itemsMap[item.id].ingresos += (m.valor_unitario_cobrado !== undefined && m.valor_unitario_cobrado !== null ? Number(m.valor_unitario_cobrado) : (item.precio_venta || 0)) * m.cantidad;
           itemsMap[item.id].costo += (item.valor_mayorista || 0) * m.cantidad;
         }
       }
