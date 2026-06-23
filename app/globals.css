@@ -54,7 +54,7 @@
   --radius-full: 9999px;
 
   /* Spacing */
-  --nav-h: 72px;
+  --nav-h: 140px;
 
   /* Transitions */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -291,35 +291,35 @@ h1, h2, h3, h4, h5, h6 {
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
 }
 
 .navbar-logo-icon {
-  width: 48px; height: 48px;
+  width: 108px; height: 108px;
   background: linear-gradient(135deg, var(--teal-800), var(--teal-500));
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 24px;
+  font-size: 54px;
   box-shadow: var(--shadow-teal);
   transition: transform .2s var(--ease-out);
 }
 
 .navbar-brand:hover .navbar-logo-icon { transform: scale(1.08); }
 
-.navbar-brand-text { display: flex; flex-direction: column; gap: 2px; }
+.navbar-brand-text { display: flex; flex-direction: column; gap: 4px; }
 .navbar-brand-name {
   font-family: 'Outfit', sans-serif;
-  font-size: 17px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--slate-900);
   line-height: 1;
   letter-spacing: -.02em;
 }
 .navbar-brand-sub {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--teal-600);
   letter-spacing: .06em;
@@ -329,14 +329,14 @@ h1, h2, h3, h4, h5, h6 {
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   list-style: none;
 }
 
 .navbar-links a {
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: var(--radius-full);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--slate-600);
   transition: color .2s, background .2s;
@@ -1094,6 +1094,30 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --nav-h: 96px;
+  }
+  .navbar-logo-icon {
+    width: 64px !important;
+    height: 64px !important;
+    font-size: 32px !important;
+  }
+  .navbar-brand {
+    gap: 12px;
+  }
+  .navbar-brand-name {
+    font-size: 18px !important;
+  }
+  .navbar-brand-sub {
+    font-size: 12px !important;
+  }
+  .navbar-logo-icon img {
+    height: 64px !important;
+  }
+  .navbar-logo-icon svg {
+    width: 32px !important;
+    height: 32px !important;
+  }
   .navbar-links, .navbar-cta { display: none; }
   .navbar-hamburger { display: flex; }
   .hero-photo-frame img { height: 360px; }

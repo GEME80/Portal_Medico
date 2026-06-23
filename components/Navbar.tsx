@@ -35,10 +35,10 @@ export default function Navbar({
             {/* Brand */}
             <Link href={base || "/"} className="navbar-brand">
               <div className="navbar-logo-icon" aria-hidden="true" style={logoUrl ? { background: "none", border: "none", width: "auto", height: "auto", display: "flex", alignItems: "center" } : undefined}>
-                {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" style={{ height: "56px", width: "auto", borderRadius: "8px", objectFit: "contain" }} />
+                 {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" style={{ height: "108px", width: "auto", borderRadius: "12px", objectFit: "contain" }} />
                 ) : (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  <svg width="54" height="54" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2L13.5 8.5H20L14.5 12.5L16 19L12 15L8 19L9.5 12.5L4 8.5H10.5Z"/>
                     <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
