@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+import { headers } from "next/headers";
+
 interface TenantLayoutProps {
   children: React.ReactNode;
   params: Promise<{ slug: string }>;
@@ -36,6 +38,10 @@ export async function generateMetadata({ params }: TenantLayoutProps): Promise<M
 
 export default async function TenantLayout({ children, params }: TenantLayoutProps) {
   const { slug } = await params;
+  const headerList = await headers();
+  const pathname = headerList.get("x-pathname") || "";
+  const isAdmin = pathname.includes("/admin");
+
   const supabase = await createClient();
 
   // Validate tenant exists and is active
@@ -47,6 +53,10 @@ export default async function TenantLayout({ children, params }: TenantLayoutPro
     .single();
 
   if (!tenant) notFound();
+
+  if (isAdmin) {
+    return <>{children}</>;
+  }
 
   // Load portal config for Navbar/Footer
   const { data: config } = await supabase
