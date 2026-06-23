@@ -135,7 +135,10 @@ export async function createTenantAction(input: CreateTenantInput) {
     ]);
 
     // 7. Invite the doctor via Supabase Auth Admin API
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://portal-medico-five.vercel.app";
+    const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL 
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` 
+      : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || vercelUrl || "https://portal-medico-five.vercel.app";
     
     // We send invitation
     const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {

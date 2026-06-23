@@ -44,9 +44,16 @@ export async function middleware(request: NextRequest) {
 
   // 3. Resolve Tenant (by Custom Domain or path slug)
   const hostname = request.headers.get("host") || "";
+  
+  const getFallbackHost = () => {
+    if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    if (process.env.VERCEL_URL) return process.env.VERCEL_URL;
+    return "portal-medico-five.vercel.app";
+  };
+
   const mainDomain = process.env.NEXT_PUBLIC_APP_URL 
     ? new URL(process.env.NEXT_PUBLIC_APP_URL).host 
-    : "portal-medico-five.vercel.app";
+    : getFallbackHost();
   
   const isVercelDomain = hostname.endsWith(".vercel.app");
   const isLocalhost = hostname.startsWith("localhost");

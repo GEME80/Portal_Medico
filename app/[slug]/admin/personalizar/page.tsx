@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImageAction, revalidateTenantPagesAction } from "../noticias/actions";
 
 const TABS = [
   { id: "identidad",     label: "👨‍⚕️ Identidad",      desc: "Logo, doctor y clínica" },
@@ -121,30 +122,47 @@ export default function PersonalizarPage({ params }: Props) {
         .update({ ...config, updated_at: new Date().toISOString() })
         .eq("tenant_id", tenantId);
       if (error) showToast("Error al guardar: " + error.message, "error");
-      else showToast("✅ Cambios guardados correctamente");
+      else {
+        showToast("✅ Cambios guardados correctamente");
+        await revalidateTenantPagesAction(slug);
+      }
     });
   };
 
-  const saveLineas = async () => {
-    for (const l of lineas) {
-      if (l.id.startsWith("new-")) {
-        await supabase.from("lineas_investigacion").insert({ ...l, id: undefined, tenant_id: tenantId });
-      } else {
-        await supabase.from("lineas_investigacion").update(l).eq("id", l.id);
+  const saveLineas = () => {
+    startTransition(async () => {
+      try {
+        for (const l of lineas) {
+          if (l.id.startsWith("new-")) {
+            await supabase.from("lineas_investigacion").insert({ ...l, id: undefined, tenant_id: tenantId });
+          } else {
+            await supabase.from("lineas_investigacion").update(l).eq("id", l.id);
+          }
+        }
+        showToast("✅ Líneas de investigación guardadas");
+        await revalidateTenantPagesAction(slug);
+      } catch (err: any) {
+        showToast("Error al guardar líneas: " + err.message, "error");
       }
-    }
-    showToast("✅ Líneas de investigación guardadas");
+    });
   };
 
-  const saveHitos = async () => {
-    for (const h of hitos) {
-      if (h.id.startsWith("new-")) {
-        await supabase.from("hitos_timeline").insert({ ...h, id: undefined, tenant_id: tenantId });
-      } else {
-        await supabase.from("hitos_timeline").update(h).eq("id", h.id);
+  const saveHitos = () => {
+    startTransition(async () => {
+      try {
+        for (const h of hitos) {
+          if (h.id.startsWith("new-")) {
+            await supabase.from("hitos_timeline").insert({ ...h, id: undefined, tenant_id: tenantId });
+          } else {
+            await supabase.from("hitos_timeline").update(h).eq("id", h.id);
+          }
+        }
+        showToast("✅ Trayectoria guardada");
+        await revalidateTenantPagesAction(slug);
+      } catch (err: any) {
+        showToast("Error al guardar trayectoria: " + err.message, "error");
       }
-    }
-    showToast("✅ Trayectoria guardada");
+    });
   };
 
   const saveAlert = () => {
@@ -184,7 +202,10 @@ export default function PersonalizarPage({ params }: Props) {
       }
 
       if (error) showToast("Error al guardar alerta: " + error.message, "error");
-      else showToast("✅ Alerta epidemiológica guardada correctamente");
+      else {
+        showToast("✅ Alerta epidemiológica guardada correctamente");
+        await revalidateTenantPagesAction(slug);
+      }
     });
   };
 
@@ -193,23 +214,18 @@ export default function PersonalizarPage({ params }: Props) {
     if (!file) return;
 
     startTransition(async () => {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${tenantId}/logo_${Date.now()}.${fileExt}`;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("tenantId", tenantId);
+      formData.append("folder", "logo");
 
-      const { data, error } = await supabase.storage
-        .from('portal-media')
-        .upload(fileName, file, { cacheControl: '3600', upsert: true });
-
-      if (error) {
-        showToast("Error al subir logo: " + error.message, "error");
+      const res = await uploadImageAction(formData);
+      if (!res.success) {
+        showToast("Error al subir logo: " + res.error, "error");
         return;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('portal-media')
-        .getPublicUrl(fileName);
-
-      setConfig(c => ({ ...c, logo_url: publicUrl }));
+      setConfig(c => ({ ...c, logo_url: res.publicUrl || "" }));
       showToast("✅ Logotipo subido correctamente. Guarde los cambios para aplicar.");
     });
   };

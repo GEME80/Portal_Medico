@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImageAction, revalidateTenantPagesAction } from "./actions";
 
 interface Post {
   id: string;
@@ -100,6 +101,7 @@ export default function AdminNoticiasPage({ params }: Props) {
         showToast("Error al eliminar: " + error.message, "error");
       } else {
         showToast("✅ Publicación eliminada");
+        await revalidateTenantPagesAction(tenantSlug);
         loadPosts(tenantId);
       }
     });
@@ -110,23 +112,18 @@ export default function AdminNoticiasPage({ params }: Props) {
     if (!file || !editingPost) return;
 
     startTransition(async () => {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${tenantId}/posts/post_${Date.now()}.${fileExt}`;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("tenantId", tenantId);
+      formData.append("folder", "posts");
 
-      const { data, error } = await supabase.storage
-        .from('portal-media')
-        .upload(fileName, file, { cacheControl: '3600', upsert: true });
-
-      if (error) {
-        showToast("Error al subir imagen: " + error.message, "error");
+      const res = await uploadImageAction(formData);
+      if (!res.success) {
+        showToast("Error al subir imagen: " + res.error, "error");
         return;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('portal-media')
-        .getPublicUrl(fileName);
-
-      setEditingPost(prev => prev ? { ...prev, imagen_portada_url: publicUrl } : null);
+      setEditingPost(prev => prev ? { ...prev, imagen_portada_url: res.publicUrl } : null);
       showToast("✅ Imagen de portada subida");
     });
   };
@@ -135,7 +132,7 @@ export default function AdminNoticiasPage({ params }: Props) {
     e.preventDefault();
     if (!editingPost || !editingPost.titulo) return;
 
-    // Auto-generate slug if empty
+    // Auto-generate slug
     const slugVal = editingPost.slug?.trim() || editingPost.titulo
       .toLowerCase()
       .trim()
@@ -170,6 +167,7 @@ export default function AdminNoticiasPage({ params }: Props) {
         showToast("Error al guardar: " + error.message, "error");
       } else {
         showToast("✅ Publicación guardada correctamente");
+        await revalidateTenantPagesAction(tenantSlug);
         setIsModalOpen(false);
         setEditingPost(null);
         loadPosts(tenantId);
@@ -323,18 +321,6 @@ export default function AdminNoticiasPage({ params }: Props) {
                     />
                   </div>
 
-                  {/* Slug */}
-                  <div>
-                    <label style={labelStyle}>Slug de ruta (opcional)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="ej-mi-articulo-2026"
-                      value={editingPost.slug || ""}
-                      onChange={e => setEditingPost(p => p ? { ...p, slug: e.target.value } : null)}
-                    />
-                  </div>
-
                   {/* Category */}
                   <div>
                     <label style={labelStyle}>Categoría</label>
@@ -349,18 +335,6 @@ export default function AdminNoticiasPage({ params }: Props) {
                       <option value="Epidemiología">Epidemiología</option>
                       <option value="EcoVaccine">EcoVaccine</option>
                     </select>
-                  </div>
-
-                  {/* Emoji Icon */}
-                  <div>
-                    <label style={labelStyle}>Emoji de respaldo (Fallback)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="📄"
-                      value={editingPost.emoji || ""}
-                      onChange={e => setEditingPost(p => p ? { ...p, emoji: e.target.value } : null)}
-                    />
                   </div>
 
                   {/* Upload Image */}
