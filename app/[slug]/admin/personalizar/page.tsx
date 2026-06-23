@@ -121,9 +121,10 @@ export default function PersonalizarPage({ params }: Props) {
     startTransition(async () => {
       // Filter payload to only update keys that exist in the DB
       const payload: Record<string, any> = {};
+      const excludedKeys = ["id", "tenant_id", "created_at"];
       if (dbKeys.length > 0) {
         dbKeys.forEach(key => {
-          if (key in config) {
+          if (key in config && !excludedKeys.includes(key)) {
             payload[key] = (config as any)[key];
           }
         });
@@ -139,7 +140,7 @@ export default function PersonalizarPage({ params }: Props) {
           "meta_titulo", "meta_descripcion"
         ];
         safeKeys.forEach(key => {
-          if (key in config) {
+          if (key in config && !excludedKeys.includes(key)) {
             payload[key] = (config as any)[key];
           }
         });
