@@ -1166,3 +1166,12 @@ h1, h2, h3, h4, h5, h6 {
 .overflow-hidden { overflow: hidden; }
 .relative { position: relative; }
 .z-1 { position: relative; z-index: 1; }
+
+/* ─── CAROUSEL UTILITY ────────────────────────────────────────────────── */
+.news-carousel-scroller::-webkit-scrollbar {
+  display: none;
+}
+.news-carousel-scroller {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}

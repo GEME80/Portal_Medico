@@ -22,19 +22,17 @@ export default async function TenantHomePage({ params }: PageProps) {
   if (!tenant) notFound();
 
   // Load all portal data in parallel
-  const [configRes, lineasRes, hitosRes, noticiasRes, alertasRes] = await Promise.all([
+  const [configRes, lineasRes, hitosRes, noticiasRes] = await Promise.all([
     supabase.from("configuracion_portal").select("*").eq("tenant_id", tenant.id).single(),
     supabase.from("lineas_investigacion").select("*").eq("tenant_id", tenant.id).eq("activo", true).order("orden"),
     supabase.from("hitos_timeline").select("*").eq("tenant_id", tenant.id).order("orden"),
-    supabase.from("noticias_posts").select("id,titulo,resumen,emoji,categoria,created_at,slug").eq("tenant_id", tenant.id).eq("publicado", true).order("created_at", { ascending: false }).limit(3),
-    supabase.from("alertas_epidemiologicas").select("*").eq("tenant_id", tenant.id).eq("activa", true).order("created_at", { ascending: false }).limit(1),
+    supabase.from("noticias_posts").select("id,titulo,resumen,emoji,categoria,created_at,slug,imagen_portada_url").eq("tenant_id", tenant.id).eq("publicado", true).order("created_at", { ascending: false }).limit(6),
   ]);
 
   const config = configRes.data;
   const lineas = lineasRes.data ?? [];
   const hitos = hitosRes.data ?? [];
   const noticias = noticiasRes.data ?? [];
-  const alerta = alertasRes.data?.[0] ?? null;
 
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
@@ -63,32 +61,6 @@ export default async function TenantHomePage({ params }: PageProps) {
 
   return (
     <>
-      {/* ── ALERTA EPIDEMIOLÓGICA ────────────────────────────── */}
-      {alerta && (
-        <div className={`alert-banner level-${alerta.nivel}`}>
-          <div className="container">
-            <div className="alert-inner">
-              <span className="alert-icon">⚠️</span>
-              <div className="alert-content">
-                <strong className="alert-title">{alerta.titulo}</strong>
-                {alerta.descripcion && <p className="alert-desc">{alerta.descripcion}</p>}
-              </div>
-              <span className="badge" style={{
-                background: "rgba(180, 83, 9, 0.1)",
-                color: "#b45309",
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.05em",
-                padding: "4px 10px",
-                borderRadius: "30px"
-              }}>
-                ACTUALIZADO
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="hero" id="inicio" style={{
         background: `linear-gradient(160deg, ${primaryColor}f0, ${primaryColor}cc 60%, var(--slate-900))`,
@@ -292,40 +264,70 @@ export default async function TenantHomePage({ params }: PageProps) {
         </section>
       )}
 
-      {/* ── NOTICIAS RECIENTES ───────────────────────────────── */}
+      {/* ── NOTICIAS RECIENTES (CARRUSEL) ────────────────────── */}
       {noticias.length > 0 && (
-        <section className="section" aria-label="Publicaciones recientes">
+        <section className="section" style={{ background: "var(--slate-50)" }} aria-label="Publicaciones recientes">
           <div className="container">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "32px", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <span className="badge badge-teal mb-4" style={{ display: "inline-flex" }}>Publicaciones</span>
-                <h2 className="section-heading">Noticias y<br /><span className="text-teal">artículos recientes</span></h2>
-              </div>
-              <Link href={`/${slug}/noticias`} className="btn btn-outline">Ver todas →</Link>
+            <div style={{ textAlign: "center", marginBottom: "48px" }}>
+              <h2 className="section-heading" style={{ fontSize: "36px", fontWeight: 800, fontFamily: "Outfit, sans-serif", color: "var(--slate-900)" }}>
+                Noticias y<br />
+                <span style={{ color: primaryColor }}>boletines científicos</span>
+              </h2>
+              <p style={{ fontSize: "15px", color: "var(--slate-500)", marginTop: "12px", maxWidth: "600px", margin: "12px auto 0" }}>
+                Artículos académicos, alertas epidemiológicas y actualizaciones del programa EcoVaccine.
+              </p>
             </div>
-            <div className="news-grid">
+            
+            <div 
+              className="news-carousel-scroller" 
+              style={{
+                display: "flex",
+                gap: "24px",
+                overflowX: "auto",
+                scrollSnapType: "x mandatory",
+                padding: "16px 4px 32px 4px",
+                scrollbarWidth: "none",
+                msOverflowStyle: "none"
+              }}
+            >
               {noticias.map((post) => (
-                <article key={post.id} className="news-card">
-                  <div className="news-card-img" role="img" aria-hidden="true">
-                    <span style={{ fontSize: "52px" }}>{post.emoji || "📄"}</span>
+                <article key={post.id} className="news-card" style={{ flex: "0 0 360px", scrollSnapAlign: "start" }}>
+                  <div className="news-card-img" style={{ height: "200px", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${primaryColor}10, ${accentColor}08)` }}>
+                    {post.imagen_portada_url ? (
+                      <img src={post.imagen_portada_url} alt={post.titulo} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: "56px" }}>{post.emoji || "📄"}</span>
+                    )}
                   </div>
                   <div className="news-card-body">
                     <div className="news-card-meta">
                       <span className={`badge ${post.categoria === "Académico" ? "badge-teal" : post.categoria === "Epidemiología" ? "badge-rose" : "badge-emerald"}`}>
                         {post.categoria}
                       </span>
+                      <span style={{ fontSize: "12px", color: "var(--slate-400)", fontWeight: 600 }}>
+                        {new Date(post.created_at).toLocaleDateString("es-ES", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric"
+                        })}
+                      </span>
                     </div>
-                    <h3 className="news-card-title">{post.titulo}</h3>
-                    <p className="news-card-excerpt">{post.resumen}</p>
-                    <Link href={`/${slug}/noticias/${post.slug}`} className="news-card-link">
-                      Leer
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                      </svg>
+                    <h3 className="news-card-title" style={{ fontSize: "16px", minHeight: "44px" }}>{post.titulo}</h3>
+                    <p className="news-card-excerpt" style={{ fontSize: "13px", height: "64px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
+                      {post.resumen}
+                    </p>
+                    <Link href={`/${slug}/noticias/${post.slug}`} className="news-card-link" style={{ color: primaryColor }}>
+                      Leer artículo completo →
                     </Link>
                   </div>
                 </article>
               ))}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "32px" }}>
+              <Link href={`/${slug}/noticias`} className="btn btn-outline" style={{ borderRadius: "var(--radius-full)", padding: "12px 32px", fontSize: "14px", fontWeight: 700, borderColor: primaryColor, color: primaryColor }}>
+                Ver todas las publicaciones
+              </Link>
             </div>
           </div>
         </section>

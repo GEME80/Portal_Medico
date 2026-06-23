@@ -29,6 +29,7 @@ export default function AdminShell({
     { href: `/${tenantSlug}/admin`, icon: "🏠", label: "Dashboard", exact: true },
     { href: `/${tenantSlug}/admin/vacunas`, icon: "💉", label: "Vacunas", exact: false },
     { href: `/${tenantSlug}/admin/personalizar`, icon: "🎨", label: "Personalizar Home", exact: false },
+    { href: `/${tenantSlug}/admin/noticias`, icon: "📰", label: "Publicaciones", exact: false },
   ];
 
   const isActive = (href: string, exact: boolean) =>

@@ -5,9 +5,18 @@ import Link from "next/link";
 interface NavbarProps {
   tenantSlug?: string;
   nombreClinica?: string;
+  logoUrl?: string;
+  nombreMenuVacunas?: string;
+  habilitarMenuVacunas?: boolean;
 }
 
-export default function Navbar({ tenantSlug, nombreClinica }: NavbarProps = {}) {
+export default function Navbar({
+  tenantSlug,
+  nombreClinica,
+  logoUrl,
+  nombreMenuVacunas = "EcoVaccine",
+  habilitarMenuVacunas = true
+}: NavbarProps = {}) {
   const base = tenantSlug ? `/${tenantSlug}` : "";
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -25,12 +34,16 @@ export default function Navbar({ tenantSlug, nombreClinica }: NavbarProps = {}) 
           <div className="navbar-inner">
             {/* Brand */}
             <Link href={base || "/"} className="navbar-brand">
-              <div className="navbar-logo-icon" aria-hidden="true">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2L13.5 8.5H20L14.5 12.5L16 19L12 15L8 19L9.5 12.5L4 8.5H10.5Z"/>
-                  <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
-                </svg>
+              <div className="navbar-logo-icon" aria-hidden="true" style={logoUrl ? { background: "none", border: "none", width: "auto", height: "auto", display: "flex", alignItems: "center" } : undefined}>
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" style={{ height: "36px", width: "auto", borderRadius: "8px", objectFit: "contain" }} />
+                ) : (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2L13.5 8.5H20L14.5 12.5L16 19L12 15L8 19L9.5 12.5L4 8.5H10.5Z"/>
+                    <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+                  </svg>
+                )}
               </div>
               <div className="navbar-brand-text">
                 <span className="navbar-brand-name">{nombreClinica || "Dr. Carlos Torres"}</span>
@@ -42,7 +55,9 @@ export default function Navbar({ tenantSlug, nombreClinica }: NavbarProps = {}) 
             <ul className="navbar-links" id="nav-links">
               <li><Link href={`${base}/sobre-el-doctor`}>Sobre el Doctor</Link></li>
               <li><Link href={`${base}/noticias`}>Publicaciones</Link></li>
-              <li><Link href={`${base}/vacunas`}>EcoVaccine</Link></li>
+              {habilitarMenuVacunas && (
+                <li><Link href={`${base}/vacunas`}>{nombreMenuVacunas}</Link></li>
+              )}
             </ul>
 
             {/* CTA */}
@@ -78,7 +93,9 @@ export default function Navbar({ tenantSlug, nombreClinica }: NavbarProps = {}) 
       <div className={`mobile-menu${menuOpen ? " open" : ""}`} id="mobile-menu" aria-hidden={!menuOpen}>
         <Link href={`${base}/sobre-el-doctor`} onClick={() => setMenuOpen(false)}>Sobre el Doctor</Link>
         <Link href={`${base}/noticias`} onClick={() => setMenuOpen(false)}>Publicaciones</Link>
-        <Link href={`${base}/vacunas`} onClick={() => setMenuOpen(false)}>EcoVaccine</Link>
+        {habilitarMenuVacunas && (
+          <Link href={`${base}/vacunas`} onClick={() => setMenuOpen(false)}>{nombreMenuVacunas}</Link>
+        )}
         <Link href={`${base}/admin`} onClick={() => setMenuOpen(false)} style={{ marginTop: "8px" }}>
           <span className="btn btn-primary" style={{ width: "100%", padding: "12px", fontSize: "14px" }}>
             Panel Admin

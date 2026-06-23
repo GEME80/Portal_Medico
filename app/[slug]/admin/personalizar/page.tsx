@@ -3,17 +3,19 @@ import { useState, useEffect, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const TABS = [
-  { id: "identidad",     label: "👨‍⚕️ Identidad",      desc: "Doctor y clínica" },
+  { id: "identidad",     label: "👨‍⚕️ Identidad",      desc: "Logo, doctor y clínica" },
   { id: "hero",          label: "🖼️ Hero",             desc: "Sección principal" },
   { id: "stats",         label: "📊 Estadísticas",     desc: "Contadores del home" },
   { id: "contacto",      label: "📞 Contacto",          desc: "Email, teléfono, ciudad" },
+  { id: "especialidad",  label: "💉 Menú / Especialidad", desc: "Configurar EcoVaccine" },
+  { id: "alertas",       label: "🔔 Alerta Global",    desc: "Banner de aviso" },
   { id: "investigacion", label: "🔬 Investigación",     desc: "Líneas de investigación" },
   { id: "timeline",      label: "🎓 Trayectoria",       desc: "Hitos académicos" },
 ];
 
 interface Config {
   nombre_doctor: string; titulo_doctor: string; especialidad: string;
-  nombre_clinica: string; bio_corta: string; bio_larga: string;
+  nombre_clinica: string; logo_url: string; bio_corta: string; bio_larga: string;
   hero_titulo: string; hero_subtitulo: string; hero_badge_texto: string;
   stat_anos_experiencia: string; stat_publicaciones: string;
   stat_pacientes_anio: string; stat_consultorios: string;
@@ -22,6 +24,14 @@ interface Config {
   linkedin_url: string; instagram_url: string;
   color_primario: string; color_acento: string;
   meta_titulo: string; meta_descripcion: string;
+  // new settings:
+  habilitar_menu_vacunas?: boolean;
+  nombre_menu_vacunas?: string;
+  vacunas_hero_titulo?: string;
+  vacunas_hero_subtitulo?: string;
+  vacunas_hero_descripcion?: string;
+  vacunas_mitos_titulo?: string;
+  vacunas_inventario_titulo?: string;
 }
 
 interface Linea { id: string; icono: string; titulo: string; descripcion: string; orden: number; }
@@ -35,19 +45,33 @@ export default function PersonalizarPage({ params }: Props) {
   const [activeTab, setActiveTab] = useState("identidad");
   const [config, setConfig] = useState<Config>({
     nombre_doctor: "", titulo_doctor: "", especialidad: "",
-    nombre_clinica: "", bio_corta: "", bio_larga: "",
+    nombre_clinica: "", logo_url: "", bio_corta: "", bio_larga: "",
     hero_titulo: "", hero_subtitulo: "", hero_badge_texto: "",
     stat_anos_experiencia: "", stat_publicaciones: "", stat_pacientes_anio: "", stat_consultorios: "",
     email: "", telefono: "", whatsapp: "", direccion: "", ciudad: "", pais: "Colombia",
     linkedin_url: "", instagram_url: "",
     color_primario: "#0A4D5C", color_acento: "#00D4AA",
     meta_titulo: "", meta_descripcion: "",
+    habilitar_menu_vacunas: true,
+    nombre_menu_vacunas: "EcoVaccine",
+    vacunas_hero_titulo: "Vacunas seguras, niños protegidos",
+    vacunas_hero_subtitulo: "EcoVaccine — Vacunación Basada en Evidencia",
+    vacunas_hero_descripcion: "El doctor responde con evidencia científica los mitos más comunes sobre la vacunación.",
+    vacunas_mitos_titulo: "Mitos Vacunales",
+    vacunas_inventario_titulo: "Vacunas Disponibles y Esquemas de Aplicación"
   });
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [hitos, setHitos] = useState<Hito[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
+
+  // Alertas variables
+  const [alertId, setAlertId] = useState<string | null>(null);
+  const [alertTitulo, setAlertTitulo] = useState("");
+  const [alertDescripcion, setAlertDescripcion] = useState("");
+  const [alertNivel, setAlertNivel] = useState<"info" | "warning" | "danger">("warning");
+  const [alertActiva, setAlertActiva] = useState(false);
 
   const supabase = createClient();
 
@@ -63,15 +87,29 @@ export default function PersonalizarPage({ params }: Props) {
       if (!tenant) return;
       setTenantId(tenant.id);
 
-      const [cfgRes, lineasRes, hitosRes] = await Promise.all([
+      const [cfgRes, lineasRes, hitosRes, alertRes] = await Promise.all([
         supabase.from("configuracion_portal").select("*").eq("tenant_id", tenant.id).single(),
         supabase.from("lineas_investigacion").select("*").eq("tenant_id", tenant.id).order("orden"),
         supabase.from("hitos_timeline").select("*").eq("tenant_id", tenant.id).order("orden"),
+        supabase.from("alertas_epidemiologicas").select("*").eq("tenant_id", tenant.id).order("created_at", { ascending: false }).limit(1).maybeSingle()
       ]);
 
-      if (cfgRes.data) setConfig(cfgRes.data as unknown as Config);
+      if (cfgRes.data) {
+        setConfig(prev => ({
+          ...prev,
+          ...cfgRes.data
+        }));
+      }
       if (lineasRes.data) setLineas(lineasRes.data as Linea[]);
       if (hitosRes.data) setHitos(hitosRes.data as Hito[]);
+      
+      if (alertRes.data) {
+        setAlertId(alertRes.data.id);
+        setAlertTitulo(alertRes.data.titulo);
+        setAlertDescripcion(alertRes.data.descripcion || "");
+        setAlertNivel(alertRes.data.nivel || "warning");
+        setAlertActiva(alertRes.data.activa);
+      }
       setLoading(false);
     });
   }, []);
@@ -109,6 +147,73 @@ export default function PersonalizarPage({ params }: Props) {
     showToast("✅ Trayectoria guardada");
   };
 
+  const saveAlert = () => {
+    startTransition(async () => {
+      if (!alertTitulo.trim()) {
+        showToast("El título de la alerta es obligatorio", "error");
+        return;
+      }
+
+      let error;
+      if (alertId) {
+        const { error: err } = await supabase
+          .from("alertas_epidemiologicas")
+          .update({
+            titulo: alertTitulo,
+            descripcion: alertDescripcion,
+            nivel: alertNivel,
+            activa: alertActiva,
+            created_at: new Date().toISOString()
+          })
+          .eq("id", alertId);
+        error = err;
+      } else {
+        const { data, error: err } = await supabase
+          .from("alertas_epidemiologicas")
+          .insert({
+            tenant_id: tenantId,
+            titulo: alertTitulo,
+            descripcion: alertDescripcion,
+            nivel: alertNivel,
+            activa: alertActiva
+          })
+          .select()
+          .single();
+        error = err;
+        if (data) setAlertId(data.id);
+      }
+
+      if (error) showToast("Error al guardar alerta: " + error.message, "error");
+      else showToast("✅ Alerta epidemiológica guardada correctamente");
+    });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    startTransition(async () => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${tenantId}/logo_${Date.now()}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from('portal-media')
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+      if (error) {
+        showToast("Error al subir logo: " + error.message, "error");
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('portal-media')
+        .getPublicUrl(fileName);
+
+      setConfig(c => ({ ...c, logo_url: publicUrl }));
+      showToast("✅ Logotipo subido correctamente. Guarde los cambios para aplicar.");
+    });
+  };
+
   const uid = () => "new-" + Math.random().toString(36).slice(2, 8);
 
   if (loading) return (
@@ -123,7 +228,7 @@ export default function PersonalizarPage({ params }: Props) {
       <div className="admin-topbar">
         <div>
           <h1 className="admin-topbar-title">🎨 Personalizar Portal</h1>
-          <p style={{ fontSize: "12px", color: "var(--slate-500)", marginTop: "2px" }}>
+          <p style={{ fontSize: "12px", color: "var(--slate-50)", marginTop: "2px" }}>
             Edita cómo se ve tu portal público en{" "}
             <a href={`/${slug}`} target="_blank" rel="noopener noreferrer"
               style={{ color: "var(--teal-600)", textDecoration: "underline" }}>
@@ -139,7 +244,7 @@ export default function PersonalizarPage({ params }: Props) {
       </div>
 
       <div className="admin-content">
-        <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "24px", alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "250px 1fr", gap: "24px", alignItems: "start" }}>
 
           {/* TABS SIDEBAR */}
           <div style={{ background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-xl)", overflow: "hidden", position: "sticky", top: "88px" }}>
@@ -175,6 +280,33 @@ export default function PersonalizarPage({ params }: Props) {
                 </div>
                 <div className="modal-body" style={{ maxHeight: "none" }}>
                   <div className="form-grid">
+                    {/* Logo upload field */}
+                    <div className="form-group full-width" style={{ borderBottom: "1px solid var(--slate-100)", paddingBottom: "24px", marginBottom: "8px" }}>
+                      <label className="form-label" style={{ fontWeight: 700 }}>Logo de la Clínica o Doctor</label>
+                      <div style={{ display: "flex", gap: "16px", alignItems: "center", marginTop: "8px" }}>
+                        <div style={{
+                          width: "80px", height: "80px",
+                          border: "1px dashed var(--slate-300)",
+                          borderRadius: "12px",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          background: "var(--slate-50)", overflow: "hidden"
+                        }}>
+                          {config.logo_url ? (
+                            <img src={config.logo_url} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                          ) : (
+                            <span style={{ fontSize: "28px" }}>🛡️</span>
+                          )}
+                        </div>
+                        <div>
+                          <input type="file" accept="image/*" id="logo-upload" style={{ display: "none" }} onChange={handleLogoUpload} />
+                          <label htmlFor="logo-upload" className="btn btn-outline" style={{ cursor: "pointer", fontSize: "13px", display: "inline-block" }}>
+                            {isPending ? "Subiendo..." : "Subir Logotipo"}
+                          </label>
+                          <p style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "6px" }}>Formatos recomendados: PNG o SVG con fondo transparente. Máx 500KB.</p>
+                        </div>
+                      </div>
+                    </div>
+
                     <Field label="Nombre del doctor *" id="nombre_doctor" value={config.nombre_doctor} onChange={v => setConfig(c => ({ ...c, nombre_doctor: v }))} placeholder="Dr. Carlos Torres Martínez" />
                     <Field label="Título / Especialidad corta *" id="titulo_doctor" value={config.titulo_doctor} onChange={v => setConfig(c => ({ ...c, titulo_doctor: v }))} placeholder="Infectólogo Pediatra" />
                     <Field label="Especialidad completa" id="especialidad" value={config.especialidad} onChange={v => setConfig(c => ({ ...c, especialidad: v }))} placeholder="Infectología Pediátrica y Vacunología Clínica" />
@@ -279,6 +411,148 @@ export default function PersonalizarPage({ params }: Props) {
                   </div>
                 </div>
                 <SaveBar onSave={saveConfig} isPending={isPending} />
+              </div>
+            )}
+
+            {/* ── MENÚ / ESPECIALIDAD ──────────────────────── */}
+            {activeTab === "especialidad" && (
+              <div>
+                <div style={{ padding: "24px 28px", borderBottom: "1px solid var(--slate-200)" }}>
+                  <h2 style={{ fontFamily: "Outfit, sans-serif", fontWeight: 800, fontSize: "18px" }}>💉 Pestaña de Especialidad (EcoVaccine / Servicios)</h2>
+                  <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "4px" }}>Configura la pestaña de inventario de acuerdo a tu especialidad médica.</p>
+                </div>
+                <div className="modal-body" style={{ maxHeight: "none" }}>
+                  <div className="form-grid">
+                    <div className="form-group full-width" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <input 
+                        type="checkbox" 
+                        id="habilitar_menu_vacunas" 
+                        checked={config.habilitar_menu_vacunas !== false} 
+                        onChange={e => setConfig(c => ({ ...c, habilitar_menu_vacunas: e.target.checked }))}
+                        style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                      />
+                      <label htmlFor="habilitar_menu_vacunas" style={{ fontSize: "14px", fontWeight: 700, color: "var(--slate-900)", cursor: "pointer" }}>
+                        Habilitar pestaña de portafolio / inventario pública
+                      </label>
+                    </div>
+
+                    <Field 
+                      label="Nombre de la pestaña en el menú *" 
+                      id="nombre_menu_vacunas" 
+                      value={config.nombre_menu_vacunas || "EcoVaccine"} 
+                      onChange={v => setConfig(c => ({ ...c, nombre_menu_vacunas: v }))} 
+                      placeholder="EcoVaccine, Servicios, Tratamientos, etc." 
+                      fullWidth 
+                    />
+                    <Field 
+                      label="Título Hero de la página *" 
+                      id="vacunas_hero_titulo" 
+                      value={config.vacunas_hero_titulo || "Vacunas seguras, niños protegidos"} 
+                      onChange={v => setConfig(c => ({ ...c, vacunas_hero_titulo: v }))} 
+                      placeholder="Vacunas seguras, niños protegidos" 
+                      fullWidth 
+                    />
+                    <Field 
+                      label="Subtítulo Hero de la página *" 
+                      id="vacunas_hero_subtitulo" 
+                      value={config.vacunas_hero_subtitulo || "EcoVaccine — Vacunación Basada en Evidencia"} 
+                      onChange={v => setConfig(c => ({ ...c, vacunas_hero_subtitulo: v }))} 
+                      placeholder="EcoVaccine — Vacunación Basada en Evidencia" 
+                      fullWidth 
+                    />
+                    <div className="form-group full-width">
+                      <label className="form-label" htmlFor="vacunas_hero_descripcion">Descripción Hero de la página</label>
+                      <textarea 
+                        id="vacunas_hero_descripcion" 
+                        className="form-textarea" 
+                        value={config.vacunas_hero_descripcion || ""} 
+                        onChange={e => setConfig(c => ({ ...c, vacunas_hero_descripcion: e.target.value }))}
+                        placeholder="Descripción detallada de la página de portafolio..." 
+                        rows={3} 
+                      />
+                    </div>
+                    <Field 
+                      label="Título de la sección de preguntas/mitos *" 
+                      id="vacunas_mitos_titulo" 
+                      value={config.vacunas_mitos_titulo || "Mitos Vacunales"} 
+                      onChange={v => setConfig(c => ({ ...c, vacunas_mitos_titulo: v }))} 
+                      placeholder="Mitos Vacunales, Preguntas Frecuentes, etc." 
+                      fullWidth 
+                    />
+                    <Field 
+                      label="Título de la sección de disponibilidad/esquemas *" 
+                      id="vacunas_inventario_titulo" 
+                      value={config.vacunas_inventario_titulo || "Vacunas Disponibles y Esquemas de Aplicación"} 
+                      onChange={v => setConfig(c => ({ ...c, vacunas_inventario_titulo: v }))} 
+                      placeholder="Procedimientos Disponibles, Portafolio, etc." 
+                      fullWidth 
+                    />
+                  </div>
+                </div>
+                <SaveBar onSave={saveConfig} isPending={isPending} />
+              </div>
+            )}
+
+            {/* ── ALERTA EPIDEMIOLÓGICA ──────────────────────── */}
+            {activeTab === "alertas" && (
+              <div>
+                <div style={{ padding: "24px 28px", borderBottom: "1px solid var(--slate-200)" }}>
+                  <h2 style={{ fontFamily: "Outfit, sans-serif", fontWeight: 800, fontSize: "18px" }}>🔔 Alerta Epidemiológica Global</h2>
+                  <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "4px" }}>Configura un banner de advertencia epidemiológica que se muestra globalmente debajo del menú.</p>
+                </div>
+                <div className="modal-body" style={{ maxHeight: "none" }}>
+                  <div className="form-grid">
+                    <div className="form-group full-width" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <input 
+                        type="checkbox" 
+                        id="alert_activa" 
+                        checked={alertActiva} 
+                        onChange={e => setAlertActiva(e.target.checked)}
+                        style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                      />
+                      <label htmlFor="alert_activa" style={{ fontSize: "14px", fontWeight: 700, color: "var(--slate-900)", cursor: "pointer" }}>
+                        Activar banner de alerta global en el portal
+                      </label>
+                    </div>
+
+                    <Field 
+                      label="Título de la alerta *" 
+                      id="alert_titulo" 
+                      value={alertTitulo} 
+                      onChange={setAlertTitulo} 
+                      placeholder="Ej: Brote de Sarampión registrado en la región Andina" 
+                      fullWidth 
+                    />
+
+                    <div className="form-group full-width">
+                      <label className="form-label" htmlFor="alert_descripcion">Descripción detallada</label>
+                      <textarea 
+                        id="alert_descripcion" 
+                        className="form-textarea" 
+                        value={alertDescripcion}
+                        onChange={e => setAlertDescripcion(e.target.value)}
+                        placeholder="Recomendaciones para los pacientes, síntomas sospechosos, etc." 
+                        rows={3} 
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="alert_nivel">Nivel de Alerta</label>
+                      <select 
+                        id="alert_nivel" 
+                        className="form-input" 
+                        value={alertNivel} 
+                        onChange={e => setAlertNivel(e.target.value as any)}
+                        style={{ height: "46px", background: "white", cursor: "pointer" }}
+                      >
+                        <option value="info">🔵 Informativa (Info)</option>
+                        <option value="warning">🟡 Advertencia (Warning)</option>
+                        <option value="danger">🔴 Peligro Inminente (Danger)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <SaveBar onSave={saveAlert} isPending={isPending} label="Guardar alerta" />
               </div>
             )}
 

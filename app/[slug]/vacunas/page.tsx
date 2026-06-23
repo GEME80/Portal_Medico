@@ -22,7 +22,7 @@ export default async function DynamicVacunasPage({ params }: PageProps) {
 
   // Load portal configuration, vaccine myths, and inventory
   const [configRes, mitosRes, inventarioRes] = await Promise.all([
-    supabase.from("configuracion_portal").select("nombre_doctor, color_primario, color_acento, email").eq("tenant_id", tenant.id).single(),
+    supabase.from("configuracion_portal").select("*").eq("tenant_id", tenant.id).single(),
     supabase.from("mitos_vacunales").select("*").eq("tenant_id", tenant.id).eq("activo", true).order("orden"),
     supabase.from("inventario_vacunas").select("*").eq("tenant_id", tenant.id).order("nombre"),
   ]);
@@ -34,6 +34,13 @@ export default async function DynamicVacunasPage({ params }: PageProps) {
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
 
+  // Dynamic values based on specialty
+  const heroTitulo = config?.vacunas_hero_titulo || "Vacunas seguras, niños protegidos";
+  const heroSubtitulo = config?.vacunas_hero_subtitulo || "EcoVaccine — Vacunación Basada en Evidencia";
+  const heroDescripcion = config?.vacunas_hero_descripcion || `El doctor responde con evidencia científica los mitos más comunes sobre la vacunación. Basado en publicaciones indexadas y guías de la OPS/OMS.`;
+  const mitosTitulo = config?.vacunas_mitos_titulo || "Mitos Vacunales";
+  const inventarioTitulo = config?.vacunas_inventario_titulo || "Vacunas Disponibles y Esquemas de Aplicación";
+
   return (
     <>
       {/* ── HERO ─────────────────────────────────────────────────────── */}
@@ -42,30 +49,28 @@ export default async function DynamicVacunasPage({ params }: PageProps) {
         padding: "80px 0 100px",
         position: "relative",
         overflow: "hidden",
-      }} aria-label="EcoVaccine — Vacunación Segura">
+      }} aria-label={config?.nombre_menu_vacunas || "EcoVaccine"}>
         <div className="hero-bg-grid" aria-hidden="true"/>
         <div className="hero-glow-1" aria-hidden="true" style={{ opacity: 0.6 }}/>
         <div className="container" style={{ position: "relative", zIndex: 1 }}>
           <div className="text-center" style={{ maxWidth: "700px", margin: "0 auto" }}>
             <div className="hero-kicker" style={{ display: "inline-flex", margin: "0 auto 20px" }}>
               <span className="pulse-dot"/>
-              💉 EcoVaccine — Vacunación Basada en Evidencia
+              {heroSubtitulo}
             </div>
             <h1 style={{
               fontSize: "clamp(36px, 5vw, 60px)", fontWeight: 900,
               color: "white", letterSpacing: "-.03em", marginBottom: "20px",
               fontFamily: "Outfit, sans-serif", lineHeight: 1.05
             }}>
-              Vacunas seguras,<br/>
-              <span className="hero-title-accent">niños protegidos</span>
+              {heroTitulo}
             </h1>
             <p style={{ fontSize: "17px", color: "rgba(255,255,255,.65)", lineHeight: 1.7, marginBottom: "32px" }}>
-              El {config?.nombre_doctor || "doctor"} responde con evidencia científica los mitos más comunes sobre la vacunación.
-              Basado en publicaciones indexadas y guías de la OPS/OMS.
+              {heroDescripcion}
             </p>
             <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
               <a href="#mitos" className="btn btn-emerald">
-                Decodificador de Mitos
+                Ver Detalles
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M12 5v14M5 12l7 7 7-7"/>
                 </svg>
@@ -78,18 +83,18 @@ export default async function DynamicVacunasPage({ params }: PageProps) {
 
       {/* ── MYTH DECODER ────────────────────────────────────────────── */}
       {mitos.length > 0 && (
-        <section className="section" id="mitos" aria-label="Decodificador de mitos sobre vacunación">
+        <section className="section" id="mitos" aria-label="Decodificador de mitos">
           <div className="container">
             <div className="text-center mb-8">
               <span className="badge badge-rose mb-4" style={{ display: "inline-flex" }}>
-                🔍 Basado en Evidencia Molecular
+                🔍 Información y Evidencia
               </span>
               <h2 className="section-heading">
                 Decodificador de<br/>
-                <span className="text-teal">Mitos Vacunales</span>
+                <span className="text-teal">{mitosTitulo}</span>
               </h2>
               <p className="section-sub mt-4" style={{ maxWidth: "560px", margin: "16px auto 0" }}>
-                Respuestas detalladas a los {mitos.length} mitos más frecuentes que surgen en la consulta, con soporte científico verificable.
+                Respuestas detalladas a las preguntas y mitos más frecuentes que surgen en la consulta.
               </p>
             </div>
 
@@ -121,11 +126,11 @@ export default async function DynamicVacunasPage({ params }: PageProps) {
 
       {/* ── DISPONIBILIDAD VACUNAS ─────────────────────────────────── */}
       {vacunas.length > 0 && (
-        <section className="section" style={{ background: "white" }} aria-label="Disponibilidad de vacunas en inventario">
+        <section className="section" style={{ background: "white" }} aria-label="Disponibilidad en inventario">
           <div className="container">
             <div className="text-center mb-8">
-              <span className="badge badge-teal mb-4" style={{ display: "inline-flex" }}>Portafolio de Vacunas</span>
-              <h2 className="section-heading">Vacunas Disponibles y<br/><span className="text-teal">Esquemas de Aplicación</span></h2>
+              <span className="badge badge-teal mb-4" style={{ display: "inline-flex" }}>Portafolio / Disponibilidad</span>
+              <h2 className="section-heading">{inventarioTitulo}</h2>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
