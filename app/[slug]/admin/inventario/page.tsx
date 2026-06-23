@@ -457,16 +457,24 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       {/* TOP BAR */}
       <div className="admin-topbar">
         <h1 className="admin-topbar-title">📦 Control de Inventario</h1>
-        <div className="admin-topbar-right">
+        <div className="admin-topbar-right" style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end" }}>
           {activeTab === "catalogo" && (
-            <button
-              id="btn-nueva-vacuna"
-              className="btn btn-primary"
-              style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
-              onClick={() => newVacunaRef.current?.showModal()}
-            >
-              ＋ Nuevo Ítem
-            </button>
+            <>
+              <button className="btn btn-outline" style={{ borderColor: "#f59e0b", color: "#d97706", padding: "10px 20px", fontSize: "13px", fontWeight: 700 }} onClick={handleGenerarPruebas}>
+                🧪 Generar Pruebas
+              </button>
+              <button className="btn btn-outline" style={{ borderColor: "#ef4444", color: "#dc2626", padding: "10px 20px", fontSize: "13px", fontWeight: 700 }} onClick={handleResetearPruebas}>
+                🗑 Resetear Todo
+              </button>
+              <button
+                id="btn-nueva-vacuna"
+                className="btn btn-primary"
+                style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
+                onClick={() => newVacunaRef.current?.showModal()}
+              >
+                ＋ Nuevo Ítem
+              </button>
+            </>
           )}
         </div>
       </div>
