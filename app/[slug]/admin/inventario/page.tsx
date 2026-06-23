@@ -3,9 +3,14 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
-// ─── TYPES ──────────────────────────────────────────────────────────────
 type EstadoStock = "ok" | "low" | "critical";
 type TipoMovimiento = "ENTRADA" | "SALIDA";
+
+interface Categoria {
+  id: string;
+  nombre: string;
+  color: string;
+}
 
 interface Lote {
   id: string;
@@ -28,8 +33,9 @@ interface Movimiento {
   notas?: string;
 }
 
-interface Vacuna {
+interface InventarioItem {
   id: string;
+  categoria_id: string;
   nombre: string;
   nombreGenerico: string;
   laboratorio: string;
@@ -46,7 +52,7 @@ interface Vacuna {
   lotes: Lote[];
 }
 
-const getStockStatus = (v: Vacuna): EstadoStock => {
+const getStockStatus = (v: InventarioItem): EstadoStock => {
   if (v.stockActual === 0) return "critical";
   if (v.stockActual <= v.stockMinimo) return "low";
   return "ok";
@@ -77,10 +83,12 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const [tenantId, setTenantId] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#0A4D5C");
   const [accentColor, setAccentColor] = useState("#00D4AA");
-  const [vacunas, setVacunas] = useState<Vacuna[]>([]);
+  const [vacunas, setVacunas] = useState<InventarioItem[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"catalogo" | "categorias">("catalogo");
 
   const supabase = createClient();
 
@@ -104,22 +112,25 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
   const loadData = async (tId: string) => {
     try {
-      const { data: vacs, error: vacsErr } = await supabase
-        .from("inventario_vacunas")
-        .select("*")
-        .eq("tenant_id", tId)
-        .order("nombre");
+      const [vacsRes, catRes] = await Promise.all([
+        supabase.from("inventario_medico").select("*, categoria_id").eq("tenant_id", tId).order("nombre"),
+        supabase.from("categorias_inventario").select("*").eq("tenant_id", tId).order("nombre")
+      ]);
 
-      if (vacsErr) throw vacsErr;
+      const vacs = vacsRes.data;
+      if (vacsRes.error) throw vacsRes.error;
+      
+      setCategorias(catRes.data || []);
 
       const enrichedVacs = await Promise.all((vacs || []).map(async (v) => {
         const [lotsRes, movsRes] = await Promise.all([
-          supabase.from("lotes_vacunas").select("*").eq("vacuna_id", v.id).order("fecha_registro", { ascending: false }),
-          supabase.from("movimientos_vacunas").select("*").eq("vacuna_id", v.id).order("fecha", { ascending: false })
+          supabase.from("lotes_inventario").select("*").eq("item_id", v.id).order("fecha_registro", { ascending: false }),
+          supabase.from("movimientos_inventario").select("*").eq("item_id", v.id).order("fecha", { ascending: false })
         ]);
 
         return {
           id: v.id,
+          categoria_id: v.categoria_id,
           nombre: v.nombre,
           nombreGenerico: v.nombre_generico || "",
           laboratorio: v.laboratorio || "",
@@ -199,9 +210,10 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     e.preventDefault();
     try {
       const { error } = await supabase
-        .from("inventario_vacunas")
+        .from("inventario_medico")
         .insert({
           tenant_id: tenantId,
+          categoria_id: categorias.length > 0 ? categorias[0].id : null, // Default to first category if available
           nombre: newForm.nombre,
           nombre_generico: newForm.nombreGenerico,
           laboratorio: newForm.laboratorio,
@@ -251,10 +263,10 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     try {
       // 1. Insert lot
       const { error: lotErr } = await supabase
-        .from("lotes_vacunas")
+        .from("lotes_inventario")
         .insert({
           tenant_id: tenantId,
-          vacuna_id: selectedId,
+          item_id: selectedId,
           numero_lote: loteForm.numero,
           cantidad: cantidad,
           fecha_fabricacion: loteForm.fechaFabricacion || null,
@@ -268,10 +280,10 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
       // 2. Insert movement
       const { error: movErr } = await supabase
-        .from("movimientos_vacunas")
+        .from("movimientos_inventario")
         .insert({
           tenant_id: tenantId,
-          vacuna_id: selectedId,
+          item_id: selectedId,
           tipo_movimiento: "ENTRADA",
           cantidad: cantidad,
           motivo: "Compra a proveedor",
@@ -280,10 +292,10 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
       if (movErr) throw movErr;
 
-      // 3. Update stock and active lot in inventario_vacunas
+      // 3. Update stock and active lot in inventario_medico
       const currentStock = selectedVacuna?.stockActual || 0;
       const { error: updErr } = await supabase
-        .from("inventario_vacunas")
+        .from("inventario_medico")
         .update({
           stock_actual: currentStock + cantidad,
           lote_activo: loteForm.numero
@@ -314,10 +326,10 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     try {
       // 1. Insert movement
       const { error: movErr } = await supabase
-        .from("movimientos_vacunas")
+        .from("movimientos_inventario")
         .insert({
           tenant_id: tenantId,
-          vacuna_id: selectedId,
+          item_id: selectedId,
           tipo_movimiento: "SALIDA",
           cantidad: 1,
           motivo: "Aplicación de dosis",
@@ -327,11 +339,11 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
       if (movErr) throw movErr;
 
-      // 2. Update stock in inventario_vacunas
+      // 2. Update stock in inventario_medico
       const currentStock = selectedVacuna?.stockActual || 0;
       const newStock = Math.max(0, currentStock - 1);
       const { error: updErr } = await supabase
-        .from("inventario_vacunas")
+        .from("inventario_medico")
         .update({
           stock_actual: newStock
         })
@@ -377,43 +389,63 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     <>
       {/* TOP BAR */}
       <div className="admin-topbar">
-        <h1 className="admin-topbar-title">💉 Control de Vacunas</h1>
+        <h1 className="admin-topbar-title">📦 Control de Inventario</h1>
         <div className="admin-topbar-right">
-          <button
-            id="btn-nueva-vacuna"
-            className="btn btn-primary"
-            style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
-            onClick={() => newVacunaRef.current?.showModal()}
-          >
-            ＋ Nueva Vacuna
-          </button>
+          {activeTab === "catalogo" && (
+            <button
+              id="btn-nueva-vacuna"
+              className="btn btn-primary"
+              style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
+              onClick={() => newVacunaRef.current?.showModal()}
+            >
+              ＋ Nuevo Ítem
+            </button>
+          )}
         </div>
       </div>
 
+      <div className="admin-tabs" style={{ display: "flex", gap: "16px", padding: "0 40px", borderBottom: "1px solid var(--slate-200)", marginBottom: "24px", background: "white" }}>
+        <button 
+          className={`tab-btn ${activeTab === "catalogo" ? "active" : ""}`} 
+          onClick={() => setActiveTab("catalogo")}
+          style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "catalogo" ? `2px solid ${primaryColor}` : "2px solid transparent", color: activeTab === "catalogo" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "catalogo" ? 700 : 500, cursor: "pointer" }}
+        >
+          📦 Catálogo de Ítems
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === "categorias" ? "active" : ""}`} 
+          onClick={() => setActiveTab("categorias")}
+          style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "categorias" ? `2px solid ${primaryColor}` : "2px solid transparent", color: activeTab === "categorias" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "categorias" ? 700 : 500, cursor: "pointer" }}
+        >
+          🏷️ Categorías
+        </button>
+      </div>
+
       <div className="admin-content">
+        {activeTab === "catalogo" && (
+          <>
+            {/* ── KPI CARDS ─────────────────────────────────────────── */}
+            <div className="kpi-grid">
+              <KPICard icon="💊" iconClass="kpi-icon-teal"    number={totalVacunas} label="Ítems registrados"     trend="Total" trendClass="kpi-trend-neu" />
+              <KPICard icon="📦" iconClass="kpi-icon-emerald" number={totalDosis}   label="Unidades disponibles"    trend={totalDosis > 20 ? "Buen stock" : "Stock bajo"} trendClass={totalDosis > 20 ? "kpi-trend-up" : "kpi-trend-warn"} />
+              <KPICard icon="⚠️" iconClass="kpi-icon-rose"    number={criticas}     label="Ítems sin stock OK"    trend={criticas > 0 ? "Requiere atención" : "Todo OK"} trendClass={criticas > 0 ? "kpi-trend-warn" : "kpi-trend-up"} />
+              <KPICard icon="💉" iconClass="kpi-icon-amber"   number={dosisHoy}     label="Salidas hoy"             trend="Hoy" trendClass="kpi-trend-neu" />
+            </div>
 
-        {/* ── KPI CARDS ─────────────────────────────────────────── */}
-        <div className="kpi-grid">
-          <KPICard icon="💊" iconClass="kpi-icon-teal"    number={totalVacunas} label="Vacunas registradas"     trend="Total" trendClass="kpi-trend-neu" />
-          <KPICard icon="📦" iconClass="kpi-icon-emerald" number={totalDosis}   label="Dosis disponibles"       trend={totalDosis > 20 ? "Buen stock" : "Stock bajo"} trendClass={totalDosis > 20 ? "kpi-trend-up" : "kpi-trend-warn"} />
-          <KPICard icon="⚠️" iconClass="kpi-icon-rose"    number={criticas}     label="Vacunas sin stock OK"    trend={criticas > 0 ? "Requiere atención" : "Todo OK"} trendClass={criticas > 0 ? "kpi-trend-warn" : "kpi-trend-up"} />
-          <KPICard icon="💉" iconClass="kpi-icon-amber"   number={dosisHoy}     label="Dosis aplicadas hoy"     trend="Hoy" trendClass="kpi-trend-neu" />
-        </div>
-
-        {/* ── INVENTORY TABLE ───────────────────────────────────── */}
-        <div className="section-header">
-          <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Inventario de Vacunas</h2>
-          <input
-            type="search"
-            id="search-vacunas"
-            placeholder="Buscar por nombre o laboratorio..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="form-input"
-            style={{ width: "260px" }}
-            aria-label="Buscar vacunas"
-          />
-        </div>
+            {/* ── INVENTORY TABLE ───────────────────────────────────── */}
+            <div className="section-header">
+              <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Catálogo de Ítems</h2>
+              <input
+                type="search"
+                id="search-vacunas"
+                placeholder="Buscar por nombre o laboratorio..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="form-input"
+                style={{ width: "260px" }}
+                aria-label="Buscar ítems"
+              />
+            </div>
 
         <div className="inv-table-wrap">
           {filtered.length === 0 ? (
@@ -541,6 +573,37 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                 </div>
               );
             })}
+          </div>
+        )}
+      </>
+        )}
+
+        {/* ── CATEGORÍAS ─────────────────────────────────────────── */}
+        {activeTab === "categorias" && (
+          <div className="categorias-section">
+            <div className="section-header">
+              <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Categorías de Inventario</h2>
+              <button 
+                className="btn btn-primary"
+                onClick={() => addToast("Funcionalidad de agregar categoría en desarrollo", "info")}
+              >
+                ＋ Nueva Categoría
+              </button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
+              {categorias.length === 0 ? (
+                <div style={{ gridColumn: "1/-1", padding: "40px", textAlign: "center", color: "var(--slate-500)", background: "var(--slate-50)", borderRadius: "var(--radius-lg)" }}>
+                  No hay categorías registradas. Se usarán ítems sin clasificar.
+                </div>
+              ) : categorias.map(c => (
+                <div key={c.id} className="card" style={{ padding: "20px", borderLeft: `4px solid ${c.color || primaryColor}` }}>
+                  <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--slate-900)" }}>{c.nombre}</h3>
+                  <div style={{ marginTop: "12px", fontSize: "13px", color: "var(--slate-500)" }}>
+                    {vacunas.filter(v => v.categoria_id === c.id).length} ítems en esta categoría
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -24,13 +24,14 @@ export default async function TenantAdminLayout({ children, params }: Props) {
   // Load configuration for branding
   const { data: config } = await supabase
     .from("configuracion_portal")
-    .select("nombre_doctor, color_primario, color_acento")
+    .select("nombre_doctor, color_primario, color_acento, nombre_menu_vacunas")
     .eq("tenant_id", tenant.id)
     .single();
 
   const doctorName = config?.nombre_doctor || "Doctor";
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
+  const inventoryName = config?.nombre_menu_vacunas || "Inventario Médico";
 
   // Check if current user is superadmin (allows bypass of billing block)
   const { data: { user } } = await supabase.auth.getUser();
@@ -43,6 +44,7 @@ export default async function TenantAdminLayout({ children, params }: Props) {
       doctorName={doctorName}
       primaryColor={primaryColor}
       accentColor={accentColor}
+      inventoryName={inventoryName}
       isMora={isMora && !isSuperadmin}
     >
       {children}
