@@ -14,7 +14,7 @@ export default async function TenantAdminLayout({ children, params }: Props) {
   // Load tenant
   const { data: tenant } = await supabase
     .from("tenants")
-    .select("id, nombre")
+    .select("id, nombre, estado_pago")
     .eq("slug", slug)
     .eq("activo", true)
     .single();
@@ -32,12 +32,18 @@ export default async function TenantAdminLayout({ children, params }: Props) {
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
 
+  // Check if current user is superadmin (allows bypass of billing block)
+  const { data: { user } } = await supabase.auth.getUser();
+  const isSuperadmin = user?.email === process.env.SUPERADMIN_EMAIL || user?.app_metadata?.role === "superadmin";
+  const isMora = tenant.estado_pago === "mora";
+
   return (
     <AdminShell
       tenantSlug={slug}
       doctorName={doctorName}
       primaryColor={primaryColor}
       accentColor={accentColor}
+      isMora={isMora && !isSuperadmin}
     >
       {children}
     </AdminShell>

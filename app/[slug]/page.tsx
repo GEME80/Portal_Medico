@@ -39,20 +39,51 @@ export default async function TenantHomePage({ params }: PageProps) {
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
 
+  const renderTitle = (title: string) => {
+    const target = "al servicio";
+    if (title.includes(target)) {
+      const parts = title.split(target);
+      return (
+        <>
+          {parts[0]}
+          <span className="hero-title-accent" style={{
+            background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text"
+          }}>
+            {target}
+          </span>
+          {parts[1]}
+        </>
+      );
+    }
+    return title;
+  };
+
   return (
     <>
       {/* ── ALERTA EPIDEMIOLÓGICA ────────────────────────────── */}
       {alerta && (
-        <div style={{
-          background: alerta.nivel === "critical" ? "rgba(244,63,94,.12)" : alerta.nivel === "warning" ? "rgba(245,158,11,.12)" : "rgba(0,212,170,.12)",
-          borderBottom: `1px solid ${alerta.nivel === "critical" ? "rgba(244,63,94,.3)" : alerta.nivel === "warning" ? "rgba(245,158,11,.3)" : "rgba(0,212,170,.3)"}`,
-          padding: "12px 0",
-        }}>
-          <div className="container" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "18px" }}>{alerta.nivel === "critical" ? "🔴" : alerta.nivel === "warning" ? "🟠" : "🔵"}</span>
-            <div>
-              <strong style={{ fontSize: "14px" }}>{alerta.titulo}</strong>
-              {alerta.descripcion && <span style={{ fontSize: "13px", marginLeft: "8px", opacity: 0.75 }}>{alerta.descripcion}</span>}
+        <div className={`alert-banner level-${alerta.nivel}`}>
+          <div className="container">
+            <div className="alert-inner">
+              <span className="alert-icon">⚠️</span>
+              <div className="alert-content">
+                <strong className="alert-title">{alerta.titulo}</strong>
+                {alerta.descripcion && <p className="alert-desc">{alerta.descripcion}</p>}
+              </div>
+              <span className="badge" style={{
+                background: "rgba(180, 83, 9, 0.1)",
+                color: "#b45309",
+                fontSize: "11px",
+                fontWeight: 700,
+                letterSpacing: "0.05em",
+                padding: "4px 10px",
+                borderRadius: "30px"
+              }}>
+                ACTUALIZADO
+              </span>
             </div>
           </div>
         </div>
@@ -74,60 +105,95 @@ export default async function TenantHomePage({ params }: PageProps) {
           <div className="hero-inner">
             <div className="hero-content animate-left">
               {config?.hero_badge_texto && (
-                <div className="hero-kicker">
-                  <span className="pulse-dot" />
+                <div className="hero-kicker" style={{
+                  background: "rgba(0, 212, 170, 0.08)",
+                  border: "1px solid rgba(0, 212, 170, 0.2)",
+                  borderRadius: "30px",
+                  padding: "6px 16px",
+                  color: "#00d4aa",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  marginBottom: "24px"
+                }}>
+                  <span style={{ width: "6px", height: "6px", background: "#00d4aa", borderRadius: "50%" }} />
                   {config.hero_badge_texto}
                 </div>
               )}
-              <h1 className="hero-title">
-                {config?.hero_titulo || config?.nombre_doctor || tenant.nombre}
-                {config?.hero_subtitulo && (
-                  <><br /><span className="hero-title-accent">{config.hero_subtitulo}</span></>
-                )}
+              <h1 className="hero-title" style={{ fontFamily: "Outfit, sans-serif", fontSize: "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.03em", color: "#ffffff", marginBottom: "24px" }}>
+                {renderTitle(config?.hero_titulo || config?.nombre_doctor || tenant.nombre)}
               </h1>
 
               {config?.bio_corta && (
-                <p className="hero-subtitle">
+                <p className="hero-subtitle" style={{ fontSize: "17px", color: "rgba(255,255,255,.65)", lineHeight: 1.7, marginBottom: "36px", fontWeight: 400, maxWidth: "480px" }}>
                   {config.bio_corta}
                 </p>
               )}
 
-              <div className="hero-actions">
-                <Link href={`/${slug}/sobre-el-doctor`} className="btn btn-emerald">
-                  Conocer al Doctor
+              <div className="hero-actions" style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "40px" }}>
+                <Link href={`/${slug}/vacunas`} className="btn" style={{
+                  padding: "14px 28px",
+                  background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
+                  borderRadius: "12px",
+                  color: "#0c111d",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  textDecoration: "none",
+                  boxShadow: `0 4px 12px ${accentColor}26`,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  Explorar EcoVaccine
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
                 </Link>
-                <Link href={`/${slug}/vacunas`} className="btn btn-ghost">
-                  EcoVaccine →
+                <Link href={`/${slug}/noticias`} className="btn" style={{
+                  padding: "14px 28px",
+                  background: "rgba(255, 255, 255, 0.04)",
+                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                  borderRadius: "12px",
+                  color: "#ffffff",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  textDecoration: "none"
+                }}>
+                  Ver Publicaciones
                 </Link>
               </div>
             </div>
 
             <div className="hero-img-wrap animate-right delay-200">
-              <div className="hero-photo-frame">
+              <div className="hero-photo-frame" style={{ borderRadius: "24px" }}>
                 <Image
                   src={config?.foto_url || "/doctor-torres.png"}
                   alt={config?.nombre_doctor || "Dr. Carlos Torres"}
                   width={600}
                   height={520}
                   priority
-                  style={{ objectFit: "cover", objectPosition: "center top" }}
+                  style={{ objectFit: "cover", objectPosition: "center top", borderRadius: "24px" }}
                 />
                 <div className="hero-photo-overlay" />
               </div>
 
               {/* Floating cards */}
-              <div className="cred-card cred-card-tl">
-                <div className="cred-card-icon" style={{ background: primaryColor }}>🏆</div>
+              <div className="cred-card cred-card-tl" style={{ padding: "12px 16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(12px)", borderRadius: "16px" }}>
+                <div className="cred-card-icon" style={{ background: `${accentColor}22`, color: accentColor }}>👨‍⚕️</div>
                 <div className="cred-card-text">
                   <div className="cred-card-title">{config?.titulo_doctor || "Pediatra Infectólogo"}</div>
-                  <div className="cred-card-sub">{config?.especialidad || "Miembro de la SCP y SLIPE"}</div>
+                  <div className="cred-card-sub" style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "10px" }}>{config?.especialidad || "Miembro de la SCP y SLIPE"}</div>
                 </div>
               </div>
-              <div className="cred-card cred-card-br">
-                <div className="cred-card-icon" style={{ background: primaryColor }}>📚</div>
+              <div className="cred-card cred-card-br" style={{ padding: "12px 16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(12px)", borderRadius: "16px" }}>
+                <div className="cred-card-icon" style={{ background: `${accentColor}22`, color: accentColor }}>🏆</div>
                 <div className="cred-card-text">
-                  <div className="cred-card-title">{config?.nombre_clinica || "Clínica Infantil Colsubsidio"}</div>
-                  <div className="cred-card-sub">{(config?.ciudad && config?.pais) ? `${config.ciudad}, ${config.pais}` : "Bogotá, Colombia"}</div>
+                  <div className="cred-card-title">{config?.stat_publicaciones ? `${config.stat_publicaciones} Publicaciones` : "+42 Publicaciones"}</div>
+                  <div className="cred-card-sub" style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "10px" }}>Revistas indexadas ISI</div>
                 </div>
               </div>
             </div>
@@ -159,46 +225,68 @@ export default async function TenantHomePage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* ── LÍNEAS DE INVESTIGACIÓN ─────────────────────────── */}
-      {lineas.length > 0 && (
-        <section className="section" aria-label="Líneas de investigación">
+      {/* ── SECCIÓN COMBINADA: TRAYECTORIA Y LÍNEAS DE INVESTIGACIÓN ── */}
+      {(hitos.length > 0 || lineas.length > 0) && (
+        <section className="section" id="trayectoria" style={{ background: "var(--white)", padding: "100px 0" }}>
           <div className="container">
-            <div className="text-center mb-8">
-              <span className="badge badge-teal mb-4" style={{ display: "inline-flex" }}>Áreas de especialidad</span>
-              <h2 className="section-heading">Líneas de<br /><span className="text-teal">investigación activa</span></h2>
-            </div>
-            <div className="features-grid">
-              {lineas.map((linea) => (
-                <div key={linea.id} className="feature-card">
-                  <div className="feature-icon">{linea.icono}</div>
-                  <h3 className="feature-title">{linea.titulo}</h3>
-                  <p className="feature-desc">{linea.descripcion}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── TIMELINE ─────────────────────────────────────────── */}
-      {hitos.length > 0 && (
-        <section className="section" style={{ background: "var(--slate-50)" }} aria-label="Trayectoria académica">
-          <div className="container">
-            <div className="text-center mb-8">
-              <span className="badge badge-emerald mb-4" style={{ display: "inline-flex" }}>Trayectoria</span>
-              <h2 className="section-heading">Formación y<br /><span className="text-teal">hitos académicos</span></h2>
-            </div>
-            <div className="timeline">
-              {hitos.map((hito) => (
-                <div key={hito.id} className="timeline-item">
-                  <div className="timeline-year">{hito.anio}</div>
-                  <div className="timeline-dot" aria-hidden="true" />
-                  <div className="timeline-content">
-                    <h3 className="timeline-title">{hito.titulo}</h3>
-                    {hito.institucion && <p className="timeline-sub">{hito.institucion}</p>}
+            <div className="about-grid">
+              
+              {/* Columna Izquierda: Trayectoria / Timeline */}
+              <div>
+                <h2 className="section-heading" style={{ fontFamily: "Outfit, sans-serif", fontSize: "32px", fontWeight: 800, lineHeight: 1.15, color: "var(--slate-900)", marginBottom: "36px" }}>
+                  30 años construyendo<br/>
+                  <span style={{ color: primaryColor }}>evidencia científica</span>
+                </h2>
+                {hitos.length > 0 && (
+                  <div className="timeline">
+                    {hitos.map((hito) => (
+                      <div key={hito.id} className="timeline-item" style={{ paddingBottom: "24px" }}>
+                        <div className="timeline-line">
+                          <div className="timeline-dot" style={{ background: primaryColor, border: "3px solid var(--white)", boxShadow: `0 0 0 3px ${primaryColor}22` }} />
+                          <div className="timeline-connector" />
+                        </div>
+                        <div className="timeline-content" style={{ paddingLeft: "12px" }}>
+                          <div className="timeline-year" style={{ color: primaryColor, fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em" }}>{hito.anio}</div>
+                          <h3 className="timeline-title" style={{ fontSize: "14px", fontWeight: 700, margin: "2px 0" }}>{hito.titulo}</h3>
+                          {hito.institucion && <p className="timeline-sub" style={{ fontSize: "12px", color: "var(--slate-500)" }}>{hito.institucion}</p>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                )}
+                <div style={{ marginTop: "32px" }}>
+                  <Link href={`/${slug}/sobre-el-doctor`} className="btn btn-outline" style={{ display: "inline-flex", borderColor: primaryColor, color: primaryColor, borderRadius: "var(--radius-full)", padding: "12px 24px", fontWeight: 600, fontSize: "14px", textDecoration: "none" }}>
+                    Ver currículum completo →
+                  </Link>
                 </div>
-              ))}
+              </div>
+
+              {/* Columna Derecha: Líneas de Investigación */}
+              <div>
+                <span className="badge badge-teal" style={{ background: `${accentColor}15`, color: primaryColor, display: "inline-flex", marginBottom: "16px" }}>
+                  LÍNEAS DE INVESTIGACIÓN
+                </span>
+                <h2 className="section-heading" style={{ fontFamily: "Outfit, sans-serif", fontSize: "32px", fontWeight: 800, lineHeight: 1.15, color: "var(--slate-900)", marginBottom: "36px" }}>
+                  Ciencia aplicada a la<br/>
+                  <span style={{ color: primaryColor }}>prevención</span>
+                </h2>
+                {lineas.length > 0 && (
+                  <div className="research-lines" style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "32px" }}>
+                    {lineas.map((linea) => (
+                      <div key={linea.id} className="research-item">
+                        <div className="research-icon" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})` }}>
+                          {linea.icono}
+                        </div>
+                        <div className="research-text">
+                          <h4 style={{ color: "var(--slate-900)", fontWeight: 700, margin: "0 0 4px 0" }}>{linea.titulo}</h4>
+                          <p style={{ color: "var(--slate-500)", margin: 0 }}>{linea.descripcion}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
         </section>
