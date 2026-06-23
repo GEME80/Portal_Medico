@@ -4,11 +4,21 @@ import Link from "next/link";
 import LogoutButton from "./components/LogoutButton";
 import "../admin.css";
 
+import { headers } from "next/headers";
+
 interface SuperadminLayoutProps {
   children: React.ReactNode;
 }
 
 export default async function SuperadminLayout({ children }: SuperadminLayoutProps) {
+  const headerList = await headers();
+  const pathname = headerList.get("x-pathname") || "";
+
+  // Bypass layout auth check for the login page itself
+  if (pathname === "/superadmin/login") {
+    return <>{children}</>;
+  }
+
   const supabase = await createClient();
 
   // Validate session and role
