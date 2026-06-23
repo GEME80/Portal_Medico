@@ -37,8 +37,7 @@ interface InventarioItem {
   id: string;
   categoria_id: string;
   nombre: string;
-  nombreGenerico: string;
-  laboratorio: string;
+  valorMayorista?: string;
   enfermedad: string;
   viaAdmin: string;
   esquemaDosis: string;
@@ -134,8 +133,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           id: v.id,
           categoria_id: v.categoria_id,
           nombre: v.nombre,
-          nombreGenerico: v.nombre_generico || "",
-          laboratorio: v.laboratorio || "",
+          valorMayorista: v.valor_mayorista ? String(v.valor_mayorista) : "0",
           enfermedad: v.enfermedad || "",
           viaAdmin: v.via_admin || "Intramuscular",
           esquemaDosis: v.esquema_dosis || "",
@@ -245,9 +243,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
   // ── NUEVA VACUNA FORM ──────────────────────────────────────────────
   const [newForm, setNewForm] = useState({
-    categoria_id: "", nombre: "", nombreGenerico: "", laboratorio: "", enfermedad: "",
-    viaAdmin: "", esquemaDosis: "", stockMinimo: "5",
-    precioVenta: "", temperatura: "Temperatura ambiente", descripcion: "",
+    categoria_id: "", nombre: "", enfermedad: "", viaAdmin: "",
+    esquemaDosis: "", stockMinimo: "5", valorMayorista: "",
+    precioVenta: "", temperatura: "2-8°C"
   });
 
   const openNewItemForCategory = (categoryId: string) => {
@@ -271,23 +269,21 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           tenant_id: tenantId,
           categoria_id: newForm.categoria_id || (categorias.length > 0 ? categorias[0].id : null),
           nombre: newForm.nombre,
-          nombre_generico: newForm.nombreGenerico,
-          laboratorio: newForm.laboratorio,
-          enfermedad: newForm.enfermedad,
-          via_admin: newForm.viaAdmin,
-          esquema_dosis: newForm.esquemaDosis,
+          enfermedad: newForm.enfermedad || null,
+          via_admin: newForm.viaAdmin || null,
+          esquema_dosis: newForm.esquemaDosis || null,
           stock_minimo: parseInt(newForm.stockMinimo) || 5,
           stock_actual: 0,
+          valor_mayorista: parseFloat(newForm.valorMayorista) || 0,
           precio_venta: parseFloat(newForm.precioVenta) || 0,
           temperatura: newForm.temperatura,
-          descripcion: newForm.descripcion,
           lote_activo: "—"
         });
 
       if (error) throw error;
 
       newVacunaRef.current?.close();
-      setNewForm({ categoria_id: "", nombre: "", nombreGenerico: "", laboratorio: "", enfermedad: "", viaAdmin: "", esquemaDosis: "", stockMinimo: "5", precioVenta: "", temperatura: "Temperatura ambiente", descripcion: "" });
+      setNewForm({ categoria_id: "", nombre: "", enfermedad: "", viaAdmin: "", esquemaDosis: "", stockMinimo: "5", valorMayorista: "", precioVenta: "", temperatura: "2-8°C" });
       addToast(`Vacuna "${newForm.nombre}" registrada correctamente.`);
       await loadData(tenantId);
     } catch (err: any) {
@@ -430,8 +426,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   // ── FILTERED ──────────────────────────────────────────────────────
   const filtered = vacunas.filter(v =>
     (selectedCategoryFilter === "all" || v.categoria_id === selectedCategoryFilter) &&
-    v.nombre.toLowerCase().includes(search.toLowerCase()) ||
-    v.laboratorio.toLowerCase().includes(search.toLowerCase())
+    (v.nombre.toLowerCase().includes(search.toLowerCase()))
   );
 
   if (loading) {
@@ -548,7 +543,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                       <td>
                         <div className="vaccine-name-cell">
                           <span className="vaccine-name-main">{v.nombre}</span>
-                          <span className="vaccine-name-generic">{v.laboratorio}</span>
+                          <span className="vaccine-name-generic">{categorias.find(c => c.id === v.categoria_id)?.nombre || "Sin Categoría"}</span>
                         </div>
                       </td>
                       <td>
@@ -685,7 +680,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       <dialog ref={newVacunaRef} id="modal-nueva-vacuna" aria-labelledby="dialog-nueva-title">
         <div className="modal-header">
           <div>
-            <div className="modal-title" id="dialog-nueva-title">➕ Registrar Nueva Vacuna</div>
+            <div className="modal-title" id="dialog-nueva-title">➕ Registrar Nuevo Ítem</div>
             <div className="modal-subtitle">Complete todos los campos obligatorios marcados con *</div>
           </div>
           <button className="modal-close" onClick={() => newVacunaRef.current?.close()} type="button" aria-label="Cerrar">✕</button>
@@ -702,42 +697,25 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
+
               <div className="form-group">
                 <label className="form-label" htmlFor="nombre">Nombre comercial <span className="required-mark">*</span></label>
                 <input id="nombre" name="nombre" type="text" className="form-input"
                   value={newForm.nombre} onChange={handleNewFormChange}
-                  required minLength={2} placeholder="ej: Hepatitis B"
-                  autoComplete="off" />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="nombreGenerico">Nombre genérico / Principio activo <span className="required-mark">*</span></label>
-                <input id="nombreGenerico" name="nombreGenerico" type="text" className="form-input"
-                  value={newForm.nombreGenerico} onChange={handleNewFormChange}
-                  required placeholder="ej: Vacuna recombinante HBsAg"
-                  autoComplete="off" />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="laboratorio">Laboratorio fabricante <span className="required-mark">*</span></label>
-                <input id="laboratorio" name="laboratorio" type="text" className="form-input"
-                  value={newForm.laboratorio} onChange={handleNewFormChange}
-                  required placeholder="ej: GSK Biologicals"
-                  autoComplete="organization" />
+                  required minLength={2} placeholder="ej: Hepatitis B" autoComplete="off" />
               </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="enfermedad">Enfermedad que previene</label>
                 <input id="enfermedad" name="enfermedad" type="text" className="form-input"
                   value={newForm.enfermedad} onChange={handleNewFormChange}
-                  placeholder="ej: Hepatitis B crónica"
-                  autoComplete="off" />
+                  placeholder="ej: Hepatitis B crónica" autoComplete="off" />
               </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="viaAdmin">Vía de administración</label>
-                <select id="viaAdmin" name="viaAdmin" className="form-select"
-                  value={newForm.viaAdmin} onChange={handleNewFormChange}> <option value="">No aplica</option>
+                <select id="viaAdmin" name="viaAdmin" className="form-select" value={newForm.viaAdmin} onChange={handleNewFormChange}>
+                  <option value="">No aplica</option>
                   <option value="Intramuscular">Intramuscular</option>
                   <option value="Subcutánea">Subcutánea</option>
                   <option value="Oral">Oral</option>
@@ -746,9 +724,8 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="temperatura">Temperatura de almacenamiento <span className="required-mark">*</span></label>
-                <select id="temperatura" name="temperatura" className="form-select"
-                  value={newForm.temperatura} onChange={handleNewFormChange} required>
+                <label className="form-label" htmlFor="temperatura">Temperatura de almacenamiento</label>
+                <select id="temperatura" name="temperatura" className="form-select" value={newForm.temperatura} onChange={handleNewFormChange} required>
                   <option value="2-8°C">2-8°C (Refrigeración)</option>
                   <option value="-15 a -25°C">-15 a -25°C (Congelación)</option>
                   <option value="Temperatura ambiente">Temperatura ambiente</option>
@@ -759,39 +736,32 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                 <label className="form-label" htmlFor="esquemaDosis">Esquema de dosis</label>
                 <input id="esquemaDosis" name="esquemaDosis" type="text" className="form-input"
                   value={newForm.esquemaDosis} onChange={handleNewFormChange}
-                  placeholder="ej: 3 dosis: 2, 4, 6 meses"
-                  autoComplete="off" />
+                  placeholder="ej: 3 dosis: 2, 4, 6 meses" autoComplete="off" />
               </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="stockMinimo">Stock mínimo de alerta <span className="required-mark">*</span></label>
-                <input id="stockMinimo" name="stockMinimo" type="text" inputMode="numeric"
-                  pattern="[0-9]*" className="form-input"
+                <input id="stockMinimo" name="stockMinimo" type="text" inputMode="numeric" pattern="[0-9]*" className="form-input"
                   value={newForm.stockMinimo} onChange={handleNewFormChange}
-                  required placeholder="ej: 10"
-                  autoComplete="off" />
-                <span className="form-hint">Se activará alerta cuando el stock baje de este número</span>
+                  required placeholder="ej: 10" autoComplete="off" />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="precioVenta">Precio de venta (COP) <span className="required-mark">*</span></label>
-                <input id="precioVenta" name="precioVenta" type="text" inputMode="decimal"
-                  className="form-input"
-                  value={newForm.precioVenta} onChange={handleNewFormChange}
-                  required placeholder="ej: 45000"
-                  autoComplete="off" />
+                <label className="form-label" htmlFor="valorMayorista">Valor mayorista (Costo) <span className="required-mark">*</span></label>
+                <input id="valorMayorista" name="valorMayorista" type="text" inputMode="decimal" className="form-input"
+                  value={newForm.valorMayorista} onChange={handleNewFormChange}
+                  required placeholder="ej: 30000" autoComplete="off" />
               </div>
 
-              <div className="form-group full-width">
-                <label className="form-label" htmlFor="descripcion">Descripción / Notas</label>
-                <textarea id="descripcion" name="descripcion" className="form-textarea"
-                  value={newForm.descripcion} onChange={handleNewFormChange}
-                  placeholder="Información adicional sobre la vacuna, contraindicaciones, etc."
-                  rows={3} />
+              <div className="form-group">
+                <label className="form-label" htmlFor="precioVenta">Valor precio de venta <span className="required-mark">*</span></label>
+                <input id="precioVenta" name="precioVenta" type="text" inputMode="decimal" className="form-input"
+                  value={newForm.precioVenta} onChange={handleNewFormChange}
+                  required placeholder="ej: 45000" autoComplete="off" />
               </div>
+
             </div>
           </div>
-
           <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={() => newVacunaRef.current?.close()}>
               Cancelar
