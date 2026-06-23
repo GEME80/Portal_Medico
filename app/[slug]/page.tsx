@@ -37,7 +37,8 @@ export default async function TenantHomePage({ params }: PageProps) {
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
 
-  const renderTitle = (title: string) => {
+  const renderTitle = (title: string = "") => {
+    if (!title) return "";
     const target = "al servicio";
     if (title.includes(target)) {
       const parts = title.split(target);

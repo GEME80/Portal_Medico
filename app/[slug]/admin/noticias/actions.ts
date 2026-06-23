@@ -32,6 +32,16 @@ export async function uploadImageAction(formData: FormData) {
     return { success: false, error: "Archivo, Tenant ID y Carpeta son requeridos." };
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceKey) {
+    return { 
+      success: false, 
+      error: "Error de configuración: Claves de Supabase (URL o Service Role Key) no configuradas en el servidor." 
+    };
+  }
+
   const supabase = createAdminClient();
   try {
     // 1. Ensure public bucket 'portal-media' exists

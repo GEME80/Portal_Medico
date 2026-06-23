@@ -291,35 +291,35 @@ h1, h2, h3, h4, h5, h6 {
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .navbar-logo-icon {
-  width: 42px; height: 42px;
+  width: 48px; height: 48px;
   background: linear-gradient(135deg, var(--teal-800), var(--teal-500));
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 20px;
+  font-size: 24px;
   box-shadow: var(--shadow-teal);
   transition: transform .2s var(--ease-out);
 }
 
 .navbar-brand:hover .navbar-logo-icon { transform: scale(1.08); }
 
-.navbar-brand-text { display: flex; flex-direction: column; gap: 1px; }
+.navbar-brand-text { display: flex; flex-direction: column; gap: 2px; }
 .navbar-brand-name {
   font-family: 'Outfit', sans-serif;
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--slate-900);
   line-height: 1;
   letter-spacing: -.02em;
 }
 .navbar-brand-sub {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--teal-600);
   letter-spacing: .06em;
