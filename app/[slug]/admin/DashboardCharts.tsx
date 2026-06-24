@@ -19,6 +19,7 @@ const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', '
 export default function DashboardCharts({ inventario, categorias, movimientos, primaryColor, accentColor }: Props) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedCatPie, setSelectedCatPie] = useState<string>("all");
 
   // Derive unique years from movimientos for the selector
   const availableYears = useMemo(() => {
@@ -51,23 +52,35 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
     return data;
   }, [movimientos, inventario, selectedYear]);
 
-  // 2. Gráfica: Distribución de Categorías en Inventario Actual (Valor Potencial)
-  const chartDataCategoriasValor = useMemo(() => {
-    const dataMap: Record<string, number> = {};
-    categorias.forEach(c => dataMap[c.id] = 0);
+  // 2. Gráfica: Participación de Ítems (Volumen de Aplicación)
+  const chartDataParticipacionItems = useMemo(() => {
+    const dataMap: Record<string, { name: string, value: number, color: string }> = {};
     
-    inventario.forEach(item => {
-      if (item.categoria_id && dataMap[item.categoria_id] !== undefined) {
-        dataMap[item.categoria_id] += (item.stock_actual * (item.precio_venta || 0));
+    // Asignar colores aleatorios o predefinidos a los ítems (usaremos la paleta de la categoría o algo similar)
+    const itemColors = ['#0ea5e9', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1'];
+
+    movimientos.forEach(m => {
+      const d = new Date(m.fecha);
+      if (d.getFullYear() === selectedYear && m.tipo_movimiento === "SALIDA" && (!m.motivo || !m.motivo.startsWith("MERMA"))) {
+        const item = inventario.find(i => i.id === m.item_id);
+        if (item) {
+          // Filtrar por categoría seleccionada si no es "all"
+          if (selectedCatPie !== "all" && item.categoria_id !== selectedCatPie) return;
+
+          if (!dataMap[item.id]) {
+            dataMap[item.id] = { 
+              name: item.nombre, 
+              value: 0, 
+              color: itemColors[Object.keys(dataMap).length % itemColors.length] 
+            };
+          }
+          dataMap[item.id].value += m.cantidad;
+        }
       }
     });
 
-    return categorias.map(c => ({
-      name: c.nombre,
-      value: dataMap[c.id],
-      color: c.color || primaryColor
-    })).filter(c => c.value > 0);
-  }, [inventario, categorias, primaryColor]);
+    return Object.values(dataMap).sort((a, b) => b.value - a.value);
+  }, [movimientos, inventario, selectedYear, selectedCatPie]);
 
   // 3. Gráfica: Tendencia de Aplicación (Salidas) por Categoría a lo largo del año
   const chartDataTendenciaCat = useMemo(() => {
@@ -175,21 +188,33 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
-        {/* Distribución Actual */}
-        <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px" }}>Valor Potencial por Categoría</h3>
-          <div style={{ height: "250px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
-            {chartDataCategoriasValor.length === 0 ? (
-               <div style={{ color: "var(--slate-400)", fontSize: "13px" }}>Sin datos de inventario</div>
+        {/* Participación de Ítems */}
+        <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)", display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)" }}>Participación por Ítem (Volumen)</h3>
+            <select 
+              className="form-select" 
+              style={{ fontSize: "12px", padding: "4px 8px" }}
+              value={selectedCatPie}
+              onChange={(e) => setSelectedCatPie(e.target.value)}
+            >
+              <option value="all">Todas las Categorías</option>
+              {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+          </div>
+          
+          <div style={{ height: "250px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+            {chartDataParticipacionItems.length === 0 ? (
+               <div style={{ color: "var(--slate-400)", fontSize: "13px" }}>Sin datos de aplicación en este año para la selección</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={chartDataCategoriasValor} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
-                    {chartDataCategoriasValor.map((entry, index) => (
+                  <Pie data={chartDataParticipacionItems} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                    {chartDataParticipacionItems.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <RechartsTooltip formatter={(val: any) => `$${val.toLocaleString()}`} />
+                  <RechartsTooltip formatter={(val: any) => `${val} aplicados`} />
                   <Legend iconType="circle" verticalAlign="bottom" />
                 </PieChart>
               </ResponsiveContainer>

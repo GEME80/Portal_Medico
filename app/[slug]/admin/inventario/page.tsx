@@ -87,8 +87,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<"catalogo" | "categorias">("catalogo");
+  const [activeTab, setActiveTab] = useState<"catalogo" | "categorias" | "diario">("catalogo");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("all");
+  const [diarioMonth, setDiarioMonth] = useState<string>(new Date().toISOString().slice(0, 7));
 
   const supabase = createClient();
 
@@ -593,6 +594,13 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "categorias" ? `2px solid ${primaryColor}` : "2px solid transparent", color: activeTab === "categorias" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "categorias" ? 700 : 500, cursor: "pointer" }}
         >
           🏷️ Categorías
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === "diario" ? "active" : ""}`} 
+          onClick={() => setActiveTab("diario")}
+          style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "diario" ? `2px solid ${primaryColor}` : "2px solid transparent", color: activeTab === "diario" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "diario" ? 700 : 500, cursor: "pointer" }}
+        >
+          📅 Control Diario
         </button>
       </div>
 
