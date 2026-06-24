@@ -45,7 +45,7 @@ export default function TextReveal({ text, className = "", delay = 100 }: TextRe
         } else {
           clearInterval(timer);
         }
-      }, 35); // 35ms per character for natural flow
+      }, 85); // Slower typing speed (85ms per character) for a natural reveal
     }, delay);
 
     return () => {

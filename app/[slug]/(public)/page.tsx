@@ -123,14 +123,14 @@ export default async function TenantHomePage({ params }: PageProps) {
             </div>
 
             <div className="hero-img-wrap">
-              <div className="hero-photo-frame" style={{ borderRadius: "0px" }}>
+              <div className="hero-photo-frame" style={{ borderRadius: "20px" }}>
                 <Image
                   src={config?.foto_url || "/doctor-torres.png"}
                   alt={config?.nombre_doctor || "Dr. Carlos Torres"}
                   width={600}
                   height={520}
                   priority
-                  style={{ objectFit: "cover", objectPosition: "center top", borderRadius: "0px" }}
+                  style={{ objectFit: "cover", objectPosition: "center top", borderRadius: "20px" }}
                 />
               </div>
 
@@ -359,7 +359,7 @@ export default async function TenantHomePage({ params }: PageProps) {
             ¿Necesita una consulta?
           </h2>
           <p style={{ color: "var(--slate-600)", fontSize: "16px", lineHeight: 1.7, marginBottom: "32px" }}>
-            {config?.nombre_doctor || "El doctor"} atiende consultas de infectología pediátrica y vacunación. Agenda tu cita hoy.
+            {config?.nombre_doctor || "El doctor"} atiende consultas de infectología pediátrica y vacunación. Contáctelo hoy.
           </p>
           {config?.email && (
             <a href={`mailto:${config.email}`} className="btn btn-primary" style={{

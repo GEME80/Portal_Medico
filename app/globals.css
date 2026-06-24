@@ -579,26 +579,50 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ─── ALERT BANNER ─────────────────────────────────────────────────── */
-.alert-banner {
-  padding: 12px 0;
-  overflow: hidden;
+@keyframes slideDownAlert {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.alert-banner.level-info    { background: rgba(20, 154, 181, .08); border-top: 2px solid var(--teal-400); border-bottom: 2px solid var(--teal-400); }
-.alert-banner.level-warning { background: rgba(245, 158, 11, .08); border-top: 2px solid var(--amber-400); border-bottom: 2px solid var(--amber-400); }
-.alert-banner.level-critical{ background: rgba(244, 63, 94, .08);  border-top: 2px solid var(--rose-500);  border-bottom: 2px solid var(--rose-500); }
+@keyframes alertPulseGlow {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+
+@keyframes iconRotatePulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.15) rotate(-5deg); }
+  75% { transform: scale(1.15) rotate(5deg); }
+}
+
+.alert-banner {
+  padding: 14px 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 95;
+  animation: slideDownAlert 0.7s cubic-bezier(0.16, 1, 0.3, 1) both, alertPulseGlow 3s ease-in-out infinite;
+}
+
+.alert-banner.level-info    { background: rgba(20, 154, 181, .06); border-bottom: 2px solid var(--teal-400); }
+.alert-banner.level-warning { background: rgba(245, 158, 11, .06); border-bottom: 2px solid var(--amber-400); }
+.alert-banner.level-critical{ background: rgba(244, 63, 94, .06);  border-bottom: 2px solid var(--rose-500); }
 
 .alert-inner {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
-.alert-icon { font-size: 20px; flex-shrink: 0; }
+.alert-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  display: inline-block;
+  animation: iconRotatePulse 2.5s ease-in-out infinite;
+}
 
 .alert-content { flex: 1; }
-.alert-title { font-weight: 700; font-size: 14px; font-family: 'Outfit', sans-serif; }
-.alert-desc  { font-size: 12px; color: var(--slate-600); margin-top: 2px; }
+.alert-title { font-weight: 800; font-size: 15px; font-family: 'Outfit', sans-serif; color: var(--slate-950); }
+.alert-desc  { font-size: 13px; color: var(--slate-700); margin-top: 3px; }
 
 /* ─── SECTION: ABOUT PREVIEW ────────────────────────────────────────── */
 .about-grid {

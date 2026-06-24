@@ -65,9 +65,6 @@ export default function Navbar({
               <Link href={`${base}/admin`} className="btn btn-ghost" style={{ padding: "10px 20px", fontSize: "13px", color: "var(--slate-500)", border: "none", background: "transparent", boxShadow: "none" }}>
                 Admin
               </Link>
-              <Link href={`${base}/#contacto`} className="btn btn-primary" style={{ padding: "12px 24px", fontSize: "14px", borderRadius: "0px", boxShadow: "none" }}>
-                Agenda tu cita
-              </Link>
             </div>
 
             {/* Hamburger */}
