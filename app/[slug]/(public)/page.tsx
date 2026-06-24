@@ -5,10 +5,34 @@ import ScrollObserver from "@/components/ScrollObserver";
 import { notFound } from "next/navigation";
 import TextReveal from "@/components/TextReveal";
 import CanvasParticles from "@/components/CanvasParticles";
+import { Activity, Syringe, BarChart3, Shield, FlaskConical, Dna, FileText } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
+
+const renderModernIcon = (emoji: string = "") => {
+  const clean = emoji.trim();
+  if (clean.includes("🦠") || clean.toLowerCase().includes("virus") || clean.toLowerCase().includes("bacteria")) {
+    return <Activity size={20} />;
+  }
+  if (clean.includes("💉") || clean.toLowerCase().includes("vacuna") || clean.toLowerCase().includes("syringe")) {
+    return <Syringe size={20} />;
+  }
+  if (clean.includes("📊") || clean.toLowerCase().includes("grafica") || clean.toLowerCase().includes("chart")) {
+    return <BarChart3 size={20} />;
+  }
+  if (clean.includes("📚") || clean.toLowerCase().includes("investigacion") || clean.toLowerCase().includes("book") || clean.toLowerCase().includes("pdf")) {
+    return <FileText size={20} />;
+  }
+  if (clean.includes("🧬")) {
+    return <Dna size={20} />;
+  }
+  if (clean.includes("🔬")) {
+    return <FlaskConical size={20} />;
+  }
+  return <Shield size={20} />;
+};
 
 export default async function TenantHomePage({ params }: PageProps) {
   const { slug } = await params;
@@ -54,8 +78,7 @@ export default async function TenantHomePage({ params }: PageProps) {
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="hero" id="inicio" style={{
         background: "var(--white)",
-        padding: "60px 0 80px",
-        minHeight: "calc(100vh - var(--nav-h))",
+        padding: "60px 0 10px",
         display: "flex",
         alignItems: "center",
       }} aria-label="Presentación del doctor">
@@ -191,7 +214,17 @@ export default async function TenantHomePage({ params }: PageProps) {
 
           <div className="container" style={{ position: "relative", zIndex: 1 }}>
             <div style={{ marginBottom: "40px" }}>
-              <span className="badge" style={{ background: "rgba(0, 0, 0, 0.04)", border: "1px solid rgba(0, 0, 0, 0.08)", borderRadius: "0px", color: "#000000", display: "inline-flex" }}>
+              <span className="badge" style={{
+                background: "#000000",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "0px",
+                padding: "8px 16px",
+                fontSize: "12px",
+                fontWeight: 800,
+                letterSpacing: "0.15em",
+                display: "inline-flex"
+              }}>
                 TRAYECTORIA E INVESTIGACIÓN
               </span>
             </div>
@@ -232,7 +265,7 @@ export default async function TenantHomePage({ params }: PageProps) {
                     {lineas.map((linea) => (
                       <div key={linea.id} className="research-item">
                         <div className="research-icon">
-                          {linea.icono}
+                          {renderModernIcon(linea.icono)}
                         </div>
                         <div className="research-text">
                           <h4 style={{ color: "#000000", fontWeight: 700, margin: "0 0 4px 0" }}>{linea.titulo}</h4>
