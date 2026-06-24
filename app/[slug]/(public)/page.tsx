@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
-import ScrollObserver from "@/components/ScrollObserver";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -52,7 +51,6 @@ export default async function TenantHomePage({ params }: PageProps) {
       const parts = title.split(target);
       return (
         <>
-      <ScrollObserver />
           {parts[0]}
           <span className="hero-title-accent" style={{
             background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
@@ -225,14 +223,17 @@ export default async function TenantHomePage({ params }: PageProps) {
                   <span style={{ color: primaryColor }}>evidencia científica</span>
                 </h2>
                 {hitos.length > 0 && (
-                  <div className="timeline-container">
+                  <div className="timeline">
                     {hitos.map((hito) => (
-                      <div key={hito.id} className="timeline-item">
-                        <div className="timeline-node"></div>
-                        <div className="timeline-content">
-                          <div className="timeline-year">{hito.anio}</div>
-                          <h3 className="timeline-title">{hito.titulo}</h3>
-                          {hito.institucion && <p className="timeline-inst">{hito.institucion}</p>}
+                      <div key={hito.id} className="timeline-item" style={{ paddingBottom: "24px" }}>
+                        <div className="timeline-line">
+                          <div className="timeline-dot" style={{ background: primaryColor, border: "3px solid var(--white)", boxShadow: `0 0 0 3px ${primaryColor}22` }} />
+                          <div className="timeline-connector" />
+                        </div>
+                        <div className="timeline-content" style={{ paddingLeft: "12px" }}>
+                          <div className="timeline-year" style={{ color: primaryColor, fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em" }}>{hito.anio}</div>
+                          <h3 className="timeline-title" style={{ fontSize: "14px", fontWeight: 700, margin: "2px 0" }}>{hito.titulo}</h3>
+                          {hito.institucion && <p className="timeline-sub" style={{ fontSize: "12px", color: "var(--slate-500)" }}>{hito.institucion}</p>}
                         </div>
                       </div>
                     ))}
@@ -276,76 +277,6 @@ export default async function TenantHomePage({ params }: PageProps) {
         </section>
       )}
 
-      
-      {/* ── ECOVACCINE WIDGET SECTION ────────────────────── */}
-      <section className="section" style={{ background: "var(--slate-900)", padding: "100px 0", color: "white" }}>
-        <div className="container">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center" }}>
-            <div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(20, 154, 181, 0.2)", color: "var(--teal-400)", padding: "6px 16px", borderRadius: "30px", fontSize: "12px", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "24px" }}>
-                <span className="pulse-dot" style={{ background: "var(--teal-400)" }}></span>
-                Tecnología Destacada
-              </div>
-              <h2 className="section-heading" style={{ color: "white", marginBottom: "24px", fontSize: "42px" }}>
-                Conoce <span style={{ color: "var(--emerald-400)" }}>EcoVaccine</span>
-              </h2>
-              <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "17px", lineHeight: 1.8, marginBottom: "32px" }}>
-                Nuestra plataforma integral de inmunización no solo informa, sino que monitorea en tiempo real la disponibilidad y las pautas más recientes para la protección de tu familia.
-              </p>
-              <Link href={`/${slug}/vacunas`} className="btn btn-primary" style={{ padding: "16px 32px", fontSize: "15px" }}>
-                Explorar portafolio de servicios →
-              </Link>
-            </div>
-            
-            <div className="eco-widget">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--emerald-400)" strokeWidth="1.5">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                  </svg>
-                  <span style={{ fontWeight: 700, fontSize: "16px", letterSpacing: "1px" }}>SYSTEM METRICS</span>
-                </div>
-                <span style={{ color: "var(--teal-400)", fontSize: "12px", fontWeight: 600 }}>LIVE SYNC</span>
-              </div>
-              
-              <div className="eco-widget-grid">
-                <div className="eco-widget-item">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--teal-200)" strokeWidth="1.5" style={{ margin: "0 auto" }}>
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                  <div className="eco-widget-value">99.8%</div>
-                  <div className="eco-widget-label">Eficacia Clínica</div>
-                </div>
-                <div className="eco-widget-item">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--teal-200)" strokeWidth="1.5" style={{ margin: "0 auto" }}>
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                  <div className="eco-widget-value">24/7</div>
-                  <div className="eco-widget-label">Monitorización</div>
-                </div>
-                <div className="eco-widget-item">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--teal-200)" strokeWidth="1.5" style={{ margin: "0 auto" }}>
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                    <line x1="7" y1="7" x2="7.01" y2="7"/>
-                  </svg>
-                  <div className="eco-widget-value">15+</div>
-                  <div className="eco-widget-label">Esquemas</div>
-                </div>
-                <div className="eco-widget-item">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--teal-200)" strokeWidth="1.5" style={{ margin: "0 auto" }}>
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  </svg>
-                  <div className="eco-widget-value">100%</div>
-                  <div className="eco-widget-label">Seguridad</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ── NOTICIAS RECIENTES (CARRUSEL) ────────────────────── */}
       {noticias.length > 0 && (
         <section className="section" style={{ background: "var(--slate-50)" }} aria-label="Publicaciones recientes">
@@ -360,32 +291,53 @@ export default async function TenantHomePage({ params }: PageProps) {
               </p>
             </div>
             
-            <div className="bento-grid" style={{ marginTop: "40px" }}>
-              {noticias.slice(0, 5).map((post, index) => (
-                <article key={post.id} className={`bento-card ${index === 0 ? "bento-hero" : ""}`}>
-                  <div className="news-card-img" style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${primaryColor}10, ${accentColor}08)` }}>
+            <div 
+              className="news-carousel-scroller" 
+              style={{
+                display: "flex",
+                gap: "24px",
+                overflowX: "auto",
+                scrollSnapType: "x mandatory",
+                padding: "16px 4px 32px 4px",
+                scrollbarWidth: "none",
+                msOverflowStyle: "none"
+              }}
+            >
+              {noticias.map((post) => (
+                <article key={post.id} className="news-card" style={{ flex: "0 0 360px", scrollSnapAlign: "start" }}>
+                  <div className="news-card-img" style={{ height: "200px", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${primaryColor}10, ${accentColor}08)` }}>
                     {post.imagen_portada_url ? (
-                      <img src={post.imagen_portada_url} alt={post.titulo} className="post-image" />
+                      <img src={post.imagen_portada_url} alt={post.titulo} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
-                      <div className="post-image" style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: index === 0 ? "80px" : "40px" }}>{post.emoji || "📄"}</div>
+                      <span style={{ fontSize: "56px" }}>{post.emoji || "📄"}</span>
                     )}
                   </div>
-                  <div className="bento-content">
-                    <div className="bento-meta">
-                      {post.categoria} • {new Date(post.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                  <div className="news-card-body">
+                    <div className="news-card-meta">
+                      <span className={`badge ${post.categoria === "Académico" ? "badge-teal" : post.categoria === "Epidemiología" ? "badge-rose" : "badge-emerald"}`}>
+                        {post.categoria}
+                      </span>
+                      <span style={{ fontSize: "12px", color: "var(--slate-400)", fontWeight: 600 }}>
+                        {new Date(post.created_at).toLocaleDateString("es-ES", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric"
+                        })}
+                      </span>
                     </div>
-                    <h3 className="bento-title" style={{ color: "var(--slate-900)" }}>{post.titulo}</h3>
-                    {index === 0 && <p className="bento-excerpt">{post.resumen}</p>}
-                    
-                    <Link href={`/${slug}/noticias/${post.slug}`} className="bento-read-more">
-                      Leer artículo <span style={{ fontSize: "16px" }}>→</span>
+                    <h3 className="news-card-title" style={{ fontSize: "16px", minHeight: "44px" }}>{post.titulo}</h3>
+                    <p className="news-card-excerpt" style={{ fontSize: "13px", height: "64px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
+                      {post.resumen}
+                    </p>
+                    <Link href={`/${slug}/noticias/${post.slug}`} className="news-card-link" style={{ color: primaryColor }}>
+                      Leer artículo completo →
                     </Link>
                   </div>
                 </article>
               ))}
             </div>
-            
-            <div style={{ display: "flex", justifyContent: "center", marginTop: "48px" }}>
+
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "32px" }}>
               <Link href={`/${slug}/noticias`} className="btn btn-outline" style={{ borderRadius: "var(--radius-full)", padding: "12px 32px", fontSize: "14px", fontWeight: 700, borderColor: primaryColor, color: primaryColor }}>
                 Ver todas las publicaciones
               </Link>
