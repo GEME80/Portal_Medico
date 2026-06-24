@@ -37,6 +37,13 @@ export default async function TenantHomePage({ params }: PageProps) {
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
 
+  let heroData: any = {};
+  if (config?.hero_badge_texto && config.hero_badge_texto.startsWith("{")) {
+    try { heroData = JSON.parse(config.hero_badge_texto); } catch (e) {}
+  } else {
+    heroData = { badge: config?.hero_badge_texto || "" };
+  }
+
   const renderTitle = (title: string = "") => {
     if (!title) return "";
     const target = "al servicio";
@@ -77,7 +84,7 @@ export default async function TenantHomePage({ params }: PageProps) {
         <div className="container">
           <div className="hero-inner">
             <div className="hero-content animate-left">
-              {config?.hero_badge_texto && (
+              {heroData.badge && (
                 <div className="hero-kicker" style={{
                   background: "rgba(0, 212, 170, 0.08)",
                   border: "1px solid rgba(0, 212, 170, 0.2)",
@@ -94,7 +101,7 @@ export default async function TenantHomePage({ params }: PageProps) {
                   marginBottom: "24px"
                 }}>
                   <span style={{ width: "6px", height: "6px", background: "#00d4aa", borderRadius: "50%" }} />
-                  {config.hero_badge_texto}
+                  {heroData.badge}
                 </div>
               )}
               <h1 className="hero-title" style={{ fontFamily: "Outfit, sans-serif", fontSize: "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.03em", color: "#ffffff", marginBottom: "24px" }}>
@@ -155,20 +162,25 @@ export default async function TenantHomePage({ params }: PageProps) {
               </div>
 
               {/* Floating cards */}
-              <div className="cred-card cred-card-tl" style={{ padding: "12px 16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(12px)", borderRadius: "16px" }}>
-                <div className="cred-card-icon" style={{ background: `${accentColor}22`, color: accentColor }}>👨‍⚕️</div>
-                <div className="cred-card-text">
-                  <div className="cred-card-title">{config?.titulo_doctor || "Pediatra Infectólogo"}</div>
-                  <div className="cred-card-sub" style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "10px" }}>{config?.especialidad || "Miembro de la SCP y SLIPE"}</div>
+              {(heroData.g1_t || config?.titulo_doctor) && (
+                <div className="cred-card cred-card-tl" style={{ padding: "12px 16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(12px)", borderRadius: "16px" }}>
+                  <div className="cred-card-icon" style={{ background: `${accentColor}22`, color: accentColor }}>👨‍⚕️</div>
+                  <div className="cred-card-text">
+                    <div className="cred-card-title">{heroData.g1_t || config?.titulo_doctor}</div>
+                    <div className="cred-card-sub" style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "10px" }}>{heroData.g1_s || config?.especialidad}</div>
+                  </div>
                 </div>
-              </div>
-              <div className="cred-card cred-card-br" style={{ padding: "12px 16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(12px)", borderRadius: "16px" }}>
-                <div className="cred-card-icon" style={{ background: `${accentColor}22`, color: accentColor }}>🏆</div>
-                <div className="cred-card-text">
-                  <div className="cred-card-title">{config?.stat_publicaciones ? `${config.stat_publicaciones} Publicaciones` : "+42 Publicaciones"}</div>
-                  <div className="cred-card-sub" style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "10px" }}>Revistas indexadas ISI</div>
+              )}
+              
+              {(heroData.g2_t || config?.stat_publicaciones) && (
+                <div className="cred-card cred-card-br" style={{ padding: "12px 16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(12px)", borderRadius: "16px" }}>
+                  <div className="cred-card-icon" style={{ background: `${accentColor}22`, color: accentColor }}>🏆</div>
+                  <div className="cred-card-text">
+                    <div className="cred-card-title">{heroData.g2_t || `${config?.stat_publicaciones} Publicaciones`}</div>
+                    <div className="cred-card-sub" style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "10px" }}>{heroData.g2_s || "Revistas indexadas ISI"}</div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

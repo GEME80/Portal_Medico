@@ -191,7 +191,7 @@ export default function AdminShell({
         </div>
 
         <nav className="sidebar-nav" aria-label="Navegación del panel admin">
-          <span className="sidebar-section-label">Módulos</span>
+          <span className="sidebar-section-label">Gestión Operativa</span>
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -199,9 +199,9 @@ export default function AdminShell({
               className={`sidebar-link${isActive(item.href, item.exact) ? " active" : ""}`}
               aria-current={isActive(item.href, item.exact) ? "page" : undefined}
               style={isActive(item.href, item.exact) ? {
-                background: `${primaryColor}12`,
-                color: primaryColor,
-                borderLeftColor: primaryColor
+                background: "rgba(255, 255, 255, 0.08)",
+                color: "#ffffff",
+                borderLeft: `3px solid ${accentColor}`
               } : undefined}
             >
               <span className="sidebar-link-icon">{item.icon}</span>
@@ -209,51 +209,37 @@ export default function AdminShell({
             </Link>
           ))}
 
+          <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.05)", margin: "12px 0" }}></div>
+
+          <span className="sidebar-section-label">Configuración / Cuenta</span>
+          <Link href={`/${tenantSlug}/admin/personalizar`} className="sidebar-link">
+             <span className="sidebar-link-icon">👤</span> Tu Perfil
+          </Link>
+          <button 
+            onClick={handleLogout} 
+            className="sidebar-link" 
+            style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}
+          >
+             <span className="sidebar-link-icon">🚪</span> Cerrar Sesión
+          </button>
+
+          <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.05)", margin: "12px 0" }}></div>
+
           <span className="sidebar-section-label">Portal</span>
-          <Link href={`/${tenantSlug}`} className="sidebar-link" target="_blank">
-            <span className="sidebar-link-icon">🌐</span>
-            Ver Portal Público
+          <Link href={`/${tenantSlug}`} className="sidebar-link" target="_blank" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span><span className="sidebar-link-icon">🌐</span> Ver Portal Público</span>
+            <span style={{ opacity: 0.5, fontSize: "14px" }}>↗</span>
           </Link>
         </nav>
 
         <div className="sidebar-footer" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div className="sidebar-user">
+          <div className="sidebar-user" style={{ background: "rgba(255, 255, 255, 0.03)", padding: "12px", borderRadius: "12px" }}>
             <div className="sidebar-avatar">👨‍⚕️</div>
             <div>
               <div className="sidebar-user-name">{doctorName}</div>
               <div className="sidebar-user-role">Administrador</div>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              width: "100%",
-              padding: "10px",
-              background: "rgba(239, 68, 68, 0.08)",
-              border: "1px solid rgba(239, 68, 68, 0.15)",
-              borderRadius: "8px",
-              color: "#f87171",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "background 0.15s, border-color 0.15s",
-              fontFamily: "inherit"
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
-              e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "rgba(239, 68, 68, 0.08)";
-              e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.15)";
-            }}
-          >
-            <span>🚪</span> Cerrar Sesión
-          </button>
         </div>
       </aside>
 

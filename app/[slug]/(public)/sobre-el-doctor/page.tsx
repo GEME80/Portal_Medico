@@ -35,6 +35,14 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
 
+  let waData = { n: config?.whatsapp || config?.telefono, t: "w" };
+  if (config?.whatsapp && config.whatsapp.startsWith("{")) {
+    try { waData = JSON.parse(config.whatsapp); } catch (e) {}
+  }
+  const chatUrl = waData.t === "t" 
+    ? `https://t.me/${waData.n?.replace(/[^a-zA-Z0-9_]/g, "")}` 
+    : `https://wa.me/${waData.n?.replace(/[^0-9]/g, "")}`;
+
   // We can construct affiliations statically or adapt them
   const affiliations = [
     { name: "Sociedad Colombiana de Infectología", abbr: "SCI" },
@@ -109,7 +117,12 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 {config?.email && (
                   <a href={`mailto:${config.email}`} className="btn btn-emerald">
-                    Contactar al Doctor
+                    ✉️ Enviar Email
+                  </a>
+                )}
+                {waData.n && (
+                  <a href={chatUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ borderColor: "rgba(255,255,255,.2)", color: "white" }}>
+                    {waData.t === "t" ? "✈️ Telegram" : "💬 WhatsApp"}
                   </a>
                 )}
                 <Link href={`/${slug}/noticias`} className="btn btn-ghost">
@@ -117,6 +130,82 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
                 </Link>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CONTACT CARD ────────────────────────────────────────────── */}
+      <section className="section" style={{ padding: "60px 0", background: "var(--white)" }}>
+        <div className="container">
+          <div style={{
+            background: "var(--slate-50)",
+            border: "1px solid var(--slate-200)",
+            borderRadius: "var(--radius-xl)",
+            padding: "40px",
+            display: "grid",
+            gridTemplateColumns: config?.direccion ? "1fr 1fr" : "1fr",
+            gap: "40px",
+            boxShadow: "var(--shadow-sm)"
+          }}>
+            <div>
+              <span className="badge badge-teal mb-4" style={{ display: "inline-flex" }}>Contacto Directo</span>
+              <h2 style={{ fontSize: "28px", fontWeight: 800, fontFamily: "Outfit, sans-serif", color: "var(--slate-900)", marginBottom: "20px" }}>
+                ¿Deseas agendar una cita o tienes dudas?
+              </h2>
+              <p style={{ fontSize: "15px", color: "var(--slate-600)", marginBottom: "32px", lineHeight: 1.6 }}>
+                Estamos disponibles para atender tus consultas a través de nuestros canales oficiales.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {config?.email && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--white)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--slate-200)", fontSize: "16px" }}>📧</div>
+                    <div>
+                      <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em" }}>Correo Electrónico</div>
+                      <a href={`mailto:${config.email}`} style={{ fontSize: "15px", color: primaryColor, fontWeight: 600, textDecoration: "none" }}>{config.email}</a>
+                    </div>
+                  </div>
+                )}
+                {waData.n && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--white)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--slate-200)", fontSize: "16px" }}>{waData.t === "t" ? "✈️" : "💬"}</div>
+                    <div>
+                      <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em" }}>Chat Directo</div>
+                      <a href={chatUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "15px", color: primaryColor, fontWeight: 600, textDecoration: "none" }}>{waData.t === "t" ? "Telegram" : "WhatsApp"} ({waData.n})</a>
+                    </div>
+                  </div>
+                )}
+                {(config?.linkedin_url || config?.instagram_url) && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "8px" }}>
+                    <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginRight: "8px" }}>Redes Sociales:</div>
+                    {config?.linkedin_url && (
+                      <a href={config.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ padding: "6px 12px", background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-sm)", fontSize: "13px", fontWeight: 600, color: "var(--slate-700)", textDecoration: "none" }}>in LinkedIn</a>
+                    )}
+                    {config?.instagram_url && (
+                      <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" style={{ padding: "6px 12px", background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-sm)", fontSize: "13px", fontWeight: 600, color: "var(--slate-700)", textDecoration: "none" }}>📸 Instagram</a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {config?.direccion && (
+              <div style={{ background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-lg)", padding: "24px", display: "flex", flexDirection: "column" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--slate-50)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--slate-200)", fontSize: "18px" }}>📍</div>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--slate-900)" }}>Consultorio Médico</div>
+                    <div style={{ fontSize: "13px", color: "var(--slate-500)" }}>Atención presencial</div>
+                  </div>
+                </div>
+                <p style={{ fontSize: "14px", color: "var(--slate-700)", lineHeight: 1.6, marginBottom: "24px", flex: 1 }}>
+                  {config.direccion}
+                </p>
+                <a href={`https://maps.google.com/?q=${encodeURIComponent(config.direccion)}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ width: "100%", justifyContent: "center" }}>
+                  🗺️ Abrir en Google Maps
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </section>

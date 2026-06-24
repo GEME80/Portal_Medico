@@ -73,8 +73,9 @@ export default async function TenantAdminDashboard({ params }: Props) {
   // --- KPI Calculations ---
   const parseCategoryName = (nombre: string): string => {
     try {
-      if (nombre && nombre.startsWith("{") && nombre.endsWith("}")) {
-        const parsed = JSON.parse(nombre);
+      const trimmed = nombre.trim();
+      if (trimmed && trimmed.startsWith("{") && trimmed.endsWith("}")) {
+        const parsed = JSON.parse(trimmed);
         return parsed.n || nombre;
       }
     } catch (e) {
@@ -138,7 +139,7 @@ export default async function TenantAdminDashboard({ params }: Props) {
   
   const categoriasMap: Record<string, string> = {};
   safeCategorias.forEach(c => {
-    categoriasMap[c.id] = c.nombre;
+    categoriasMap[c.id] = parseCategoryName(c.nombre);
   });
 
   // Iterar movimientos de salida para varios cálculos

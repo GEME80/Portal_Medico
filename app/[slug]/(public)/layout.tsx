@@ -114,6 +114,8 @@ export default async function TenantLayout({ children, params }: TenantLayoutPro
         logoUrl={logoUrl}
         nombreMenuVacunas={nombreMenuVacunas}
         habilitarMenuVacunas={habilitarMenuVacunas}
+        direccion={config?.direccion || ""}
+        whatsapp={config?.whatsapp || ""}
       />
     </>
   );

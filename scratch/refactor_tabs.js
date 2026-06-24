@@ -1,320 +1,10 @@
-"use client";
-import { useState, useEffect, useTransition } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { saveConfigAction, saveAlertAction } from "./actions";
-import { uploadImageAction } from "../noticias/actions";
+const fs = require('fs');
+const file = 'app/[slug]/admin/personalizar/page.tsx';
+let content = fs.readFileSync(file, 'utf8');
 
-const TABS = [
-  { id: "identidad", label: "👨‍⚕️ Identidad", desc: "Logo, foto, nombre, redes y contacto" },
-  { id: "hero", label: "🖼️ Hero y Contenido", desc: "Globos, textos, biografía y trayectoria" },
-  { id: "estilos", label: "🎨 Estilos", desc: "Colores, menú y alertas globales" },
-];
-
-interface Config {
-  nombre_doctor: string; titulo_doctor: string; especialidad: string;
-  nombre_clinica: string; logo_url: string; foto_url?: string; bio_corta: string; bio_larga: string;
-  hero_titulo: string; hero_subtitulo: string; hero_badge_texto: string;
-  stat_anos_experiencia: string; stat_publicaciones: string;
-  stat_pacientes_anio: string; stat_consultorios: string;
-  email: string; telefono: string; whatsapp: string;
-  direccion: string; ciudad: string; pais: string;
-  linkedin_url: string; instagram_url: string;
-  color_primario: string; color_acento: string;
-  meta_titulo: string; meta_descripcion: string;
-  // new settings:
-  habilitar_menu_vacunas?: boolean;
-  nombre_menu_vacunas?: string;
-  vacunas_hero_titulo?: string;
-  vacunas_hero_subtitulo?: string;
-  vacunas_hero_descripcion?: string;
-  vacunas_mitos_titulo?: string;
-  vacunas_inventario_titulo?: string;
-}
-
-interface Linea { id: string; icono: string; titulo: string; descripcion: string; orden: number; }
-interface Hito  { id: string; anio: string; titulo: string; institucion: string; orden: number; }
-
-interface Props { params: Promise<{ slug: string }> }
-
-export default function PersonalizarPage({ params }: Props) {
-  const [slug, setSlug] = useState("");
-  const [tenantId, setTenantId] = useState("");
-  const [activeTab, setActiveTab] = useState("identidad");
-  const [dbKeys, setDbKeys] = useState<string[]>([]);
-  const [config, setConfig] = useState<Config>({
-    nombre_doctor: "", titulo_doctor: "", especialidad: "",
-    nombre_clinica: "", logo_url: "", bio_corta: "", bio_larga: "",
-    hero_titulo: "", hero_subtitulo: "", hero_badge_texto: "",
-    stat_anos_experiencia: "", stat_publicaciones: "", stat_pacientes_anio: "", stat_consultorios: "",
-    email: "", telefono: "", whatsapp: "", direccion: "", ciudad: "", pais: "Colombia",
-    linkedin_url: "", instagram_url: "",
-    color_primario: "#0A4D5C", color_acento: "#00D4AA",
-    meta_titulo: "", meta_descripcion: "",
-    habilitar_menu_vacunas: true,
-    nombre_menu_vacunas: "EcoVaccine",
-    vacunas_hero_titulo: "Vacunas seguras, niños protegidos",
-    vacunas_hero_subtitulo: "EcoVaccine — Vacunación Basada en Evidencia",
-    vacunas_hero_descripcion: "El doctor responde con evidencia científica los mitos más comunes sobre la vacunación.",
-    vacunas_mitos_titulo: "Mitos Vacunales",
-    vacunas_inventario_titulo: "Vacunas Disponibles y Esquemas de Aplicación"
-  });
-  const [lineas, setLineas] = useState<Linea[]>([]);
-  const [hitos, setHitos] = useState<Hito[]>([]);
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [loading, setLoading] = useState(true);
-
-  // Alertas variables
-  const [alertId, setAlertId] = useState<string | null>(null);
-  const [alertTitulo, setAlertTitulo] = useState("");
-  const [alertDescripcion, setAlertDescripcion] = useState("");
-  const [alertNivel, setAlertNivel] = useState<"info" | "warning" | "critical">("warning");
-  const [alertActiva, setAlertActiva] = useState(false);
-
-  const supabase = createClient();
-
-  const showToast = (msg: string, type: "success" | "error" = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  useEffect(() => {
-    params.then(async (p) => {
-      setSlug(p.slug);
-      const { data: tenant } = await supabase.from("tenants").select("id").eq("slug", p.slug).single();
-      if (!tenant) return;
-      setTenantId(tenant.id);
-
-      const [cfgRes, lineasRes, hitosRes, alertRes] = await Promise.all([
-        supabase.from("configuracion_portal").select("*").eq("tenant_id", tenant.id).single(),
-        supabase.from("lineas_investigacion").select("*").eq("tenant_id", tenant.id).order("orden"),
-        supabase.from("hitos_timeline").select("*").eq("tenant_id", tenant.id).order("orden"),
-        supabase.from("alertas_epidemiologicas").select("*").eq("tenant_id", tenant.id).order("created_at", { ascending: false }).limit(1).maybeSingle()
-      ]);
-
-      if (cfgRes.data) {
-        setDbKeys(Object.keys(cfgRes.data));
-        setConfig(prev => ({
-          ...prev,
-          ...cfgRes.data
-        }));
-      }
-      if (lineasRes.data) setLineas(lineasRes.data as Linea[]);
-      if (hitosRes.data) setHitos(hitosRes.data as Hito[]);
-      
-      if (alertRes.data) {
-        setAlertId(alertRes.data.id);
-        setAlertTitulo(alertRes.data.titulo);
-        setAlertDescripcion(alertRes.data.descripcion || "");
-        setAlertNivel(alertRes.data.nivel || "warning");
-        setAlertActiva(alertRes.data.activa);
-      }
-      setLoading(false);
-    });
-  }, []);
-
-  const saveConfig = () => {
-    startTransition(async () => {
-      // Build payload from known DB keys (excluding reserved keys)
-      const payload: Record<string, any> = {};
-      const excludedKeys = ["id", "tenant_id", "created_at"];
-      if (dbKeys.length > 0) {
-        dbKeys.forEach(key => {
-          if (key in config && !excludedKeys.includes(key)) {
-            payload[key] = (config as any)[key];
-          }
-        });
-      } else {
-        // Fallback to safe core columns if dbKeys wasn't populated
-        const safeKeys = [
-          "nombre_doctor", "titulo_doctor", "especialidad", "foto_url",
-          "nombre_clinica", "logo_url", "bio_corta", "bio_larga",
-          "hero_titulo", "hero_subtitulo", "hero_badge_texto",
-          "stat_anos_experiencia", "stat_publicaciones", "stat_pacientes_anio", "stat_consultorios",
-          "email", "telefono", "whatsapp", "direccion", "ciudad", "pais",
-          "linkedin_url", "instagram_url", "color_primario", "color_acento",
-          "meta_titulo", "meta_descripcion",
-          "habilitar_menu_vacunas", "nombre_menu_vacunas",
-          "vacunas_hero_titulo", "vacunas_hero_subtitulo", "vacunas_hero_descripcion",
-          "vacunas_mitos_titulo", "vacunas_inventario_titulo"
-        ];
-        safeKeys.forEach(key => {
-          if (key in config && !excludedKeys.includes(key)) {
-            payload[key] = (config as any)[key];
-          }
-        });
-      }
-
-      // Use server action (admin client) to save — avoids RLS + client 500
-      const result = await saveConfigAction(tenantId, slug, payload);
-      if (!result.success) {
-        showToast("Error al guardar: " + result.error, "error");
-      } else {
-        showToast("✅ Cambios guardados correctamente");
-      }
-    });
-  };
-
-  const saveLineas = () => {
-    startTransition(async () => {
-      try {
-        for (const l of lineas) {
-          if (l.id.startsWith("new-")) {
-            await supabase.from("lineas_investigacion").insert({ ...l, id: undefined, tenant_id: tenantId });
-          } else {
-            await supabase.from("lineas_investigacion").update(l).eq("id", l.id);
-          }
-        }
-        showToast("✅ Líneas de investigación guardadas");
-      } catch (err: any) {
-        showToast("Error al guardar líneas: " + err.message, "error");
-      }
-    });
-  };
-
-  const saveHitos = () => {
-    startTransition(async () => {
-      try {
-        for (const h of hitos) {
-          if (h.id.startsWith("new-")) {
-            await supabase.from("hitos_timeline").insert({ ...h, id: undefined, tenant_id: tenantId });
-          } else {
-            await supabase.from("hitos_timeline").update(h).eq("id", h.id);
-          }
-        }
-        showToast("✅ Trayectoria guardada");
-      } catch (err: any) {
-        showToast("Error al guardar trayectoria: " + err.message, "error");
-      }
-    });
-  };
-
-  const saveAlert = () => {
-    startTransition(async () => {
-      const result = await saveAlertAction(tenantId, slug, alertId, {
-        titulo: alertTitulo,
-        descripcion: alertDescripcion,
-        nivel: alertNivel,
-        activa: alertActiva,
-      });
-      if (!result.success) {
-        showToast("Error al guardar alerta: " + result.error, "error");
-      } else {
-        if (result.alertId && !alertId) setAlertId(result.alertId);
-        showToast("✅ Alerta epidemiológica guardada correctamente");
-      }
-    });
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    startTransition(async () => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("tenantId", tenantId);
-      formData.append("folder", "logo");
-
-      const res = await uploadImageAction(formData);
-      if (!res.success) {
-        showToast("Error al subir logo: " + res.error, "error");
-        return;
-      }
-
-      setConfig(c => ({ ...c, logo_url: res.publicUrl || "" }));
-      showToast("✅ Logotipo subido correctamente. Guarde los cambios para aplicar.");
-    });
-  };
-
-  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    startTransition(async () => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("tenantId", tenantId);
-      formData.append("folder", "foto_doctor");
-
-      const res = await uploadImageAction(formData);
-      if (!res.success) {
-        showToast("Error al subir foto: " + res.error, "error");
-        return;
-      }
-
-      setConfig(c => ({ ...c, foto_url: res.publicUrl || "" }));
-      showToast("✅ Foto subida correctamente. Guarde los cambios para aplicar.");
-    });
-  };
-
-  const uid = () => "new-" + Math.random().toString(36).slice(2, 8);
-
-  const parseJSONField = (field: string, defaultObj: any) => {
-    try {
-      if (field && field.startsWith("{")) return JSON.parse(field);
-    } catch (e) {}
-    return defaultObj;
-  };
-  
-  const waData = parseJSONField(config.whatsapp, { n: config.whatsapp, t: "w" });
-  const heroData = parseJSONField(config.hero_badge_texto, { badge: config.hero_badge_texto, g1_t: "15K+", g1_s: "Pacientes", g2_t: "100%", g2_s: "Seguro" });
-
-  const setWaData = (n: string, t: string) => setConfig(c => ({ ...c, whatsapp: JSON.stringify({ n, t }) }));
-  const setHeroData = (k: string, v: string) => setConfig(c => ({ ...c, hero_badge_texto: JSON.stringify({ ...heroData, [k]: v }) }));
-
-  if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "50vh", color: "var(--slate-400)" }}>
-      Cargando configuración...
-    </div>
-  );
-
-  return (
-    <>
-      {/* TOPBAR */}
-      <div className="admin-topbar" style={{ position: "sticky", top: 0, zIndex: 30, background: "#fff", borderBottom: "1px solid var(--slate-200)" }}>
-        <div>
-          <h1 className="admin-topbar-title">🎨 Personalizar Portal</h1>
-          <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "4px" }}>
-            Edita el contenido y estilo visual de tu sitio público.
-          </p>
-        </div>
-        <div className="admin-topbar-right">
-          <button onClick={saveConfig} className="btn btn-primary" disabled={isPending}>
-            {isPending ? "Guardando..." : "Guardar todo"}
-          </button>
-        </div>
-      </div>
-
-      <div className="admin-content">
-        <div style={{ display: "grid", gridTemplateColumns: "250px 1fr", gap: "24px", alignItems: "start" }}>
-
-          {/* TABS SIDEBAR */}
-          <div style={{ background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-xl)", overflow: "hidden", position: "sticky", top: "88px" }}>
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  display: "flex", flexDirection: "column", width: "100%", padding: "14px 18px",
-                  textAlign: "left", border: "none", borderBottom: "1px solid var(--slate-100)",
-                  background: activeTab === tab.id ? "rgba(10,77,92,.06)" : "transparent",
-                  borderLeft: activeTab === tab.id ? "3px solid var(--teal-700)" : "3px solid transparent",
-                  cursor: "pointer", transition: "background .15s", fontFamily: "inherit",
-                }}>
-                <span style={{ fontSize: "13px", fontWeight: 700, color: activeTab === tab.id ? "var(--teal-800)" : "var(--slate-700)" }}>
-                  {tab.label}
-                </span>
-                <span style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "2px" }}>{tab.desc}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* FORM PANEL */}
-          <div style={{ background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
-
-            {/* ── IDENTIDAD ─────────────────────────────────── */}
+// Replace IDENTIDAD tab
+content = content.replace(/\{\/\* ── IDENTIDAD ─────────────────────────────────── \*\/\}[\s\S]*?\{\/\* ── HERO ──────────────────────────────────────── \*\/\}/, 
+`{/* ── IDENTIDAD ─────────────────────────────────── */}
             {activeTab === "identidad" && (
               <div>
                 <div style={{ padding: "24px 28px", borderBottom: "1px solid var(--slate-200)" }}>
@@ -384,7 +74,11 @@ export default function PersonalizarPage({ params }: Props) {
               </div>
             )}
 
-            {/* ── HERO Y CONTENIDO ─────────────────────────────────── */}
+            {/* ── HERO ──────────────────────────────────────── */}`);
+
+// Replace HERO, STATS, CONTACTO
+content = content.replace(/\{\/\* ── HERO ──────────────────────────────────────── \*\/\}[\s\S]*?\{\/\* ── ESPECIALIDAD ──────────────────────── \*\/\}/, 
+`{/* ── HERO Y CONTENIDO ─────────────────────────────────── */}
             {activeTab === "hero" && (
               <div>
                 <div style={{ padding: "24px 28px", borderBottom: "1px solid var(--slate-200)" }}>
@@ -436,7 +130,11 @@ export default function PersonalizarPage({ params }: Props) {
               </div>
             )}
 
-            {/* ── ESTILOS Y CONFIGURACION ─────────────────────────────── */}
+            {/* ── ESPECIALIDAD ──────────────────────── */}`);
+
+// Replace ESPECIALIDAD, ALERTAS, INVESTIGACION, TIMELINE
+content = content.replace(/\{\/\* ── ESPECIALIDAD ──────────────────────── \*\/\}[\s\S]*?\{\/\* ── LÍNEAS DE INVESTIGACIÓN ───────────────────── \*\/\}/, 
+`{/* ── ESTILOS Y CONFIGURACION ─────────────────────────────── */}
             {activeTab === "estilos" && (
               <div>
                 <div style={{ padding: "24px 28px", borderBottom: "1px solid var(--slate-200)" }}>
@@ -503,7 +201,15 @@ export default function PersonalizarPage({ params }: Props) {
               </div>
             )}
 
-            {/* ── LÍNEAS DE INVESTIGACIÓN ───────────────────── */}
+            {/* ── LÍNEAS DE INVESTIGACIÓN ───────────────────── */}`);
+
+// We also need to move lineas de investigacion and timeline INTO the "hero" tab? No, wait! They are not currently active in TABS!
+// TABS only has "identidad", "hero", "estilos".
+// If they are not in TABS, how do we reach them?
+// The plan says: "Hero y Contenido: Biografías, Estadísticas, Líneas de Investigación, Trayectoria."
+// I will just change the conditional for LÍNEAS and TIMELINE to render inside the "hero" tab!
+content = content.replace(/\{\/\* ── LÍNEAS DE INVESTIGACIÓN ───────────────────── \*\/\}[\s\S]*?\{\/\* ── TIMELINE ──────────────────────────────────── \*\/\}/, 
+`{/* ── LÍNEAS DE INVESTIGACIÓN ───────────────────── */}
             {activeTab === "hero" && (
               <div>
                 <div style={{ padding: "24px 28px", borderBottom: "1px solid var(--slate-200)", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "4px solid var(--slate-100)" }}>
@@ -539,7 +245,10 @@ export default function PersonalizarPage({ params }: Props) {
               </div>
             )}
 
-            {/* ── TIMELINE ──────────────────────────────────── */}
+            {/* ── TIMELINE ──────────────────────────────────── */}`);
+
+content = content.replace(/\{\/\* ── TIMELINE ──────────────────────────────────── \*\/\}[\s\S]*?<\/div>\n\s*<\/div>\n\s*<\/div>\n\n\s*\{\/\* TOAST \*\/\}/, 
+`{/* ── TIMELINE ──────────────────────────────────── */}
             {activeTab === "hero" && (
               <div>
                 <div style={{ padding: "24px 28px", borderBottom: "1px solid var(--slate-200)", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "4px solid var(--slate-100)" }}>
@@ -578,41 +287,7 @@ export default function PersonalizarPage({ params }: Props) {
         </div>
       </div>
 
-      {/* TOAST */}
-      {toast && (
-        <div className="toast-container">
-          <div className={`toast toast-${toast.type === "success" ? "success" : "error"}`}>
-            {toast.msg}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
+      {/* TOAST */}`);
 
-// ─── SUB-COMPONENTS ──────────────────────────────────────────
-function Field({ label, id, value, onChange, placeholder, type = "text", fullWidth = false }: {
-  label: string; id: string; value: string;
-  onChange: (v: string) => void; placeholder?: string;
-  type?: string; fullWidth?: boolean;
-}) {
-  return (
-    <div className={`form-group${fullWidth ? " full-width" : ""}`}>
-      <label className="form-label" htmlFor={id}>{label}</label>
-      <input id={id} type={type} className="form-input" value={value}
-        onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete="off" />
-    </div>
-  );
-}
-
-function SaveBar({ onSave, isPending, label = "Guardar cambios" }: {
-  onSave: () => void; isPending: boolean; label?: string;
-}) {
-  return (
-    <div style={{ padding: "16px 28px", borderTop: "1px solid var(--slate-200)", background: "var(--slate-50)", display: "flex", justifyContent: "flex-end" }}>
-      <button type="button" className="btn btn-primary" onClick={onSave} disabled={isPending} style={{ minWidth: "160px" }}>
-        {isPending ? "Guardando..." : `✓ ${label}`}
-      </button>
-    </div>
-  );
-}
+fs.writeFileSync(file, content, 'utf8');
+console.log('Tabs refactored successfully.');

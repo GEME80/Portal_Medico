@@ -8,6 +8,8 @@ interface FooterProps {
   logoUrl?: string;
   nombreMenuVacunas?: string;
   habilitarMenuVacunas?: boolean;
+  direccion?: string;
+  whatsapp?: string;
 }
 
 export default function Footer({
@@ -17,10 +19,22 @@ export default function Footer({
   telefono,
   logoUrl,
   nombreMenuVacunas = "EcoVaccine",
-  habilitarMenuVacunas = true
+  habilitarMenuVacunas = true,
+  direccion,
+  whatsapp
 }: FooterProps = {}) {
   const base = tenantSlug ? `/${tenantSlug}` : "";
   const year = new Date().getFullYear();
+
+  let waData = { n: whatsapp || telefono, t: "w" };
+  if (whatsapp && whatsapp.startsWith("{")) {
+    try { waData = JSON.parse(whatsapp); } catch (e) {}
+  }
+
+  const chatUrl = waData.t === "t" 
+    ? `https://t.me/${waData.n?.replace(/[^a-zA-Z0-9_]/g, "")}` 
+    : `https://wa.me/${waData.n?.replace(/[^0-9]/g, "")}`;
+
 
   return (
     <footer className="footer">
@@ -79,11 +93,17 @@ export default function Footer({
             </ul>
             <div style={{ marginTop: "24px" }}>
               <p className="footer-heading">Contacto</p>
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,.4)", lineHeight: "1.7" }}>
+              <div style={{ fontSize: "13px", color: "rgba(255,255,255,.4)", lineHeight: "1.7" }}>
                 📧 {email || "soporte@ecovaccine.app"}<br/>
-                📞 {telefono || "+57 (601) 000-0000"}<br/>
-                📍 Colombia
-              </p>
+                <a href={chatUrl} target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,.4)", textDecoration: "none" }}>
+                  {waData.t === "t" ? "✈️" : "💬"} {waData.n || telefono}
+                </a><br/>
+                {direccion && (
+                  <a href={`https://maps.google.com/?q=${encodeURIComponent(direccion)}`} target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,.4)", textDecoration: "none" }}>
+                    📍 {direccion}
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>

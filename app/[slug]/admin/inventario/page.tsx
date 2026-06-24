@@ -68,8 +68,9 @@ interface ParsedCategoria {
 
 const parseCategory = (c: Categoria): ParsedCategoria => {
   try {
-    if (c.nombre.startsWith("{") && c.nombre.endsWith("}")) {
-      const parsed = JSON.parse(c.nombre);
+    const trimmed = c.nombre.trim();
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      const parsed = JSON.parse(trimmed);
       return {
         id: c.id,
         nombre: parsed.n || "",

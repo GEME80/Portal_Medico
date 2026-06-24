@@ -19,8 +19,9 @@ const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', '
 
 const parseCategoryName = (nombre: string): string => {
   try {
-    if (nombre && nombre.startsWith("{") && nombre.endsWith("}")) {
-      const parsed = JSON.parse(nombre);
+    const trimmed = nombre.trim();
+    if (trimmed && trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      const parsed = JSON.parse(trimmed);
       return parsed.n || nombre;
     }
   } catch (e) {
