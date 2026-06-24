@@ -273,11 +273,7 @@ export default async function TenantAdminDashboard({ params }: Props) {
           </div>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
-          <Link href={`/${slug}/admin/inventario`} className="btn btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: 700, borderColor: primaryColor, color: primaryColor }}>
-            📅 Ver Auditoría de Control Diario →
-          </Link>
-        </div>
+        
 
         <DashboardCharts 
           inventario={inventarioData}
