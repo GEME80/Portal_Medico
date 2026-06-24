@@ -190,6 +190,11 @@ export default async function TenantHomePage({ params }: PageProps) {
           <CanvasParticles />
 
           <div className="container" style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ marginBottom: "40px" }}>
+              <span className="badge" style={{ background: "rgba(0, 0, 0, 0.04)", border: "1px solid rgba(0, 0, 0, 0.08)", borderRadius: "0px", color: "#000000", display: "inline-flex" }}>
+                TRAYECTORIA E INVESTIGACIÓN
+              </span>
+            </div>
             <div className="about-grid">
               
               {/* Columna Izquierda: Trayectoria / Timeline */}
@@ -218,9 +223,6 @@ export default async function TenantHomePage({ params }: PageProps) {
 
               {/* Columna Derecha: Líneas de Investigación */}
               <div>
-                <span className="badge" style={{ background: "rgba(0, 0, 0, 0.04)", border: "1px solid rgba(0, 0, 0, 0.08)", borderRadius: "0px", color: "#000000", display: "inline-flex", marginBottom: "16px" }}>
-                  LÍNEAS DE INVESTIGACIÓN
-                </span>
                 <h2 className="section-heading" style={{ fontFamily: "Outfit, sans-serif", fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 900, lineHeight: 1.15, color: "#000000", marginBottom: "36px" }}>
                   Ciencia aplicada a la<br/>
                   <span style={{ color: accentColor }}>prevención</span>

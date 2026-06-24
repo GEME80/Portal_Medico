@@ -486,7 +486,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .hero-photo-frame {
   position: relative;
-  border-radius: 0;
+  border-radius: 20px;
   overflow: hidden;
   border: 1px solid var(--slate-100);
 }
@@ -497,6 +497,7 @@ h1, h2, h3, h4, h5, h6 {
   object-fit: cover;
   object-position: center top;
   display: block;
+  border-radius: 20px;
 }
 
 .hero-photo-overlay {
@@ -1040,7 +1041,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ─── PAGE SECTIONS SPACING ─────────────────────────────────────────── */
-.section { padding: 96px 0; }
+.section {
+  padding: 96px 0;
+  border-bottom: 1.5px solid rgba(0, 0, 0, 0.04);
+}
 .section-sm { padding: 64px 0; }
 .section-lg { padding: 120px 0; }
 
@@ -1183,12 +1187,17 @@ h1, h2, h3, h4, h5, h6 {
 /* ─── SCROLL ANIMATIONS ────────────────────────────────────────────── */
 .fade-up {
   opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(55px);
+  transition: opacity 1.3s cubic-bezier(0.16, 1, 0.3, 1), transform 1.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .fade-up.in-view {
   opacity: 1;
   transform: translateY(0);
+}
+
+@keyframes blink {
+  from, to { background-color: transparent }
+  50% { background-color: currentColor }
 }
 .delay-100 { transition-delay: 100ms; }
 .delay-200 { transition-delay: 200ms; }
@@ -1197,12 +1206,12 @@ h1, h2, h3, h4, h5, h6 {
 /* ─── CLINICAL TIMELINE ────────────────────────────────────────────── */
 .clinical-timeline {
   position: relative;
-  border-left: none;
-  padding-left: 0;
-  margin-left: 0;
+  border-left: 1.5px solid var(--slate-200);
+  padding-left: 28px;
+  margin-left: 8px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px;
 }
 .clinical-timeline-item {
   position: relative;

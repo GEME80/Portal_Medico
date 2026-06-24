@@ -24,9 +24,9 @@ export default function CanvasParticles() {
 
     let animationFrameId: number;
     let particles: Particle[] = [];
-    const particleCount = 60;
-    const connectionDistance = 110;
-    const mouseDistance = 160;
+    const particleCount = 50; // slightly reduced for clean visibility
+    const connectionDistance = 120;
+    const mouseDistance = 180;
 
     const resizeCanvas = () => {
       if (!canvas || !containerRef.current) return;
@@ -44,9 +44,9 @@ export default function CanvasParticles() {
         particles.push({
           x: Math.random() * w,
           y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.6,
-          vy: (Math.random() - 0.5) * 0.6,
-          radius: Math.random() * 2 + 1,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          radius: Math.random() * 3 + 2, // Larger particles (2px to 5px)
         });
       }
     };
@@ -69,31 +69,29 @@ export default function CanvasParticles() {
         if (p.x < 0 || p.x > w) p.vx *= -1;
         if (p.y < 0 || p.y > h) p.vy *= -1;
 
-        // Clamp to prevent getting stuck outside
+        // Clamp
         if (p.x < 0) p.x = 0;
         if (p.x > w) p.x = w;
         if (p.y < 0) p.y = 0;
         if (p.y > h) p.y = h;
 
-        // Magnetic response to mouse (gentle push/pull)
+        // Magnetic response
         if (mouse.active) {
           const dx = p.x - mouse.x;
           const dy = p.y - mouse.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < mouseDistance) {
-            // Calculate push force
             const force = (mouseDistance - dist) / mouseDistance;
             const angle = Math.atan2(dy, dx);
-            // Move slightly away from mouse
-            p.x += Math.cos(angle) * force * 0.8;
-            p.y += Math.sin(angle) * force * 0.8;
+            p.x += Math.cos(angle) * force * 0.7;
+            p.y += Math.sin(angle) * force * 0.7;
           }
         }
 
-        // Draw particle node
+        // Draw particle node (Higher opacity for clear visibility)
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0, 212, 170, 0.25)";
+        ctx.fillStyle = "rgba(0, 212, 170, 0.65)";
         ctx.fill();
       });
 
@@ -107,12 +105,13 @@ export default function CanvasParticles() {
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < connectionDistance) {
-            const alpha = (1 - dist / connectionDistance) * 0.12;
+            // Higher alpha multiplier for visibility
+            const alpha = (1 - dist / connectionDistance) * 0.35;
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.strokeStyle = `rgba(0, 212, 170, ${alpha})`;
-            ctx.lineWidth = 0.8;
+            ctx.lineWidth = 1.0;
             ctx.stroke();
           }
         }
@@ -124,12 +123,12 @@ export default function CanvasParticles() {
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < mouseDistance) {
-            const alpha = (1 - dist / mouseDistance) * 0.18;
+            const alpha = (1 - dist / mouseDistance) * 0.45;
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(mouse.x, mouse.y);
             ctx.strokeStyle = `rgba(0, 212, 170, ${alpha})`;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 1.2;
             ctx.stroke();
           }
         }
