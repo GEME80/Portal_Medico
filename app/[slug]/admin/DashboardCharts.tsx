@@ -33,24 +33,23 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
   }, [movimientos, currentYear]);
 
   // 1. Gráfica Principal: Aplicaciones por Mes (Costo vs Cobrado)
-  const chartDataRendimiento = useMemo(() => {
-    const data = MONTHS.map(m => ({ mes: m, costo: 0, cobrado: 0 }));
+  // 1. Gráfica Principal: Flujo Histórico (Entradas vs Salidas)
+  const chartDataFlujo = useMemo(() => {
+    const data = MONTHS.map(m => ({ mes: m, entradas: 0, salidas: 0 }));
     
     movimientos.forEach(m => {
       const d = new Date(m.fecha);
-      if (d.getFullYear() === selectedYear && m.tipo_movimiento === "SALIDA") {
-        const item = inventario.find(i => i.id === m.item_id);
-        if (item) {
-          const monthIndex = d.getMonth();
-          // Costo total de esa salida
-          data[monthIndex].costo += (item.valor_mayorista || 0) * m.cantidad;
-          // Valor cobrado total (usar el cobrado real si existe, sino fallback al precio de venta)
-          data[monthIndex].cobrado += (m.valor_unitario_cobrado !== undefined && m.valor_unitario_cobrado !== null ? Number(m.valor_unitario_cobrado) : (item.precio_venta || 0)) * m.cantidad;
+      if (d.getFullYear() === selectedYear) {
+        const monthIndex = d.getMonth();
+        if (m.tipo_movimiento === "ENTRADA") {
+          data[monthIndex].entradas += m.cantidad;
+        } else if (m.tipo_movimiento === "SALIDA" && (!m.motivo || !m.motivo.startsWith("MERMA"))) {
+          data[monthIndex].salidas += m.cantidad;
         }
       }
     });
     return data;
-  }, [movimientos, inventario, selectedYear]);
+  }, [movimientos, selectedYear]);
 
   // 2. Gráfica: Participación de Ítems (Volumen de Aplicación)
   const chartDataParticipacionItems = useMemo(() => {
@@ -111,21 +110,19 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
     
     movimientos.forEach(m => {
       const d = new Date(m.fecha);
-      if (d.getFullYear() === selectedYear && m.tipo_movimiento === "SALIDA") {
+      if (d.getFullYear() === selectedYear && m.tipo_movimiento === "SALIDA" && (!m.motivo || !m.motivo.startsWith("MERMA"))) {
         const item = inventario.find(i => i.id === m.item_id);
         if (item) {
           if (!itemsMap[item.id]) {
             itemsMap[item.id] = { nombre: item.nombre, cantidad: 0, ingresos: 0, costo: 0 };
           }
           itemsMap[item.id].cantidad += m.cantidad;
-          itemsMap[item.id].ingresos += (m.valor_unitario_cobrado !== undefined && m.valor_unitario_cobrado !== null ? Number(m.valor_unitario_cobrado) : (item.precio_venta || 0)) * m.cantidad;
-          itemsMap[item.id].costo += (item.valor_mayorista || 0) * m.cantidad;
         }
       }
     });
 
     return Object.values(itemsMap)
-      .sort((a, b) => b.ingresos - a.ingresos)
+      .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 5); // Top 5
   }, [movimientos, inventario, selectedYear]);
 
@@ -149,20 +146,20 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "24px" }}>
-        {/* Rendimiento Financiero */}
+        {/* Flujo Histórico */}
         <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px" }}>Rendimiento Financiero Mensual</h3>
+          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px" }}>Flujo Histórico de Inventario</h3>
           <div style={{ height: "300px", width: "100%" }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartDataRendimiento} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
+              <AreaChart data={chartDataFlujo} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--slate-200)" />
                 <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} tickFormatter={(val) => `$${(val/1000)}k`} />
-                <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} formatter={(val: any) => `$${val.toLocaleString()}`} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} />
+                <RechartsTooltip />
                 <Legend iconType="circle" />
-                <Bar dataKey="costo" name="Costo Total" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="cobrado" name="Ingreso Total" fill={primaryColor} radius={[4, 4, 0, 0]} maxBarSize={40} />
-              </BarChart>
+                <Area type="monotone" dataKey="entradas" name="Unidades Entrantes" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
+                <Area type="monotone" dataKey="salidas" name="Unidades Salientes (Aplicadas)" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -224,9 +221,9 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
 
         {/* Top Items Table */}
         <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)", display: "flex", flexDirection: "column" }}>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px" }}>Top 5 Ítems Más Rentables ({selectedYear})</h3>
+          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px" }}>Top 5 Ítems Mayor Rotación ({selectedYear})</h3>
           {topItems.length === 0 ? (
-            <div style={{ color: "var(--slate-400)", fontSize: "13px", textAlign: "center", marginTop: "40px" }}>Sin movimientos registrados en este año.</div>
+            <div style={{ color: "var(--slate-400)", fontSize: "13px", textAlign: "center", marginTop: "40px" }}>Sin salidas registradas en este año.</div>
           ) : (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px" }}>
               {topItems.map((item, idx) => (
@@ -235,12 +232,11 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
                     <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "var(--slate-100)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: "var(--slate-500)" }}>{idx + 1}</div>
                     <div>
                       <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--slate-800)" }}>{item.nombre}</div>
-                      <div style={{ fontSize: "11px", color: "var(--slate-500)" }}>{item.cantidad} aplicaciones</div>
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "13px", fontWeight: 800, color: accentColor }}>+${(item.ingresos - item.costo).toLocaleString()}</div>
-                    <div style={{ fontSize: "11px", color: "var(--slate-500)" }}>Utilidad generada</div>
+                    <div style={{ fontSize: "13px", fontWeight: 800, color: accentColor }}>{item.cantidad}</div>
+                    <div style={{ fontSize: "11px", color: "var(--slate-500)" }}>Aplicaciones</div>
                   </div>
                 </div>
               ))}
