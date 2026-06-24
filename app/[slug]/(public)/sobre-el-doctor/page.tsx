@@ -139,28 +139,7 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="LinkedIn"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "48px",
-                        height: "48px",
-                        borderRadius: "50%",
-                        border: "1px solid rgba(255, 255, 255, 0.2)",
-                        color: "white",
-                        background: "rgba(255, 255, 255, 0.05)",
-                        transition: "all 0.3s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = accentColor;
-                        e.currentTarget.style.background = "rgba(0, 212, 170, 0.1)";
-                        e.currentTarget.style.color = accentColor;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
-                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-                        e.currentTarget.style.color = "white";
-                      }}
+                      className="doctor-social-link"
                     >
                       <svg
                         viewBox="0 0 24 24"
@@ -184,28 +163,7 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Instagram"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "48px",
-                        height: "48px",
-                        borderRadius: "50%",
-                        border: "1px solid rgba(255, 255, 255, 0.2)",
-                        color: "white",
-                        background: "rgba(255, 255, 255, 0.05)",
-                        transition: "all 0.3s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = accentColor;
-                        e.currentTarget.style.background = "rgba(0, 212, 170, 0.1)";
-                        e.currentTarget.style.color = accentColor;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
-                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-                        e.currentTarget.style.color = "white";
-                      }}
+                      className="doctor-social-link"
                     >
                       <svg
                         viewBox="0 0 24 24"

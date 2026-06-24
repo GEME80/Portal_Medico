@@ -1342,3 +1342,22 @@ h1, h2, h3, h4, h5, h6 {
 .hover-text-black:hover {
   color: #000000 !important;
 }
+
+/* --- DOCTOR SOCIAL BUTTONS --- */
+.doctor-social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+.doctor-social-link:hover {
+  border-color: var(--emerald-500) !important;
+  background: rgba(0, 212, 170, 0.1) !important;
+  color: var(--emerald-500) !important;
+}
