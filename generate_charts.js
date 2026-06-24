@@ -1,4 +1,7 @@
-"use client";
+const fs = require('fs');
+const file = '/Users/germanmorales/.gemini/antigravity/scratch/dr-carlos-torres-portal/app/[slug]/admin/DashboardCharts.tsx';
+
+const code = `"use client";
 
 import React, { useState, useMemo } from 'react';
 import { 
@@ -269,13 +272,13 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
       <div style={{ display: "flex", gap: "16px", borderBottom: "1px solid var(--slate-200)", marginTop: "16px" }}>
         <button 
           onClick={() => setActiveTab("general")}
-          style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "general" ? `2px solid ${primaryColor}` : "2px solid transparent", color: activeTab === "general" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "general" ? 700 : 500, cursor: "pointer", fontSize: "15px" }}
+          style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "general" ? \`2px solid \${primaryColor}\` : "2px solid transparent", color: activeTab === "general" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "general" ? 700 : 500, cursor: "pointer", fontSize: "15px" }}
         >
           📊 Vista General (Anual)
         </button>
         <button 
           onClick={() => setActiveTab("diaria")}
-          style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "diaria" ? `2px solid ${primaryColor}` : "2px solid transparent", color: activeTab === "diaria" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "diaria" ? 700 : 500, cursor: "pointer", fontSize: "15px" }}
+          style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "diaria" ? \`2px solid \${primaryColor}\` : "2px solid transparent", color: activeTab === "diaria" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "diaria" ? 700 : 500, cursor: "pointer", fontSize: "15px" }}
         >
           📅 Vista Diaria (Mes)
         </button>
@@ -380,7 +383,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
                     <PieChart>
                       <Pie data={chartDataParticipacionItems} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
                         {chartDataParticipacionItems.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell key={\`cell-\${index}\`} fill={entry.color} />
                         ))}
                       </Pie>
                       <RechartsTooltip content={<CustomPieTooltip />} />
@@ -479,8 +482,8 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
                   <AreaChart data={chartDataDiariaFinanzas} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--slate-200)" />
                     <XAxis dataKey="dia" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} tickFormatter={(val) => `$${(val/1000)}k`} />
-                    <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} formatter={(val: any) => `$${val.toLocaleString()}`} labelFormatter={(val) => `Día ${val}`} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} tickFormatter={(val) => \`\$\${(val/1000)}k\`} />
+                    <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} formatter={(val: any) => \`\$\${val.toLocaleString()}\`} labelFormatter={(val) => \`Día \${val}\`} />
                     <Legend iconType="circle" />
                     <Area type="monotone" dataKey="ingreso" name="Ventas (Ingreso)" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
                     <Area type="monotone" dataKey="costo" name="Costo" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.1} />
@@ -499,7 +502,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--slate-200)" />
                       <XAxis dataKey="dia" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} />
-                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} formatter={(val: any) => `${val} vacunas`} labelFormatter={(val) => `Día ${val}`} />
+                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} formatter={(val: any) => \`\${val} vacunas\`} labelFormatter={(val) => \`Día \${val}\`} />
                       <Bar dataKey="aplicaciones" name="Unidades Aplicadas" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={30} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -515,7 +518,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--slate-200)" />
                       <XAxis dataKey="dia" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} />
-                      <RechartsTooltip labelFormatter={(val) => `Día ${val}`} />
+                      <RechartsTooltip labelFormatter={(val) => \`Día \${val}\`} />
                       <Legend iconType="circle" />
                       <Area type="monotone" dataKey="entradas" name="Entrantes" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
                       <Area type="monotone" dataKey="salidas" name="Aplicadas" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
@@ -549,7 +552,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
                       <PieChart>
                         <Pie data={chartDataParticipacionDiaria} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
                           {chartDataParticipacionDiaria.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                            <Cell key={\`cell-\${index}\`} fill={entry.color} />
                           ))}
                         </Pie>
                         <RechartsTooltip content={<CustomPieTooltip />} />
@@ -569,7 +572,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--slate-200)" />
                       <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} />
                       <YAxis dataKey="nombre" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--slate-700)", fontWeight: 600 }} width={120} />
-                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} formatter={(val: any) => `${val} vacunas`} />
+                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.02)' }} formatter={(val: any) => \`\${val} vacunas\`} />
                       <Bar dataKey="aplicaciones" name="Aplicaciones" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -584,3 +587,6 @@ export default function DashboardCharts({ inventario, categorias, movimientos, p
     </div>
   );
 }
+`
+
+fs.writeFileSync(file, code);
