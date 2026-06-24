@@ -71,11 +71,22 @@ export default async function TenantAdminDashboard({ params }: Props) {
   const safeLotes = lotesData || [];
     
   // --- KPI Calculations ---
+  const parseCategoryName = (nombre: string): string => {
+    try {
+      if (nombre && nombre.startsWith("{") && nombre.endsWith("}")) {
+        const parsed = JSON.parse(nombre);
+        return parsed.n || nombre;
+      }
+    } catch (e) {
+      // Ignore
+    }
+    return nombre || "";
+  };
   
   // 1. Capital Invertido y Desglose
   let capitalInvertido = 0;
   const capitalPorCategoria: Record<string, {nombre: string, total: number}> = {};
-  safeCategorias.forEach((c: any) => capitalPorCategoria[c.id] = { nombre: c.nombre, total: 0 });
+  safeCategorias.forEach((c: any) => capitalPorCategoria[c.id] = { nombre: parseCategoryName(c.nombre), total: 0 });
 
   // 4. Ítems en Riesgo Crítico
   const itemsEnRiesgo: any[] = [];

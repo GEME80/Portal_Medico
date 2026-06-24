@@ -849,7 +849,8 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                       const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
                         + ["Item,Categoria,Stock,StockMinimo,PrecioVenta"].join(",") + "\n"
                         + selectedItems.map(v => {
-                          const catName = categorias.find(c => c.id === v.categoria_id)?.nombre || "Sin Categoría";
+                          const cat = categorias.find(c => c.id === v.categoria_id);
+                          const catName = cat ? parseCategory(cat).nombre : "Sin Categoría";
                           return `"${v.nombre}","${catName}",${v.stockActual},${v.stockMinimo},${v.precioVenta}`;
                         }).join("\n");
                       const encodedUri = encodeURI(csvContent);

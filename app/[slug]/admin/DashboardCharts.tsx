@@ -17,6 +17,18 @@ interface Props {
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
+const parseCategoryName = (nombre: string): string => {
+  try {
+    if (nombre && nombre.startsWith("{") && nombre.endsWith("}")) {
+      const parsed = JSON.parse(nombre);
+      return parsed.n || nombre;
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return nombre || "";
+};
+
 // --- Custom Interactive Tooltip ---
 const HelpTooltip = ({ text }: { text: string }) => {
   const [visible, setVisible] = useState(false);
@@ -626,7 +638,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
   const detailedLotesForTab = useMemo(() => {
     return filteredLotesForTab.map(l => {
       const item = filteredInventario.find(i => i.id === l.item_id);
-      const catName = categorias.find(c => c.id === item?.categoria_id)?.nombre || "Insumos";
+      const catName = parseCategoryName(categorias.find(c => c.id === item?.categoria_id)?.nombre || "Insumos");
       
       const qty = Number(l.cantidad) || 0;
       const costU = Number(l.precio_compra) || 0;
@@ -861,7 +873,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
           <div class="filters">
             <div style="font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">Filtros Activos del Reporte</div>
             <div class="filters-grid">
-              <div>Categoría: <span class="filter-item">${selectedCategoryGlobal === "all" ? "Todas" : categorias.find(c => c.id === selectedCategoryGlobal)?.nombre}</span></div>
+              <div>Categoría: <span class="filter-item">${selectedCategoryGlobal === "all" ? "Todas" : parseCategoryName(categorias.find(c => c.id === selectedCategoryGlobal)?.nombre || "")}</span></div>
               <div>Laboratorio: <span class="filter-item">${selectedLab === "all" ? "Todos" : selectedLab}</span></div>
               <div>Mes/Año: <span class="filter-item">${selectedMonthCompras === "all" ? "Todos" : selectedMonthCompras}/${selectedYear}</span></div>
               <div>Producto: <span class="filter-item">${selectedItem === "all" ? "Todos" : availableItemsForTab.find(i => i.id === selectedItem)?.nombre}</span></div>
@@ -971,7 +983,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               style={{ minWidth: "160px", padding: "6px 12px", background: "white", borderRadius: "8px", fontSize: "13px", fontWeight: 600, border: "1px solid var(--slate-200)" }}
             >
               <option value="all">Todas las Categorías</option>
-              {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {categorias.map(c => <option key={c.id} value={c.id}>{parseCategoryName(c.nombre)}</option>)}
             </select>
           </div>
 
