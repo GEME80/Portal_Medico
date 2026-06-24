@@ -96,6 +96,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const newVacunaRef = useRef<HTMLDialogElement>(null);
   const loteRef      = useRef<HTMLDialogElement>(null);
   const usarRef      = useRef<HTMLDialogElement>(null);
+  const mermaRef     = useRef<HTMLDialogElement>(null);
+  const [mermaCantidad, setMermaCantidad] = useState(1);
+  const [mermaMotivo, setMermaMotivo] = useState("MERMA - Vencimiento");
   const catRef       = useRef<HTMLDialogElement>(null);
 
   // Selected vaccine for actions
@@ -375,6 +378,13 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     usarRef.current?.showModal();
   };
 
+  const openMermaModal = (id: string) => {
+    setSelectedId(id);
+    setMermaCantidad(1);
+    setMermaMotivo("MERMA - Vencimiento");
+    mermaRef.current?.showModal();
+  };
+
   const handleUsarDosis = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedId || !selectedVacuna) return;
@@ -417,6 +427,42 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     } catch (err: any) {
       console.error(err);
       addToast("Error al aplicar dosis: " + err.message, "error");
+    }
+  };
+
+  const handleRegistrarMerma = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedId || !selectedVacuna || mermaCantidad <= 0) return;
+    try {
+      const { error: movErr } = await supabase.from("movimientos_inventario").insert({
+        tenant_id: tenantId,
+        item_id: selectedId,
+        tipo_movimiento: "SALIDA",
+        cantidad: mermaCantidad,
+        motivo: mermaMotivo,
+        notas: `Registro de merma/desperdicio. Stock afectado: ${mermaCantidad}`,
+        fecha: today(),
+        valor_unitario_cobrado: 0 // La merma no genera ingreso
+      });
+
+      if (movErr) throw movErr;
+
+      const currentStock = selectedVacuna?.stockActual || 0;
+      const newStock = Math.max(0, currentStock - mermaCantidad);
+      
+      const { error: updErr } = await supabase
+        .from("inventario_medico")
+        .update({ stock_actual: newStock })
+        .eq("id", selectedId);
+
+      if (updErr) throw updErr;
+
+      mermaRef.current?.close();
+      addToast(`Merma registrada correctamente (${mermaCantidad} unidades).`);
+      await loadData(tenantId);
+    } catch (err: any) {
+      console.error(err);
+      addToast("Error al registrar merma: " + err.message, "error");
     }
   };
 
