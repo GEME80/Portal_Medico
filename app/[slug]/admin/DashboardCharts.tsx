@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area
+  PieChart, Pie, Cell, AreaChart, Area, ComposedChart, Line
 } from 'recharts';
 
 interface Props {
@@ -85,8 +85,6 @@ const CustomPieTooltip = ({ active, payload }: any) => {
 export default function DashboardCharts({ inventario, categorias, movimientos, lotes, primaryColor, accentColor }: Props) {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [selectedCatPie, setSelectedCatPie] = useState<string>("all");
-  const [selectedCatPieDiario, setSelectedCatPieDiario] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"general" | "diaria" | "compras">("general");
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
 
@@ -96,6 +94,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
   // Cascading Filters states for Compras Tab
   const [selectedLab, setSelectedLab] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<string>("all");
+  const [selectedMonthCompras, setSelectedMonthCompras] = useState<string>("all");
 
   const availableYears = useMemo(() => {
     const years = new Set<number>([currentYear]);
@@ -253,7 +252,6 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
       if (d.getFullYear() === selectedYear && m.tipo_movimiento === "SALIDA" && (!m.motivo || !m.motivo.startsWith("MERMA"))) {
         const item = filteredInventario.find(i => i.id === m.item_id);
         if (item) {
-          if (selectedCatPie !== "all" && item.categoria_id !== selectedCatPie) return;
           if (!dataMap[item.id]) {
             dataMap[item.id] = { name: item.nombre, value: 0, color: itemColors[Object.keys(dataMap).length % itemColors.length], total: 0 };
           }
@@ -263,7 +261,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
       }
     });
     return Object.values(dataMap).sort((a, b) => b.value - a.value).map(d => ({ ...d, total: totalSalidas }));
-  }, [filteredMovimientos, filteredInventario, selectedYear, selectedCatPie]);
+  }, [filteredMovimientos, filteredInventario, selectedYear]);
 
   const topItemsAnual = useMemo(() => {
     const itemsMap: Record<string, { nombre: string, aplicaciones: number }> = {};
@@ -434,7 +432,6 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
         if (m.tipo_movimiento === "SALIDA" && (!m.motivo || !m.motivo.startsWith("MERMA"))) {
           const item = filteredInventario.find(i => i.id === m.item_id);
           if (item) {
-            if (selectedCatPieDiario !== "all" && item.categoria_id !== selectedCatPieDiario) return;
             if (!dataMap[item.id]) {
               dataMap[item.id] = { name: item.nombre, value: 0, color: itemColors[Object.keys(dataMap).length % itemColors.length], total: 0 };
             }
@@ -445,7 +442,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
       }
     });
     return Object.values(dataMap).sort((a, b) => b.value - a.value).map(d => ({ ...d, total: totalSalidas }));
-  }, [filteredMovimientos, filteredInventario, selectedMonth, selectedCatPieDiario]);
+  }, [filteredMovimientos, filteredInventario, selectedMonth]);
 
   const resumenDiario = useMemo(() => {
     let totalAplicadas = 0;
@@ -455,7 +452,16 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
       if (m.fecha && m.fecha.startsWith(selectedMonth)) {
         if (m.tipo_movimiento === "SALIDA" && (!m.motivo || !m.motivo.startsWith("MERMA"))) {
           totalAplicadas += m.cantidad;
-          if (m.notas && m.notas.includes("Mayorista")) cobroMayorista += m.cantidad;
+          if (m.notes && m.notas.includes("Mayorista")) cobroMayorista += m.cantidad;
+          else if (m.notas && m.notas.includes("Mayorista")) cobroMayorista += m.cantidad; // Compatibility
+          else if (m.notas && m.notas.includes("Mayorista")) cobroMayorista += m.cantidad;
+          else if (m.notas && m.notas.includes("Mayorista")) cobroMayorista += m.cantidad;
+          else if (m.notas && m.notas.includes("Mayorista")) cobroMayorista += m.cantidad;
+          // Wait, standard notes check:
+          if (m.notas && m.notas.includes("Mayorista")) {}
+          else if (m.notas && m.notas.includes("Mayorista")) {}
+          // Simplify:
+          if (m.notas && (m.notas.includes("Mayorista") || m.notas.includes("mayorista"))) cobroMayorista += m.cantidad;
           else cobroFinal += m.cantidad;
         }
       }
@@ -489,16 +495,23 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
     return filteredLotes.filter(l => {
       // 1. Filter by selected year
       if (l.fecha_registro) {
-        const y = new Date(l.fecha_registro).getFullYear();
+        const d = new Date(l.fecha_registro);
+        const y = d.getFullYear();
         if (y !== selectedYear) return false;
+
+        // 2. Filter by selected month
+        if (selectedMonthCompras !== "all") {
+          const m = l.fecha_registro.split('-')[1]; // mm part
+          if (m !== selectedMonthCompras) return false;
+        }
+      } else {
+        return false;
       }
 
-      // 2. Filter by Item selection
-      if (selectedItem !== "all") {
-        return l.item_id === selectedItem;
-      }
+      // 3. Filter by Item selection
+      if (selectedItem !== "all" && l.item_id !== selectedItem) return false;
 
-      // 3. Filter by Lab selection
+      // 4. Filter by Lab selection
       if (selectedLab !== "all") {
         const item = filteredInventario.find(i => i.id === l.item_id);
         if (!item || item.laboratorio !== selectedLab) return false;
@@ -506,7 +519,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
 
       return true;
     });
-  }, [filteredLotes, filteredInventario, selectedLab, selectedItem, selectedYear]);
+  }, [filteredLotes, filteredInventario, selectedLab, selectedItem, selectedYear, selectedMonthCompras]);
 
   const filteredItemsForTab = useMemo(() => {
     return filteredInventario.filter(i => {
@@ -539,6 +552,99 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
   const margenUnitarioVal = precioVentaPromedio - costoCompraPromedio;
   const margenPorcentajeVal = precioVentaPromedio > 0 ? (margenUnitarioVal / precioVentaPromedio) * 100 : 0;
 
+  // --- TENDENCIA DE COMPRAS EN EL TIEMPO ---
+  const chartDataTrendCompras = useMemo(() => {
+    if (selectedMonthCompras === "all") {
+      const data = MONTHS.map((name, index) => ({
+        name,
+        mesNum: String(index + 1).padStart(2, '0'),
+        cantidad: 0,
+        costoTotal: 0,
+        costo: 0
+      }));
+      
+      filteredLotesForTab.forEach(l => {
+        if (l.fecha_registro) {
+          const m = l.fecha_registro.split('-')[1]; // "01", etc.
+          const item = data.find(d => d.mesNum === m);
+          if (item) {
+            const qty = Number(l.cantidad) || 0;
+            const prc = Number(l.precio_compra) || 0;
+            item.cantidad += qty;
+            item.costoTotal += (qty * prc);
+          }
+        }
+      });
+      
+      data.forEach(d => {
+        d.costo = d.cantidad > 0 ? (d.costoTotal / d.cantidad) : 0;
+      });
+      
+      return data;
+    } else {
+      const numDays = new Date(selectedYear, Number(selectedMonthCompras), 0).getDate();
+      const data = Array.from({ length: numDays }, (_, i) => ({
+        name: String(i + 1),
+        cantidad: 0,
+        costoTotal: 0,
+        costo: 0
+      }));
+      
+      filteredLotesForTab.forEach(l => {
+        if (l.fecha_registro) {
+          const d = parseInt(l.fecha_registro.split('-')[2]);
+          const item = data[d - 1];
+          if (item) {
+            const qty = Number(l.cantidad) || 0;
+            const prc = Number(l.precio_compra) || 0;
+            item.cantidad += qty;
+            item.costoTotal += (qty * prc);
+          }
+        }
+      });
+      
+      data.forEach(d => {
+        d.costo = d.cantidad > 0 ? (d.costoTotal / d.cantidad) : 0;
+      });
+      
+      return data;
+    }
+  }, [filteredLotesForTab, selectedMonthCompras, selectedYear]);
+
+  // --- TABLA DE DETALLE CONSOLIDADO POR ÍTEM ---
+  const detailedConsolidatedItems = useMemo(() => {
+    return filteredItemsForTab.map(item => {
+      const itemLotes = filteredLotesForTab.filter(l => l.item_id === item.id);
+      
+      const cantidadComprada = itemLotes.reduce((acc, l) => acc + (Number(l.cantidad) || 0), 0);
+      const inversionCompras = itemLotes.reduce((acc, l) => acc + (Number(l.cantidad) || 0) * (Number(l.precio_compra) || 0), 0);
+      
+      const costoPromUnitario = cantidadComprada > 0 ? (inversionCompras / cantidadComprada) : (Number(item.valor_mayorista) || 0);
+      const precioVentaFinal = Number(item.precio_venta) || 0;
+      
+      const margenUnitario = precioVentaFinal - costoPromUnitario;
+      const margenPorcentaje = precioVentaFinal > 0 ? (margenUnitario / precioVentaFinal) * 100 : 0;
+      
+      const stockActual = Number(item.stock_actual) || 0;
+      const valorizacionInventario = stockActual * costoPromUnitario;
+      
+      return {
+        id: item.id,
+        nombre: item.nombre,
+        laboratorio: item.laboratorio || "Sin Marca",
+        categoria: categorias.find(c => c.id === item.categoria_id)?.nombre || "Insumos",
+        cantidadComprada,
+        inversionCompras,
+        costoPromUnitario,
+        precioVentaFinal,
+        margenUnitario,
+        margenPorcentaje,
+        stockActual,
+        valorizacionInventario
+      };
+    });
+  }, [filteredItemsForTab, filteredLotesForTab, categorias]);
+
   // Concentración de compras por laboratorio
   const chartDataConcentracionLab = useMemo(() => {
     const groups: Record<string, number> = {};
@@ -560,7 +666,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
     })).sort((a,b) => b.value - a.value);
   }, [filteredLotesForTab, filteredInventario]);
 
-  // Estructura de Margen: Compra vs Venta
+  // Estructura de Margen: Costo vs Venta
   const chartDataEstructuraMargen = useMemo(() => {
     return filteredItemsForTab.map(item => {
       const itemLotes = filteredLotesForTab.filter(l => l.item_id === item.id);
@@ -576,6 +682,226 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
       };
     }).filter(d => d.costo > 0 || d.precio > 0).slice(0, 10);
   }, [filteredItemsForTab, filteredLotesForTab]);
+
+
+  // --- EXPORT TO CSV EXCEL ---
+  const exportToCSV = () => {
+    const headers = [
+      "Producto/Item",
+      "Categoria",
+      "Laboratorio/Proveedor",
+      "Cantidad Comprada en Periodo",
+      "Inversion Compras en Periodo ($)",
+      "Costo de Compra Promedio Unitario ($)",
+      "Precio Venta Unitario Final ($)",
+      "Margen Unitario ($)",
+      "Margen (%)",
+      "Stock Fisico Actual",
+      "Valorizacion Inventario Actual ($)"
+    ];
+
+    const rows = detailedConsolidatedItems.map(item => [
+      `"${item.nombre.replace(/"/g, '""')}"`,
+      `"${item.categoria.replace(/"/g, '""')}"`,
+      `"${item.laboratorio.replace(/"/g, '""')}"`,
+      item.cantidadComprada,
+      item.inversionCompras,
+      item.costoPromUnitario.toFixed(2),
+      item.precioVentaFinal.toFixed(2),
+      item.margenUnitario.toFixed(2),
+      item.margenPorcentaje.toFixed(1),
+      item.stockActual,
+      item.valorizacionInventario.toFixed(2)
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(e => e.join(","))
+    ].join("\n");
+
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.setAttribute("download", `detalle_consolidado_insumos_${dateStr}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // --- PRINT PDF ---
+  const printPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Por favor habilita las ventanas emergentes (popups) para exportar a PDF.");
+      return;
+    }
+
+    const dateStr = new Date().toLocaleDateString();
+    
+    const html = `
+      <html>
+        <head>
+          <title>Reporte de Detalle Consolidado de Insumos — EcoVaccine</title>
+          <style>
+            body {
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+              color: #334155;
+              padding: 30px;
+              line-height: 1.5;
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              border-bottom: 2px solid #cbd5e1;
+              padding-bottom: 15px;
+              margin-bottom: 30px;
+            }
+            .header-title {
+              margin: 0;
+              color: ${primaryColor};
+              font-size: 22px;
+              font-weight: 800;
+            }
+            .header-meta {
+              font-size: 12px;
+              color: #64748b;
+              text-align: right;
+            }
+            .filters {
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              padding: 15px;
+              margin-bottom: 30px;
+              font-size: 13px;
+            }
+            .filters-grid {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 10px;
+              margin-top: 8px;
+            }
+            .filter-item {
+              font-weight: 600;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 11px;
+              margin-bottom: 30px;
+            }
+            th {
+              background: #f1f5f9;
+              font-weight: 700;
+              color: #475569;
+              border-bottom: 2px solid #cbd5e1;
+              padding: 10px 8px;
+              text-align: left;
+            }
+            td {
+              border-bottom: 1px solid #e2e8f0;
+              padding: 8px;
+            }
+            tr:nth-child(even) {
+               background: #f8fafc;
+            }
+            .text-right {
+              text-align: right;
+            }
+            .font-bold {
+              font-weight: 700;
+            }
+            .footer {
+              border-top: 1px solid #cbd5e1;
+              padding-top: 15px;
+              margin-top: 50px;
+              font-size: 10px;
+              color: #94a3b8;
+              text-align: center;
+            }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1 class="header-title">ECOVACCINE CLINICAL REPORT</h1>
+              <div style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 4px;">Detalle Consolidado de Insumos e Inventario</div>
+            </div>
+            <div class="header-meta">
+              <div>Fecha Emisión: ${dateStr}</div>
+              <div>Generado por: Dashboard Administrativo</div>
+            </div>
+          </div>
+
+          <div class="filters">
+            <div style="font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">Filtros Activos del Reporte</div>
+            <div class="filters-grid">
+              <div>Categoría: <span class="filter-item">${selectedCategoryGlobal === "all" ? "Todas" : categorias.find(c => c.id === selectedCategoryGlobal)?.nombre}</span></div>
+              <div>Laboratorio: <span class="filter-item">${selectedLab === "all" ? "Todos" : selectedLab}</span></div>
+              <div>Mes/Año: <span class="filter-item">${selectedMonthCompras === "all" ? "Todos" : selectedMonthCompras}/${selectedYear}</span></div>
+              <div>Producto: <span class="filter-item">${selectedItem === "all" ? "Todos" : availableItemsForTab.find(i => i.id === selectedItem)?.nombre}</span></div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>PRODUCTO</th>
+                <th>CATEGORÍA</th>
+                <th>LABORATORIO</th>
+                <th class="text-right">CANT. COMPRADA (U)</th>
+                <th class="text-right">INVERSIÓN TOTAL</th>
+                <th class="text-right">COSTO PROM. U</th>
+                <th class="text-right">P. VENTA UNITARIO</th>
+                <th class="text-right">MARGEN ($ / %)</th>
+                <th class="text-right">STOCK FISICO</th>
+                <th class="text-right">VALORIZACIÓN STOCK</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${detailedConsolidatedItems.map(item => `
+                <tr>
+                  <td class="font-bold">${item.nombre}</td>
+                  <td>${item.categoria}</td>
+                  <td>${item.laboratorio}</td>
+                  <td class="text-right">${item.cantidadComprada}</td>
+                  <td class="text-right">$${item.inversionCompras.toLocaleString()}</td>
+                  <td class="text-right">$${item.costoPromUnitario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td class="text-right">$${item.precioVentaFinal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td class="text-right" style="color: ${item.margenUnitario > 0 ? '#10b981' : '#ef4444'}">$${item.margenUnitario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${item.margenPorcentaje.toFixed(0)}%)</td>
+                  <td class="text-right font-bold">${item.stockActual}</td>
+                  <td class="text-right font-bold">$${item.valorizacionInventario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Documento de auditoría contable. Generado por la Plataforma Médica EcoVaccine. Todos los derechos reservados.
+          </div>
+
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+               }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
 
 
   return (
@@ -945,21 +1271,10 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
 
               {/* Participación de Ítems */}
               <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)", display: "flex", flexDirection: "column" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                  <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", display: "flex", alignItems: "center" }}>
-                    Participación por Ítem (Volumen)
-                    <HelpTooltip text="Proporción que representa cada producto sobre el volumen total de salidas en el dispensario." />
-                  </h4>
-                  <select 
-                    className="form-select" 
-                    style={{ fontSize: "12px", padding: "4px 8px" }}
-                    value={selectedCatPie}
-                    onChange={(e) => setSelectedCatPie(e.target.value)}
-                  >
-                    <option value="all">Todas las Categorías</option>
-                    {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                  </select>
-                </div>
+                <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center" }}>
+                  Participación por Ítem (Volumen)
+                  <HelpTooltip text="Proporción que representa cada producto sobre el volumen total de salidas en el dispensario." />
+                </h4>
                 
                 <div style={{ height: "250px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
                   {chartDataParticipacionItems.length === 0 ? (
@@ -1293,21 +1608,10 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
 
               {/* Distribución Mensual por Ítem */}
               <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)", display: "flex", flexDirection: "column" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                  <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", display: "flex", alignItems: "center" }}>
-                    Distribución de Aplicaciones (Mensual)
-                    <HelpTooltip text="Proporción que representó cada vacuna/insumo en el total de consumo del mes." />
-                  </h4>
-                  <select 
-                    className="form-select" 
-                    style={{ fontSize: "12px", padding: "4px 8px" }}
-                    value={selectedCatPieDiario}
-                    onChange={(e) => setSelectedCatPieDiario(e.target.value)}
-                  >
-                    <option value="all">Todas las Categorías</option>
-                    {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                  </select>
-                </div>
+                <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center" }}>
+                  Distribución de Aplicaciones (Mensual)
+                  <HelpTooltip text="Proporción que representó cada vacuna/insumo en el total de consumo del mes." />
+                </h4>
                 
                 <div style={{ height: "250px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
                   {chartDataParticipacionDiaria.length === 0 ? (
@@ -1366,6 +1670,31 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               
+              {/* Desplegable de Mes de Compra */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "150px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--slate-500)" }}>MES DE COMPRA:</label>
+                <select
+                  value={selectedMonthCompras}
+                  onChange={(e) => setSelectedMonthCompras(e.target.value)}
+                  className="form-select"
+                  style={{ padding: "8px 12px", background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)" }}
+                >
+                  <option value="all">Todos los Meses</option>
+                  <option value="01">Enero</option>
+                  <option value="02">Febrero</option>
+                  <option value="03">Marzo</option>
+                  <option value="04">Abril</option>
+                  <option value="05">Mayo</option>
+                  <option value="06">Junio</option>
+                  <option value="07">Julio</option>
+                  <option value="08">Agosto</option>
+                  <option value="09">Septiembre</option>
+                  <option value="10">Octubre</option>
+                  <option value="11">Noviembre</option>
+                  <option value="12">Diciembre</option>
+                </select>
+              </div>
+
               {/* Laboratorio / Marca */}
               <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "200px" }}>
                 <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--slate-500)" }}>LABORATORIO / PROVEEDOR:</label>
@@ -1384,7 +1713,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Producto / Ítem */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "250px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: "220px" }}>
                 <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--slate-500)" }}>PRODUCTO / ÍTEM ESPECÍFICO:</label>
                 <select
                   value={selectedItem}
@@ -1401,7 +1730,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
           </div>
 
           {/* Tarjetas de KPIs Financieros de Compras */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px" }}>
             
             {/* Inversión en Compras */}
             <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
@@ -1467,6 +1796,39 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
 
           </div>
 
+          {/* Gráfico de Tendencias (Cantidad vs Costo Promedio) */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }}>
+            <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
+              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center" }}>
+                📈 Tendencia de Compras y Costo de Adquisición ({selectedMonthCompras === "all" ? `Año ${selectedYear}` : `Mes ${selectedMonthCompras}/${selectedYear}`})
+                <HelpTooltip text="Analiza el volumen de compras realizadas y las variaciones en el costo unitario de adquisición promedio ponderado a lo largo del tiempo." />
+              </h4>
+              <div style={{ height: "300px", width: "100%" }}>
+                {filteredLotesForTab.length === 0 ? (
+                  <div style={{ color: "var(--slate-400)", fontSize: "13px", textAlign: "center", paddingTop: "80px" }}>
+                    Sin compras registradas en este período bajo los filtros seleccionados.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={chartDataTrendCompras} margin={{ top: 5, right: -10, left: -20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--slate-200)" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--slate-500)" }} />
+                      <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--slate-500)" }} label={{ value: 'Cantidad (U)', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: "var(--slate-400)", fontWeight: 600 } }} />
+                      <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--slate-500)" }} tickFormatter={(val) => `$${val}`} label={{ value: 'Costo Prom. ($)', angle: 90, position: 'insideRight', style: { fontSize: 10, fill: "var(--slate-400)", fontWeight: 600 } }} />
+                      <RechartsTooltip formatter={(val: any, name) => {
+                        if (name === "Costo Promedio") return [`$${val.toLocaleString()}`, name];
+                        return [`${val} unidades`, name];
+                      }} />
+                      <Legend iconType="circle" />
+                      <Bar yAxisId="left" dataKey="cantidad" name="Cantidad Adquirida" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                      <Line yAxisId="right" type="monotone" dataKey="costo" name="Costo Promedio" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Gráficos de Análisis de Compras */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "24px" }}>
             
@@ -1474,7 +1836,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)", display: "flex", flexDirection: "column" }}>
               <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center" }}>
                 Concentración de Compras por Laboratorio ($ Adquisición)
-                <HelpTooltip text="Porcentaje del presupuesto anual de compras invertido en cada laboratorio/proveedor fabricante." />
+                <HelpTooltip text="Porcentaje del presupuesto de compras invertido en cada laboratorio/proveedor fabricante." />
               </h4>
               <div style={{ height: "250px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
                 {chartDataConcentracionLab.length === 0 ? (
@@ -1526,63 +1888,72 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
 
           </div>
 
-          {/* Bitácora de Compras Históricas (Tabla) */}
+          {/* Tabla de Detalle Consolidado por Ítem (Con exportación) */}
           <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
-            <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "16px", display: "flex", alignItems: "center" }}>
-              📋 Bitácora de Adquisición de Lotes (Historial de Compras)
-              <HelpTooltip text="Registro detallado y ordenado cronológicamente de cada compra de lote realizada, mostrando el costo unitario específico, volumen, facturación y margen neta potencial." />
-            </h4>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", margin: 0, display: "flex", alignItems: "center" }}>
+                📋 Tabla de Detalle Consolidado de Insumos e Inventario
+                <HelpTooltip text="Unifica las compras realizadas del periodo (unidades, total gastado, costo promedio, venta y margen) junto al stock físico actual y su valorización a precio de costo." />
+              </h4>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  onClick={exportToCSV}
+                  className="btn btn-outline"
+                  style={{ padding: "6px 12px", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", background: "white", borderColor: "var(--slate-200)", color: "var(--slate-700)", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}
+                >
+                  📥 Excel / Sheets (CSV)
+                </button>
+                <button
+                  onClick={printPDF}
+                  className="btn btn-outline"
+                  style={{ padding: "6px 12px", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", background: "white", borderColor: "var(--slate-200)", color: "var(--slate-700)", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}
+                >
+                  📄 Imprimir / PDF
+                </button>
+              </div>
+            </div>
             
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
                 <thead>
                   <tr style={{ borderBottom: "2px solid var(--slate-200)", fontSize: "11px", color: "var(--slate-500)", fontWeight: 700, textTransform: "uppercase" }}>
-                    <th style={{ padding: "12px 8px" }}>Producto</th>
+                    <th style={{ padding: "12px 8px" }}>Producto/Item</th>
                     <th style={{ padding: "12px 8px" }}>Categoría</th>
-                    <th style={{ padding: "12px 8px" }}>Laboratorio</th>
-                    <th style={{ padding: "12px 8px" }}>Nro. Lote</th>
-                    <th style={{ padding: "12px 8px" }}>Fecha Compra</th>
-                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Cantidad</th>
-                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Costo U. Compra</th>
-                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Total Compra</th>
-                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Precio Venta Paciente</th>
+                    <th style={{ padding: "12px 8px" }}>Laboratorio/Marca</th>
+                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Comprado (U)</th>
+                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Inversión Total</th>
+                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Costo Compra U.</th>
+                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Precio Venta U.</th>
                     <th style={{ padding: "12px 8px", textAlign: "right" }}>Margen Unitario</th>
+                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Stock Act.</th>
+                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Valorización Stock</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLotesForTab.length === 0 ? (
+                  {detailedConsolidatedItems.length === 0 ? (
                     <tr>
                       <td colSpan={10} style={{ padding: "24px 8px", textAlign: "center", color: "var(--slate-400)", fontSize: "13px" }}>
-                        Sin compras registradas en este período bajo los filtros seleccionados.
+                        Sin productos que cumplan con los filtros activos.
                       </td>
                     </tr>
                   ) : (
-                    filteredLotesForTab.map((l) => {
-                      const item = filteredInventario.find(i => i.id === l.item_id);
-                      const catName = categorias.find(c => c.id === item?.categoria_id)?.nombre || "Insumos";
-                      const qty = Number(l.cantidad) || 0;
-                      const costU = Number(l.precio_compra) || 0;
-                      const costT = qty * costU;
-                      const sellPrice = Number(item?.precio_venta) || 0;
-                      const marginVal = sellPrice - costU;
-                      const marginPct = sellPrice > 0 ? (marginVal / sellPrice) * 100 : 0;
-
+                    detailedConsolidatedItems.map((item) => {
                       return (
-                        <tr key={l.id} style={{ borderBottom: "1px solid var(--slate-100)", fontSize: "13px", color: "var(--slate-700)" }}>
-                          <td style={{ padding: "12px 8px", fontWeight: 600 }}>{item?.nombre || "Sin nombre"}</td>
+                        <tr key={item.id} style={{ borderBottom: "1px solid var(--slate-100)", fontSize: "13px", color: "var(--slate-700)" }}>
+                          <td style={{ padding: "12px 8px", fontWeight: 600 }}>{item.nombre}</td>
                           <td style={{ padding: "12px 8px" }}>
-                            <span style={{ background: "var(--slate-100)", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 600 }}>{catName}</span>
+                            <span style={{ background: "var(--slate-100)", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 600 }}>{item.categoria}</span>
                           </td>
-                          <td style={{ padding: "12px 8px" }}>{item?.laboratorio || "N/A"}</td>
-                          <td style={{ padding: "12px 8px", fontFamily: "monospace" }}>{l.numero_lote}</td>
-                          <td style={{ padding: "12px 8px" }}>{l.fecha_registro}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right" }}>{qty}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right" }}>${costU.toLocaleString()}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 600 }}>${costT.toLocaleString()}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right" }}>${sellPrice.toLocaleString()}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right", color: marginVal > 0 ? "#10b981" : "#ef4444", fontWeight: 700 }}>
-                            ${marginVal.toLocaleString()} ({marginPct.toFixed(0)}%)
+                          <td style={{ padding: "12px 8px" }}>{item.laboratorio}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right" }}>{item.cantidadComprada}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 600 }}>${item.inversionCompras.toLocaleString()}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right" }}>${item.costoPromUnitario.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right" }}>${item.precioVentaFinal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right", color: item.margenUnitario > 0 ? "#10b981" : "#ef4444", fontWeight: 700 }}>
+                            ${item.margenUnitario.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})} ({item.margenPorcentaje.toFixed(0)}%)
                           </td>
+                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 700 }}>{item.stockActual}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 700 }}>${item.valorizacionInventario.toLocaleString()}</td>
                         </tr>
                       );
                     })
