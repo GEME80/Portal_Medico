@@ -40,6 +40,54 @@ interface Hito  { id: string; anio: string; titulo: string; institucion: string;
 
 interface Props { params: Promise<{ slug: string }> }
 
+const compressImage = async (file: File, maxWidth = 1200): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("No canvas context"));
+        
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const ext = file.name.split('.').pop() || 'jpg';
+              const name = file.name.replace(`.${ext}`, '.jpg');
+              const compressedFile = new File([blob], name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              reject(new Error("Error al comprimir la imagen"));
+            }
+          },
+          "image/jpeg",
+          0.85
+        );
+      };
+      img.onerror = (error) => reject(error);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 export default function PersonalizarPage({ params }: Props) {
   const [slug, setSlug] = useState("");
   const [tenantId, setTenantId] = useState("");
@@ -212,44 +260,54 @@ export default function PersonalizarPage({ params }: Props) {
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     startTransition(async () => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("tenantId", tenantId);
-      formData.append("folder", "logo");
+      try {
+        const file = await compressImage(rawFile, 800); // 800px max width for logo
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("tenantId", tenantId);
+        formData.append("folder", "logo");
 
-      const res = await uploadImageAction(formData);
-      if (!res.success) {
-        showToast("Error al subir logo: " + res.error, "error");
-        return;
+        const res = await uploadImageAction(formData);
+        if (!res.success) {
+          showToast("Error al subir logo: " + res.error, "error");
+          return;
+        }
+
+        setConfig(c => ({ ...c, logo_url: res.publicUrl || "" }));
+        showToast("✅ Logotipo subido correctamente. Guarde los cambios para aplicar.");
+      } catch (error: any) {
+        showToast("Error al procesar logo: " + error.message, "error");
       }
-
-      setConfig(c => ({ ...c, logo_url: res.publicUrl || "" }));
-      showToast("✅ Logotipo subido correctamente. Guarde los cambios para aplicar.");
     });
   };
 
   const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     startTransition(async () => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("tenantId", tenantId);
-      formData.append("folder", "foto_doctor");
+      try {
+        const file = await compressImage(rawFile, 1200); // 1200px max width for photo
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("tenantId", tenantId);
+        formData.append("folder", "foto_doctor");
 
-      const res = await uploadImageAction(formData);
-      if (!res.success) {
-        showToast("Error al subir foto: " + res.error, "error");
-        return;
+        const res = await uploadImageAction(formData);
+        if (!res.success) {
+          showToast("Error al subir foto: " + res.error, "error");
+          return;
+        }
+
+        setConfig(c => ({ ...c, foto_url: res.publicUrl || "" }));
+        showToast("✅ Foto subida correctamente. Guarde los cambios para aplicar.");
+      } catch (error: any) {
+        showToast("Error al procesar foto: " + error.message, "error");
       }
-
-      setConfig(c => ({ ...c, foto_url: res.publicUrl || "" }));
-      showToast("✅ Foto subida correctamente. Guarde los cambios para aplicar.");
     });
   };
 
