@@ -1488,7 +1488,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
                         ))}
                       </Pie>
                       <RechartsTooltip formatter={(val: any, name, props) => {
-                        const total = props.payload.payload.total || 1;
+                        const total = props?.payload?.total || props?.payload?.payload?.total || 1;
                         const percent = ((val / total) * 100).toFixed(1);
                         return [`$${val.toLocaleString()} (${percent}%)`, "Inversión"];
                       }} />
