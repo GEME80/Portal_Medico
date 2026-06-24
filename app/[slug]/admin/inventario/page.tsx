@@ -57,6 +57,38 @@ const getStockStatus = (v: InventarioItem): EstadoStock => {
   return "ok";
 };
 
+interface ParsedCategoria {
+  id: string;
+  nombre: string;
+  color: string;
+  uf: boolean;
+  p: boolean;
+}
+
+const parseCategory = (c: Categoria): ParsedCategoria => {
+  try {
+    if (c.nombre.startsWith("{") && c.nombre.endsWith("}")) {
+      const parsed = JSON.parse(c.nombre);
+      return {
+        id: c.id,
+        nombre: parsed.n || "",
+        color: c.color,
+        uf: parsed.uf !== undefined ? parsed.uf : true,
+        p: parsed.p !== undefined ? parsed.p : true,
+      };
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return {
+    id: c.id,
+    nombre: c.nombre,
+    color: c.color,
+    uf: true,
+    p: true,
+  };
+};
+
 const stockChipLabel: Record<EstadoStock, string> = {
   ok: "✓ OK",
   low: "⚠ Stock Bajo",
@@ -97,6 +129,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const loteRef      = useRef<HTMLDialogElement>(null);
   const usarRef      = useRef<HTMLDialogElement>(null);
   const mermaRef     = useRef<HTMLDialogElement>(null);
+  const comprasHistoricasRef = useRef<HTMLDialogElement>(null);
   const [mermaCantidad, setMermaCantidad] = useState(1);
   const [mermaMotivo, setMermaMotivo] = useState("MERMA - Vencimiento");
   const catRef       = useRef<HTMLDialogElement>(null);
@@ -104,7 +137,13 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   // Selected vaccine for actions
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dosisNotas, setDosisNotas] = useState("");
+  const [pacienteNombre, setPacienteNombre] = useState("");
+  const [pacienteEdad, setPacienteEdad] = useState("");
+  const [pacienteEdadUnidad, setPacienteEdadUnidad] = useState("Años");
   const [cobrarMayorista, setCobrarMayorista] = useState(false);
+
+  const [catIsUF, setCatIsUF] = useState(true);
+  const [catIsP, setCatIsP] = useState(true);
 
   const selectedVacuna = vacunas.find(v => v.id === selectedId);
 
@@ -210,11 +249,16 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
   const openNewCategoria = () => {
     setCatForm({ id: "", nombre: "", color: primaryColor });
+    setCatIsUF(true);
+    setCatIsP(true);
     catRef.current?.showModal();
   };
 
   const openEditCategoria = (cat: Categoria) => {
-    setCatForm({ id: cat.id, nombre: cat.nombre, color: cat.color || primaryColor });
+    const pc = parseCategory(cat);
+    setCatForm({ id: pc.id, nombre: pc.nombre, color: pc.color || primaryColor });
+    setCatIsUF(pc.uf);
+    setCatIsP(pc.p);
     catRef.current?.showModal();
   };
 
@@ -222,18 +266,24 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     e.preventDefault();
     if (!catForm.nombre) return;
     
+    const serializedName = JSON.stringify({
+      n: catForm.nombre,
+      uf: catIsUF,
+      p: catIsP
+    });
+    
     try {
       if (catForm.id) {
         // Edit
         const { error } = await supabase.from("categorias_inventario")
-          .update({ nombre: catForm.nombre, color: catForm.color })
+          .update({ nombre: serializedName, color: catForm.color })
           .eq("id", catForm.id);
         if (error) throw error;
         addToast(`Categoría "${catForm.nombre}" actualizada.`);
       } else {
         // Insert
         const { error } = await supabase.from("categorias_inventario")
-          .insert({ tenant_id: tenantId, nombre: catForm.nombre, color: catForm.color, activo: true });
+          .insert({ tenant_id: tenantId, nombre: serializedName, color: catForm.color, activo: true });
         if (error) throw error;
         addToast(`Categoría "${catForm.nombre}" creada.`);
       }
@@ -267,6 +317,8 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const handleNuevaVacuna = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const selectedCat = categorias.find(c => c.id === newForm.categoria_id);
+      const isUF = selectedCat ? parseCategory(selectedCat).uf : true;
       const { error } = await supabase
         .from("inventario_medico")
         .insert({
@@ -279,7 +331,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           stock_minimo: parseInt(newForm.stockMinimo) || 5,
           stock_actual: 0,
           valor_mayorista: parseFloat(newForm.valorMayorista) || 0,
-          precio_venta: parseFloat(newForm.precioVenta) || 0,
+          precio_venta: isUF ? (parseFloat(newForm.precioVenta) || 0) : 0,
           temperatura: newForm.temperatura,
           lote_activo: "—"
         });
@@ -317,6 +369,8 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     if (isNaN(cantidad) || cantidad < 1) return;
 
     try {
+      const selectedVacCat = selectedVacuna ? categorias.find(c => c.id === selectedVacuna.categoria_id) : null;
+      const isP = selectedVacCat ? parseCategory(selectedVacCat).p : true;
       // 1. Insert lot
       const { error: lotErr } = await supabase
         .from("lotes_inventario")
@@ -326,7 +380,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           numero_lote: loteForm.numero,
           cantidad: cantidad,
           fecha_fabricacion: loteForm.fechaFabricacion || null,
-          fecha_vencimiento: loteForm.fechaVencimiento,
+          fecha_vencimiento: isP ? loteForm.fechaVencimiento : null,
           proveedor: loteForm.proveedor,
           precio_compra: loteForm.precioCompra ? parseFloat(loteForm.precioCompra) : null,
           numero_factura: loteForm.factura || null
@@ -374,6 +428,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const openUsarModal = (id: string) => {
     setSelectedId(id);
     setDosisNotas("");
+    setPacienteNombre("");
+    setPacienteEdad("");
+    setPacienteEdadUnidad("Años");
     setCobrarMayorista(false);
     usarRef.current?.showModal();
   };
@@ -385,12 +442,28 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     mermaRef.current?.showModal();
   };
 
+  const openComprasHistoricasModal = (id: string) => {
+    setSelectedId(id);
+    comprasHistoricasRef.current?.showModal();
+  };
+
   const handleUsarDosis = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedId || !selectedVacuna) return;
+    if (!pacienteNombre || !pacienteEdad) {
+      addToast("Por favor ingrese el nombre y edad del paciente.", "error");
+      return;
+    }
     try {
       const valorUnitario = cobrarMayorista ? selectedVacuna.valorMayorista : selectedVacuna.precioVenta;
-      const notasFinales = dosisNotas + (cobrarMayorista ? " [COBRO PRECIO MAYORISTA]" : "");
+      const notesParts = [
+        `Paciente: ${pacienteNombre}`,
+        `Edad: ${pacienteEdad} ${pacienteEdadUnidad}`
+      ];
+      if (dosisNotas) notesParts.push(`Notas: ${dosisNotas}`);
+      if (cobrarMayorista) notesParts.push("[COBRO PRECIO MAYORISTA]");
+      
+      const notasFinales = notesParts.join(" - ");
       
       const { error: movErr } = await supabase.from("movimientos_inventario").insert({
         tenant_id: tenantId,
@@ -555,13 +628,6 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     }
   };
 
-  // ── DERIVED KPIs ──────────────────────────────────────────────────
-  const totalVacunas       = vacunas.length;
-  const totalDosis         = vacunas.reduce((s, v) => s + v.stockActual, 0);
-  const criticas           = vacunas.filter(v => getStockStatus(v) !== "ok").length;
-  const dosisHoy           = vacunas.flatMap(v => v.movimientos)
-    .filter(m => m.tipo === "SALIDA" && m.fecha === today()).reduce((s, m) => s + m.cantidad, 0);
-
   // ── FILTERED ──────────────────────────────────────────────────────
   const filtered = vacunas.filter(v =>
     (selectedCategoryFilter === "all" || v.categoria_id === selectedCategoryFilter) &&
@@ -578,6 +644,13 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     if (weightA !== weightB) return weightA - weightB;
     return a.nombre.localeCompare(b.nombre);
   });
+
+  // ── DERIVED KPIs ──────────────────────────────────────────────────
+  const totalVacunas       = filtered.length;
+  const totalDosis         = filtered.reduce((s, v) => s + v.stockActual, 0);
+  const criticas           = filtered.filter(v => getStockStatus(v) !== "ok").length;
+  const dosisHoy           = filtered.flatMap(v => v.movimientos)
+    .filter(m => m.tipo === "SALIDA" && m.fecha === today()).reduce((s, m) => s + m.cantidad, 0);
 
   if (loading) {
     return (
@@ -634,6 +707,39 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       <div className="admin-content">
         {activeTab === "catalogo" && (
           <>
+            {/* ── FILTROS SUPERIORES ────────────────────────────────── */}
+            <div style={{ display: "flex", gap: "16px", marginBottom: "24px", alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: "260px" }}>
+                <label className="form-label" htmlFor="search-vacunas-top" style={{ marginBottom: "6px", display: "block" }}>Buscar Ítem</label>
+                <input
+                  type="search"
+                  id="search-vacunas-top"
+                  placeholder="Buscar por nombre o laboratorio..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="form-input"
+                  style={{ width: "100%" }}
+                  aria-label="Buscar ítems"
+                />
+              </div>
+              <div style={{ width: "220px" }}>
+                <label className="form-label" htmlFor="filter-categoria-top" style={{ marginBottom: "6px", display: "block" }}>Categoría</label>
+                <select
+                  id="filter-categoria-top"
+                  className="form-select"
+                  value={selectedCategoryFilter}
+                  onChange={e => setSelectedCategoryFilter(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px" }}
+                >
+                  <option value="all">Todas las Categorías</option>
+                  {categorias.map(c => {
+                    const pc = parseCategory(c);
+                    return <option key={pc.id} value={pc.id}>{pc.nombre}</option>;
+                  })}
+                </select>
+              </div>
+            </div>
+
             {/* ── KPI CARDS ─────────────────────────────────────────── */}
             <div className="kpi-grid">
               <KPICard icon="💊" iconClass="kpi-icon-teal"    number={totalVacunas} label="Ítems registrados"     trend="Total" trendClass="kpi-trend-neu" />
@@ -648,7 +754,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                 <h3 style={{ fontFamily: "Outfit, sans-serif", fontSize: "15px", fontWeight: 800, color: "var(--slate-700)" }}>
                   🔔 Alertas de Inventario
                 </h3>
-                {vacunas.filter(v => getStockStatus(v) !== "ok").map(v => {
+                {filtered.filter(v => getStockStatus(v) !== "ok").map(v => {
                   const status = getStockStatus(v);
                   return (
                     <div key={v.id} style={{
@@ -664,6 +770,23 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                             ? `AGOTADO: ${v.nombre}`
                             : `Stock bajo: ${v.nombre}`}
                         </span>
+                        {(() => {
+                          const cat = categorias.find(c => c.id === v.categoria_id);
+                          const parsedCat = cat ? parseCategory(cat) : null;
+                          return parsedCat ? (
+                            <span style={{
+                              marginLeft: "8px",
+                              padding: "2px 8px",
+                              fontSize: "11px",
+                              borderRadius: "12px",
+                              background: `${parsedCat.color || primaryColor}22`,
+                              color: parsedCat.color || primaryColor,
+                              fontWeight: 700
+                            }}>
+                              {parsedCat.nombre}
+                            </span>
+                          ) : null;
+                        })()}
                         <span style={{ fontSize: "12px", color: "var(--slate-500)", marginLeft: "8px" }}>
                           {v.stockActual} unidades restantes (mín. {v.stockMinimo})
                         </span>
@@ -685,27 +808,6 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             {/* ── INVENTORY TABLE ───────────────────────────────────── */}
             <div className="section-header">
               <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Catálogo de Ítems</h2>
-              <div style={{ display: "flex", gap: "12px" }}>
-              <select
-                className="form-select"
-                value={selectedCategoryFilter}
-                onChange={e => setSelectedCategoryFilter(e.target.value)}
-                style={{ width: "200px", padding: "8px 12px" }}
-              >
-                <option value="all">Todas las Categorías</option>
-                {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
-              <input
-                type="search"
-                id="search-vacunas"
-                placeholder="Buscar por nombre o laboratorio..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="form-input"
-                style={{ width: "260px" }}
-                aria-label="Buscar ítems"
-              />
-              </div>
             </div>
 
         <div className="inv-table-wrap">
@@ -763,7 +865,12 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                       <td>
                         <div className="vaccine-name-cell">
                           <span className="vaccine-name-main">{v.nombre}</span>
-                          <span className="vaccine-name-generic">{categorias.find(c => c.id === v.categoria_id)?.nombre || "Sin Categoría"}</span>
+                          <span className="vaccine-name-generic">
+                            {(() => {
+                              const cat = categorias.find(c => c.id === v.categoria_id);
+                              return cat ? parseCategory(cat).nombre : "Sin Categoría";
+                            })()}
+                          </span>
                         </div>
                       </td>
                       <td>
@@ -790,13 +897,26 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                         ${pUnitarioCompra.toLocaleString("es-CO")}
                       </td>
                       <td style={{ fontWeight: 700, color: primaryColor }}>
-                        ${parseInt(v.precioVenta || "0").toLocaleString("es-CO")}
+                        {(() => {
+                          const cat = categorias.find(c => c.id === v.categoria_id);
+                          const isUF = cat ? parseCategory(cat).uf : true;
+                          return isUF ? `$${parseInt(v.precioVenta || "0").toLocaleString("es-CO")}` : "Uso Interno";
+                        })()}
                       </td>
                       <td style={{ fontWeight: 700, color: "var(--slate-700)" }}>
                         ${pTotalCompra.toLocaleString("es-CO")}
                       </td>
                       <td style={{ textAlign: "right" }}>
                         <div className="action-row" style={{ justifyContent: "flex-end" }}>
+                          <button
+                            className="action-btn action-btn-ghost"
+                            onClick={() => openComprasHistoricasModal(v.id)}
+                            title="Ver compras históricas (lotes)"
+                            type="button"
+                            style={{ borderColor: primaryColor, color: primaryColor, background: "transparent" }}
+                          >
+                            📋 Compras
+                          </button>
                           <button
                             className="action-btn action-btn-emerald"
                             onClick={() => openLoteModal(v.id)}
@@ -851,22 +971,25 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                 <div style={{ gridColumn: "1/-1", padding: "40px", textAlign: "center", color: "var(--slate-500)", background: "var(--slate-50)", borderRadius: "var(--radius-lg)" }}>
                   No hay categorías registradas. Se usarán ítems sin clasificar.
                 </div>
-              ) : categorias.map(c => (
-                <div key={c.id} className="card" style={{ padding: "20px", borderLeft: `4px solid ${c.color || primaryColor}`, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--slate-900)" }}>{c.nombre}</h3>
-                      <button type="button" onClick={() => openEditCategoria(c)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px" }} title="Editar categoría">✏️</button>
+              ) : categorias.map(c => {
+                const pc = parseCategory(c);
+                return (
+                  <div key={c.id} className="card" style={{ padding: "20px", borderLeft: `4px solid ${c.color || primaryColor}`, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--slate-900)" }}>{pc.nombre}</h3>
+                        <button type="button" onClick={() => openEditCategoria(c)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px" }} title="Editar categoría">✏️</button>
+                      </div>
+                      <div style={{ marginTop: "12px", fontSize: "13px", color: "var(--slate-500)", marginBottom: "20px" }}>
+                        {vacunas.filter(v => v.categoria_id === c.id).length} ítems en esta categoría
+                      </div>
                     </div>
-                    <div style={{ marginTop: "12px", fontSize: "13px", color: "var(--slate-500)", marginBottom: "20px" }}>
-                      {vacunas.filter(v => v.categoria_id === c.id).length} ítems en esta categoría
-                    </div>
+                    <button className="btn btn-outline" style={{ width: "100%", justifyContent: "center", fontSize: "13px" }} onClick={() => openNewItemForCategory(c.id)}>
+                      ➕ Añadir Ítem
+                    </button>
                   </div>
-                  <button className="btn btn-outline" style={{ width: "100%", justifyContent: "center", fontSize: "13px" }} onClick={() => openNewItemForCategory(c.id)}>
-                    ➕ Añadir Ítem
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -892,7 +1015,10 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                 <label className="form-label" htmlFor="categoria_id">Categoría <span className="required-mark">*</span></label>
                 <select id="categoria_id" name="categoria_id" className="form-select" value={newForm.categoria_id} onChange={handleNewFormChange} required>
                   <option value="" disabled>Seleccione una categoría...</option>
-                  {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  {categorias.map(c => {
+                    const pc = parseCategory(c);
+                    return <option key={pc.id} value={pc.id}>{pc.nombre}</option>;
+                  })}
                 </select>
               </div>
 
@@ -951,12 +1077,18 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   required placeholder="ej: 30000" autoComplete="off" />
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="precioVenta">Valor precio de venta <span className="required-mark">*</span></label>
-                <input id="precioVenta" name="precioVenta" type="text" inputMode="decimal" className="form-input"
-                  value={newForm.precioVenta} onChange={handleNewFormChange}
-                  required placeholder="ej: 45000" autoComplete="off" />
-              </div>
+              {(() => {
+                const selectedNewCat = categorias.find(c => c.id === newForm.categoria_id);
+                const isUF = selectedNewCat ? parseCategory(selectedNewCat).uf : true;
+                return isUF ? (
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="precioVenta">Valor precio de venta <span className="required-mark">*</span></label>
+                    <input id="precioVenta" name="precioVenta" type="text" inputMode="decimal" className="form-input"
+                      value={newForm.precioVenta} onChange={handleNewFormChange}
+                      required placeholder="ej: 45000" autoComplete="off" />
+                  </div>
+                ) : null;
+              })()}
 
             </div>
           </div>
@@ -1013,13 +1145,19 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   required max={today()} />
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="lote-vencimiento">Fecha de vencimiento <span className="required-mark">*</span></label>
-                <input id="lote-vencimiento" name="fechaVencimiento" type="date" className="form-input"
-                  value={loteForm.fechaVencimiento} onChange={handleLoteChange}
-                  required min={today()} />
-                <span className="form-hint">Debe ser una fecha futura</span>
-              </div>
+              {(() => {
+                const selectedVacCat = selectedVacuna ? categorias.find(c => c.id === selectedVacuna.categoria_id) : null;
+                const isP = selectedVacCat ? parseCategory(selectedVacCat).p : true;
+                return isP ? (
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="lote-vencimiento">Fecha de vencimiento <span className="required-mark">*</span></label>
+                    <input id="lote-vencimiento" name="fechaVencimiento" type="date" className="form-input"
+                      value={loteForm.fechaVencimiento} onChange={handleLoteChange}
+                      required min={today()} />
+                    <span className="form-hint">Debe ser una fecha futura</span>
+                  </div>
+                ) : null;
+              })()}
 
               <div className="form-group full-width">
                 <label className="form-label" htmlFor="lote-proveedor">Proveedor / Distribuidor <span className="required-mark">*</span></label>
@@ -1085,15 +1223,58 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             </div>
           )}
 
-          <div className="form-group" style={{ textAlign: "left" }}>
-            <label className="form-label" htmlFor="dosis-notas">Notas del paciente (opcional)</label>
+          <div className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", textAlign: "left", marginTop: "16px" }}>
+            <div className="form-group" style={{ gridColumn: "span 2" }}>
+              <label className="form-label" htmlFor="paciente-nombre">Nombre del Paciente <span className="required-mark">*</span></label>
+              <input
+                id="paciente-nombre"
+                type="text"
+                className="form-input"
+                value={pacienteNombre}
+                onChange={e => setPacienteNombre(e.target.value)}
+                placeholder="ej: Juan Pérez"
+                autoComplete="off"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="paciente-edad">Edad <span className="required-mark">*</span></label>
+              <input
+                id="paciente-edad"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className="form-input"
+                value={pacienteEdad}
+                onChange={e => setPacienteEdad(e.target.value)}
+                placeholder="ej: 6"
+                autoComplete="off"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="paciente-edad-unidad">Unidad</label>
+              <select
+                id="paciente-edad-unidad"
+                className="form-select"
+                value={pacienteEdadUnidad}
+                onChange={e => setPacienteEdadUnidad(e.target.value)}
+              >
+                <option value="Años">Años</option>
+                <option value="Meses">Meses</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-group" style={{ textAlign: "left", marginTop: "16px" }}>
+            <label className="form-label" htmlFor="dosis-notes">Notas adicionales (opcional)</label>
             <input
-              id="dosis-notas"
+              id="dosis-notes"
               type="text"
               className="form-input"
               value={dosisNotas}
               onChange={e => setDosisNotas(e.target.value)}
-              placeholder="ej: Paciente Juan Pérez, 6 meses, 1ª dosis"
+              placeholder="ej: Ninguna observación"
               autoComplete="off"
             />
           </div>
@@ -1124,7 +1305,141 @@ export default function TenantAdminVacunasPage({ params }: Props) {
         </div>
       </dialog>
 
-      
+      {/* ═══════════════════════════════════════════════════════════
+          MODAL: COMPRAS HISTÓRICAS (LOTES)
+      ═══════════════════════════════════════════════════════════ */}
+      <dialog ref={comprasHistoricasRef} id="modal-compras-historicas" aria-labelledby="dialog-compras-title" style={{ maxWidth: "800px", width: "90%", margin: "auto" }}>
+        <div className="modal-header">
+          <div>
+            <div className="modal-title" id="dialog-compras-title">📋 Historial de Compras de Lotes</div>
+            <div className="modal-subtitle">
+              {selectedVacuna ? `Item: ${selectedVacuna.nombre}` : ""}
+            </div>
+          </div>
+          <button className="modal-close" onClick={() => comprasHistoricasRef.current?.close()} type="button" aria-label="Cerrar">✕</button>
+        </div>
+        <div className="modal-body" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+          {selectedVacuna && selectedVacuna.lotes && selectedVacuna.lotes.length > 0 ? (
+            <div className="inv-table-wrap" style={{ margin: 0 }}>
+              <table className="inv-table" style={{ width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Fecha Registro</th>
+                    <th>Nro Lote</th>
+                    <th>Proveedor</th>
+                    <th>Cantidad</th>
+                    <th>Costo Unitario</th>
+                    <th>Total Pagado</th>
+                    <th>Factura</th>
+                    <th>Vencimiento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedVacuna.lotes.map(l => {
+                    const cant = l.cantidad || 0;
+                    const precio = parseInt(l.precioCompra || "0");
+                    const total = cant * precio;
+                    return (
+                      <tr key={l.id}>
+                        <td style={{ fontSize: "13px" }}>{l.fechaRegistro ? l.fechaRegistro.split("T")[0] : "—"}</td>
+                        <td>
+                          <span className="lot-badge" style={{ background: `${accentColor}22`, color: primaryColor }}>
+                            {l.numero}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: "13px" }}>{l.proveedor || "—"}</td>
+                        <td>{cant}</td>
+                        <td style={{ fontSize: "13px" }}>${precio.toLocaleString("es-CO")}</td>
+                        <td style={{ fontSize: "13px", fontWeight: 700 }}>${total.toLocaleString("es-CO")}</td>
+                        <td style={{ fontSize: "13px" }}>{l.factura || "—"}</td>
+                        <td style={{ fontSize: "13px" }}>
+                          {l.fechaVencimiento ? (
+                            <span style={{ color: new Date(l.fechaVencimiento) < new Date() ? "var(--rose-500)" : "inherit" }}>
+                              {l.fechaVencimiento}
+                            </span>
+                          ) : (
+                            <span style={{ color: "var(--slate-400)" }}>No perecedero</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "40px", color: "var(--slate-500)" }}>
+              No se han registrado compras/lotes para este ítem.
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button type="button" className="btn btn-primary" style={{ background: primaryColor }} onClick={() => comprasHistoricasRef.current?.close()}>
+            Cerrar
+          </button>
+        </div>
+      </dialog>
+
+      {/* ═══════════════════════════════════════════════════════════
+          DIALOG: REGISTRAR MERMA
+      ═══════════════════════════════════════════════════════════ */}
+      <dialog ref={mermaRef} id="dialog-registrar-merma" className="confirm-dialog" aria-labelledby="dialog-merma-title" style={{ margin: "auto", maxWidth: "450px", width: "90%" }}>
+        <div className="modal-body" style={{ padding: "32px 28px" }}>
+          <div className="confirm-icon" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444" }}>🗑️</div>
+
+          <h2 className="confirm-title" id="dialog-merma-title" style={{ color: "var(--slate-900)" }}>Registrar Merma</h2>
+          <p className="confirm-msg" style={{ color: "var(--slate-600)" }}>
+            Vas a registrar una pérdida o descarte de{" "}
+            <strong>{selectedVacuna?.nombre}</strong>.
+          </p>
+
+          <form onSubmit={handleRegistrarMerma} noValidate style={{ textAlign: "left", marginTop: "16px" }}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="merma-cantidad">Cantidad a descartar <span className="required-mark">*</span></label>
+              <input
+                id="merma-cantidad"
+                type="number"
+                min="1"
+                max={selectedVacuna?.stockActual || 1}
+                className="form-input"
+                value={mermaCantidad}
+                onChange={e => setMermaCantidad(Math.max(1, parseInt(e.target.value) || 1))}
+                required
+              />
+            </div>
+
+            <div className="form-group" style={{ marginTop: "12px" }}>
+              <label className="form-label" htmlFor="merma-motivo">Motivo de la merma <span className="required-mark">*</span></label>
+              <select
+                id="merma-motivo"
+                className="form-select"
+                value={mermaMotivo}
+                onChange={e => setMermaMotivo(e.target.value)}
+                required
+              >
+                <option value="MERMA - Vencimiento">Vencimiento de lote</option>
+                <option value="MERMA - Rotura de frío">Rotura de cadena de frío</option>
+                <option value="MERMA - Accidente / Rotura">Accidente / Rotura física</option>
+                <option value="MERMA - Otro">Otro / Descarte técnico</option>
+              </select>
+            </div>
+
+            <div className="modal-footer" style={{ marginTop: "24px", padding: 0 }}>
+              <button type="button" className="btn btn-outline" onClick={() => mermaRef.current?.close()}>
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ background: "#ef4444" }}
+              >
+                Registrar Pérdida
+              </button>
+            </div>
+          </form>
+        </div>
+      </dialog>
+
       {/* ═══════════════════════════════════════════════════════════
           MODAL: CATEGORÍA
       ═══════════════════════════════════════════════════════════ */}
@@ -1155,6 +1470,22 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                     style={{ width: "40px", height: "40px", padding: "0", border: "none", cursor: "pointer", borderRadius: "8px" }} />
                   <span style={{ fontSize: "13px", color: "var(--slate-500)" }}>Elige un color para identificar esta categoría.</span>
                 </div>
+              </div>
+
+              <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                  <input type="checkbox" checked={catIsUF} onChange={e => setCatIsUF(e.target.checked)} style={{ width: "18px", height: "18px", accentColor: primaryColor }} />
+                  ¿Es para Usuario Final?
+                </label>
+                <span style={{ fontSize: "12px", color: "var(--slate-500)" }}>Requiere precio de venta al público y genera ingresos.</span>
+              </div>
+
+              <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                  <input type="checkbox" checked={catIsP} onChange={e => setCatIsP(e.target.checked)} style={{ width: "18px", height: "18px", accentColor: primaryColor }} />
+                  ¿Es Perecedero?
+                </label>
+                <span style={{ fontSize: "12px", color: "var(--slate-500)" }}>Requiere fecha de vencimiento obligatoria al registrar lotes.</span>
               </div>
             </div>
           </div>
