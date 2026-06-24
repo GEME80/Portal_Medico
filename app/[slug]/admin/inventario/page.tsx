@@ -477,6 +477,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
     try {
       const newMovements = [];
+      const newLotes = [];
       const todayDate = new Date();
       
       // Generar 30 salidas aleatorias
@@ -497,9 +498,43 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           valor_unitario_cobrado: Math.random() > 0.5 ? randomItem.valorMayorista : randomItem.precioVenta
         });
       }
+
+      // Generar 2 lotes para algunos ítems para probar inflación
+      for (let i = 0; i < Math.min(3, items.length); i++) {
+        const item = items[i];
+        const basePrice = Number(item.valorMayorista) || 10000;
+        
+        // Lote antiguo (hace 2 meses)
+        const dateAntiguo = new Date();
+        dateAntiguo.setMonth(todayDate.getMonth() - 2);
+        newLotes.push({
+          tenant_id: tenantId,
+          item_id: item.id,
+          lote: `TEST-A-${i}`,
+          cantidad_inicial: 10,
+          fecha_vencimiento: new Date(todayDate.getFullYear() + 1, 0, 1).toISOString(),
+          precio_compra: basePrice,
+          fecha_registro: dateAntiguo.toISOString()
+        });
+
+        // Lote nuevo (este mes) con 15-30% de inflación
+        const inflacion = 1 + (Math.floor(Math.random() * 15) + 15) / 100;
+        newLotes.push({
+          tenant_id: tenantId,
+          item_id: item.id,
+          lote: `TEST-N-${i}`,
+          cantidad_inicial: 10,
+          fecha_vencimiento: new Date(todayDate.getFullYear() + 2, 0, 1).toISOString(),
+          precio_compra: Math.floor(basePrice * inflacion),
+          fecha_registro: todayDate.toISOString()
+        });
+      }
       
       await supabase.from("movimientos_inventario").insert(newMovements);
-      alert("Datos generados. Ve al Dashboard para ver las gráficas.");
+      if (newLotes.length > 0) {
+        await supabase.from("lotes_inventario").insert(newLotes);
+      }
+      alert("Datos generados. Ve al Dashboard para ver las gráficas de inflación.");
       await loadData(tenantId);
     } catch (err) {
       console.error(err);
