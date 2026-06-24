@@ -63,6 +63,7 @@ interface ParsedCategoria {
   color: string;
   uf: boolean;
   p: boolean;
+  tipo: "v" | "i";
 }
 
 const parseCategory = (c: Categoria): ParsedCategoria => {
@@ -75,6 +76,7 @@ const parseCategory = (c: Categoria): ParsedCategoria => {
         color: c.color,
         uf: parsed.uf !== undefined ? parsed.uf : true,
         p: parsed.p !== undefined ? parsed.p : true,
+        tipo: parsed.tipo || "v",
       };
     }
   } catch (e) {
@@ -86,6 +88,7 @@ const parseCategory = (c: Categoria): ParsedCategoria => {
     color: c.color,
     uf: true,
     p: true,
+    tipo: "v",
   };
 };
 
@@ -144,6 +147,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
   const [catIsUF, setCatIsUF] = useState(true);
   const [catIsP, setCatIsP] = useState(true);
+  const [catTipo, setCatTipo] = useState<"v" | "i">("v");
 
   const selectedVacuna = vacunas.find(v => v.id === selectedId);
 
@@ -251,6 +255,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     setCatForm({ id: "", nombre: "", color: primaryColor });
     setCatIsUF(true);
     setCatIsP(true);
+    setCatTipo("v");
     catRef.current?.showModal();
   };
 
@@ -259,6 +264,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     setCatForm({ id: pc.id, nombre: pc.nombre, color: pc.color || primaryColor });
     setCatIsUF(pc.uf);
     setCatIsP(pc.p);
+    setCatTipo(pc.tipo);
     catRef.current?.showModal();
   };
 
@@ -269,7 +275,8 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     const serializedName = JSON.stringify({
       n: catForm.nombre,
       uf: catIsUF,
-      p: catIsP
+      p: catIsP,
+      tipo: catTipo
     });
     
     try {
@@ -318,21 +325,24 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     e.preventDefault();
     try {
       const selectedCat = categorias.find(c => c.id === newForm.categoria_id);
-      const isUF = selectedCat ? parseCategory(selectedCat).uf : true;
+      const parsedCat = selectedCat ? parseCategory(selectedCat) : null;
+      const isUF = parsedCat ? parsedCat.uf : true;
+      const isVacuna = parsedCat ? parsedCat.tipo === "v" : true;
+
       const { error } = await supabase
         .from("inventario_medico")
         .insert({
           tenant_id: tenantId,
           categoria_id: newForm.categoria_id || (categorias.length > 0 ? categorias[0].id : null),
           nombre: newForm.nombre,
-          enfermedad: newForm.enfermedad || null,
-          via_admin: newForm.viaAdmin || null,
-          esquema_dosis: newForm.esquemaDosis || null,
+          enfermedad: isVacuna ? (newForm.enfermedad || null) : null,
+          via_admin: isVacuna ? (newForm.viaAdmin || "Intramuscular") : "No aplica",
+          esquema_dosis: isVacuna ? (newForm.esquemaDosis || null) : null,
           stock_minimo: parseInt(newForm.stockMinimo) || 5,
           stock_actual: 0,
           valor_mayorista: parseFloat(newForm.valorMayorista) || 0,
           precio_venta: isUF ? (parseFloat(newForm.precioVenta) || 0) : 0,
-          temperatura: newForm.temperatura,
+          temperatura: isVacuna ? newForm.temperatura : "Temperatura ambiente",
           lote_activo: "—"
         });
 
@@ -1029,39 +1039,47 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   required minLength={2} placeholder="ej: Hepatitis B" autoComplete="off" />
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="enfermedad">Enfermedad que previene</label>
-                <input id="enfermedad" name="enfermedad" type="text" className="form-input"
-                  value={newForm.enfermedad} onChange={handleNewFormChange}
-                  placeholder="ej: Hepatitis B crónica" autoComplete="off" />
-              </div>
+              {(() => {
+                const selectedNewCat = categorias.find(c => c.id === newForm.categoria_id);
+                const isVacuna = selectedNewCat ? parseCategory(selectedNewCat).tipo === "v" : true;
+                return isVacuna ? (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="enfermedad">Enfermedad que previene</label>
+                      <input id="enfermedad" name="enfermedad" type="text" className="form-input"
+                        value={newForm.enfermedad} onChange={handleNewFormChange}
+                        placeholder="ej: Hepatitis B crónica" autoComplete="off" />
+                    </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="viaAdmin">Vía de administración</label>
-                <select id="viaAdmin" name="viaAdmin" className="form-select" value={newForm.viaAdmin} onChange={handleNewFormChange}>
-                  <option value="">No aplica</option>
-                  <option value="Intramuscular">Intramuscular</option>
-                  <option value="Subcutánea">Subcutánea</option>
-                  <option value="Oral">Oral</option>
-                  <option value="Intradérmica">Intradérmica</option>
-                </select>
-              </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="viaAdmin">Vía de administración</label>
+                      <select id="viaAdmin" name="viaAdmin" className="form-select" value={newForm.viaAdmin} onChange={handleNewFormChange}>
+                        <option value="">No aplica</option>
+                        <option value="Intramuscular">Intramuscular</option>
+                        <option value="Subcutánea">Subcutánea</option>
+                        <option value="Oral">Oral</option>
+                        <option value="Intradérmica">Intradérmica</option>
+                      </select>
+                    </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="temperatura">Temperatura de almacenamiento</label>
-                <select id="temperatura" name="temperatura" className="form-select" value={newForm.temperatura} onChange={handleNewFormChange} required>
-                  <option value="2-8°C">2-8°C (Refrigeración)</option>
-                  <option value="-15 a -25°C">-15 a -25°C (Congelación)</option>
-                  <option value="Temperatura ambiente">Temperatura ambiente</option>
-                </select>
-              </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="temperatura">Temperatura de almacenamiento</label>
+                      <select id="temperatura" name="temperatura" className="form-select" value={newForm.temperatura} onChange={handleNewFormChange} required>
+                        <option value="2-8°C">2-8°C (Refrigeración)</option>
+                        <option value="-15 a -25°C">-15 a -25°C (Congelación)</option>
+                        <option value="Temperatura ambiente">Temperatura ambiente</option>
+                      </select>
+                    </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="esquemaDosis">Esquema de dosis</label>
-                <input id="esquemaDosis" name="esquemaDosis" type="text" className="form-input"
-                  value={newForm.esquemaDosis} onChange={handleNewFormChange}
-                  placeholder="ej: 3 dosis: 2, 4, 6 meses" autoComplete="off" />
-              </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="esquemaDosis">Esquema de dosis</label>
+                      <input id="esquemaDosis" name="esquemaDosis" type="text" className="form-input"
+                        value={newForm.esquemaDosis} onChange={handleNewFormChange}
+                        placeholder="ej: 3 dosis: 2, 4, 6 meses" autoComplete="off" />
+                    </div>
+                  </>
+                ) : null;
+              })()}
 
               <div className="form-group">
                 <label className="form-label" htmlFor="stockMinimo">Stock mínimo de alerta <span className="required-mark">*</span></label>
@@ -1486,6 +1504,17 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   ¿Es Perecedero?
                 </label>
                 <span style={{ fontSize: "12px", color: "var(--slate-500)" }}>Requiere fecha de vencimiento obligatoria al registrar lotes.</span>
+              </div>
+
+              <div className="form-group full-width">
+                <label className="form-label" htmlFor="cat-tipo">Tipo de Categoría</label>
+                <select id="cat-tipo" className="form-select" value={catTipo} onChange={e => setCatTipo(e.target.value as "v" | "i")}>
+                  <option value="v">💉 Biológico / Vacuna / Medicamento</option>
+                  <option value="i">📦 Insumo Médico / Dispositivo / Otros</option>
+                </select>
+                <span style={{ fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", display: "block" }}>
+                  Las categorías de insumos ocultan campos específicos de vacunas en el formulario de registro.
+                </span>
               </div>
             </div>
           </div>
