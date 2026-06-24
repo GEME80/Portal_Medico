@@ -611,39 +611,53 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
     }
   }, [filteredLotesForTab, selectedMonthCompras, selectedYear]);
 
-  // --- TABLA DE DETALLE CONSOLIDADO POR ÍTEM ---
-  const detailedConsolidatedItems = useMemo(() => {
-    return filteredItemsForTab.map(item => {
-      const itemLotes = filteredLotesForTab.filter(l => l.item_id === item.id);
+  // --- UTILIDAD POTENCIAL EN DINERO ---
+  const utilidadDinero = useMemo(() => {
+    return filteredLotesForTab.reduce((acc, l) => {
+      const qty = Number(l.cantidad) || 0;
+      const item = filteredInventario.find(i => i.id === l.item_id);
+      const sellPrice = Number(item?.precio_venta) || 0;
+      const costU = Number(l.precio_compra) || 0;
+      return acc + (qty * (sellPrice - costU));
+    }, 0);
+  }, [filteredLotesForTab, filteredInventario]);
+
+  // --- TABLA DE DETALLE DE COMPRAS POR LOTE ---
+  const detailedLotesForTab = useMemo(() => {
+    return filteredLotesForTab.map(l => {
+      const item = filteredInventario.find(i => i.id === l.item_id);
+      const catName = categorias.find(c => c.id === item?.categoria_id)?.nombre || "Insumos";
       
-      const cantidadComprada = itemLotes.reduce((acc, l) => acc + (Number(l.cantidad) || 0), 0);
-      const inversionCompras = itemLotes.reduce((acc, l) => acc + (Number(l.cantidad) || 0) * (Number(l.precio_compra) || 0), 0);
+      const qty = Number(l.cantidad) || 0;
+      const costU = Number(l.precio_compra) || 0;
+      const costT = qty * costU;
       
-      const costoPromUnitario = cantidadComprada > 0 ? (inversionCompras / cantidadComprada) : (Number(item.valor_mayorista) || 0);
-      const precioVentaFinal = Number(item.precio_venta) || 0;
+      const sellPrice = Number(item?.precio_venta) || 0;
+      const marginVal = sellPrice - costU;
+      const marginPct = sellPrice > 0 ? (marginVal / sellPrice) * 100 : 0;
       
-      const margenUnitario = precioVentaFinal - costoPromUnitario;
-      const margenPorcentaje = precioVentaFinal > 0 ? (margenUnitario / precioVentaFinal) * 100 : 0;
-      
-      const stockActual = Number(item.stock_actual) || 0;
-      const valorizacionInventario = stockActual * costoPromUnitario;
+      const stockActual = Number(item?.stock_actual) || 0;
+      const valorizacionInventario = stockActual * costU;
       
       return {
-        id: item.id,
-        nombre: item.nombre,
-        laboratorio: item.laboratorio || "Sin Marca",
-        categoria: categorias.find(c => c.id === item.categoria_id)?.nombre || "Insumos",
-        cantidadComprada,
-        inversionCompras,
-        costoPromUnitario,
-        precioVentaFinal,
-        margenUnitario,
-        margenPorcentaje,
+        id: l.id,
+        fechaCompra: l.fecha_registro ? l.fecha_registro.split('T')[0] : "—",
+        nombre: item?.nombre || "Sin nombre",
+        categoria: catName,
+        laboratorio: item?.laboratorio || "Sin Marca",
+        numeroLote: l.numero_lote || "—",
+        cantidadComprada: qty,
+        costoCompraUnitario: costU,
+        valorTotalPagado: costT,
+        precioVentaFinal: sellPrice,
+        margenUnitario: marginVal,
+        margenPorcentaje: marginPct,
         stockActual,
         valorizacionInventario
       };
     });
-  }, [filteredItemsForTab, filteredLotesForTab, categorias]);
+  }, [filteredLotesForTab, filteredInventario, categorias]);
+
 
   // Concentración de compras por laboratorio
   const chartDataConcentracionLab = useMemo(() => {
@@ -687,31 +701,35 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
   // --- EXPORT TO CSV EXCEL ---
   const exportToCSV = () => {
     const headers = [
+      "Fecha Compra",
       "Producto/Item",
       "Categoria",
-      "Laboratorio/Proveedor",
-      "Cantidad Comprada en Periodo",
-      "Inversion Compras en Periodo ($)",
-      "Costo de Compra Promedio Unitario ($)",
-      "Precio Venta Unitario Final ($)",
+      "Laboratorio/Marca",
+      "Nro. Lote",
+      "Cantidad Comprada (U)",
+      "Costo Compra Unitario ($)",
+      "Valor Total Pagado ($)",
+      "Precio Venta Unitario ($)",
       "Margen Unitario ($)",
       "Margen (%)",
-      "Stock Fisico Actual",
+      "Stock Fisico Actual (Item)",
       "Valorizacion Inventario Actual ($)"
     ];
 
-    const rows = detailedConsolidatedItems.map(item => [
-      `"${item.nombre.replace(/"/g, '""')}"`,
-      `"${item.categoria.replace(/"/g, '""')}"`,
-      `"${item.laboratorio.replace(/"/g, '""')}"`,
-      item.cantidadComprada,
-      item.inversionCompras,
-      item.costoPromUnitario.toFixed(2),
-      item.precioVentaFinal.toFixed(2),
-      item.margenUnitario.toFixed(2),
-      item.margenPorcentaje.toFixed(1),
-      item.stockActual,
-      item.valorizacionInventario.toFixed(2)
+    const rows = detailedLotesForTab.map(l => [
+      l.fechaCompra,
+      `"${l.nombre.replace(/"/g, '""')}"`,
+      `"${l.categoria.replace(/"/g, '""')}"`,
+      `"${l.laboratorio.replace(/"/g, '""')}"`,
+      `"${l.numeroLote.replace(/"/g, '""')}"`,
+      l.cantidadComprada,
+      l.costoCompraUnitario.toFixed(2),
+      l.valorTotalPagado.toFixed(2),
+      l.precioVentaFinal.toFixed(2),
+      l.margenUnitario.toFixed(2),
+      l.margenPorcentaje.toFixed(1),
+      l.stockActual,
+      l.valorizacionInventario.toFixed(2)
     ]);
 
     const csvContent = [
@@ -725,7 +743,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
     link.setAttribute("href", url);
     
     const dateStr = new Date().toISOString().slice(0, 10);
-    link.setAttribute("download", `detalle_consolidado_insumos_${dateStr}.csv`);
+    link.setAttribute("download", `detalle_compras_lotes_${dateStr}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -745,7 +763,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
     const html = `
       <html>
         <head>
-          <title>Reporte de Detalle Consolidado de Insumos — EcoVaccine</title>
+          <title>Reporte Detallado de Compras e Inventario — EcoVaccine</title>
           <style>
             body {
               font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -791,7 +809,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 11px;
+              font-size: 10px;
               margin-bottom: 30px;
             }
             th {
@@ -799,12 +817,12 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               font-weight: 700;
               color: #475569;
               border-bottom: 2px solid #cbd5e1;
-              padding: 10px 8px;
+              padding: 10px 6px;
               text-align: left;
             }
             td {
               border-bottom: 1px solid #e2e8f0;
-              padding: 8px;
+              padding: 8px 6px;
             }
             tr:nth-child(even) {
                background: #f8fafc;
@@ -832,7 +850,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
           <div class="header">
             <div>
               <h1 class="header-title">ECOVACCINE CLINICAL REPORT</h1>
-              <div style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 4px;">Detalle Consolidado de Insumos e Inventario</div>
+              <div style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 4px;">Detalle de Compras e Inventario por Lote</div>
             </div>
             <div class="header-meta">
               <div>Fecha Emisión: ${dateStr}</div>
@@ -853,31 +871,35 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
           <table>
             <thead>
               <tr>
-                <th>PRODUCTO</th>
+                <th>FECHA COMPRA</th>
+                <th>PRODUCTO/ITEM</th>
                 <th>CATEGORÍA</th>
-                <th>LABORATORIO</th>
-                <th class="text-right">CANT. COMPRADA (U)</th>
-                <th class="text-right">INVERSIÓN TOTAL</th>
-                <th class="text-right">COSTO PROM. U</th>
-                <th class="text-right">P. VENTA UNITARIO</th>
+                <th>LABORATORIO/MARCA</th>
+                <th>NRO. LOTE</th>
+                <th class="text-right">COMPRADO (U)</th>
+                <th class="text-right">COSTO COMPRA U.</th>
+                <th class="text-right">VALOR TOTAL PAGADO</th>
+                <th class="text-right">PRECIO VENTA U.</th>
                 <th class="text-right">MARGEN ($ / %)</th>
-                <th class="text-right">STOCK FISICO</th>
+                <th class="text-right">STOCK ACT. (ITEM)</th>
                 <th class="text-right">VALORIZACIÓN STOCK</th>
               </tr>
             </thead>
             <tbody>
-              ${detailedConsolidatedItems.map(item => `
+              ${detailedLotesForTab.map(l => `
                 <tr>
-                  <td class="font-bold">${item.nombre}</td>
-                  <td>${item.categoria}</td>
-                  <td>${item.laboratorio}</td>
-                  <td class="text-right">${item.cantidadComprada}</td>
-                  <td class="text-right">$${item.inversionCompras.toLocaleString()}</td>
-                  <td class="text-right">$${item.costoPromUnitario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                  <td class="text-right">$${item.precioVentaFinal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                  <td class="text-right" style="color: ${item.margenUnitario > 0 ? '#10b981' : '#ef4444'}">$${item.margenUnitario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${item.margenPorcentaje.toFixed(0)}%)</td>
-                  <td class="text-right font-bold">${item.stockActual}</td>
-                  <td class="text-right font-bold">$${item.valorizacionInventario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td>${l.fechaCompra}</td>
+                  <td class="font-bold">${l.nombre}</td>
+                  <td>${l.categoria}</td>
+                  <td>${l.laboratorio}</td>
+                  <td style="font-family: monospace;">${l.numeroLote}</td>
+                  <td class="text-right">${l.cantidadComprada}</td>
+                  <td class="text-right">$${l.costoCompraUnitario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td class="text-right font-bold">$${l.valorTotalPagado.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td class="text-right">$${l.precioVentaFinal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td class="text-right" style="color: ${l.margenUnitario > 0 ? '#10b981' : '#ef4444'}">$${l.margenUnitario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${l.margenPorcentaje.toFixed(0)}%)</td>
+                  <td class="text-right">${l.stockActual}</td>
+                  <td class="text-right font-bold">$${l.valorizacionInventario.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -1780,6 +1802,18 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
             </div>
 
+            {/* Utilidad en Dinero */}
+            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>💵</div>
+              <div>
+                <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${utilidadDinero.toLocaleString()}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600 }}>
+                  Utilidad en Dinero
+                  <HelpTooltip text="Utilidad bruta potencial del volumen comprado calculada como: Sumatoria de (Cantidad Comprada * (Precio Venta Paciente - Costo Compra Unitario))." />
+                </div>
+              </div>
+            </div>
+
             {/* Margen Promedio */}
             <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: margenUnitarioVal > 0 ? "rgba(139, 92, 246, 0.1)" : "rgba(239, 68, 68, 0.1)", color: margenUnitarioVal > 0 ? "#8b5cf6" : "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📈</div>
@@ -1888,12 +1922,12 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
 
           </div>
 
-          {/* Tabla de Detalle Consolidado por Ítem (Con exportación) */}
+          {/* Tabla de Detalle de Compras por Lote (Con exportación) */}
           <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
               <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", margin: 0, display: "flex", alignItems: "center" }}>
-                📋 Tabla de Detalle Consolidado de Insumos e Inventario
-                <HelpTooltip text="Unifica las compras realizadas del periodo (unidades, total gastado, costo promedio, venta y margen) junto al stock físico actual y su valorización a precio de costo." />
+                📋 Tabla de Compras y Detalle de Insumos por Lote
+                <HelpTooltip text="Muestra cada lote comprado en el periodo seleccionado con su respectiva fecha, número de lote, cantidad, costo, valor total pagado, margen, existencias y valorización." />
               </h4>
               <div style={{ display: "flex", gap: "10px" }}>
                 <button
@@ -1917,12 +1951,14 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
                 <thead>
                   <tr style={{ borderBottom: "2px solid var(--slate-200)", fontSize: "11px", color: "var(--slate-500)", fontWeight: 700, textTransform: "uppercase" }}>
+                    <th style={{ padding: "12px 8px" }}>Fecha Compra</th>
                     <th style={{ padding: "12px 8px" }}>Producto/Item</th>
                     <th style={{ padding: "12px 8px" }}>Categoría</th>
                     <th style={{ padding: "12px 8px" }}>Laboratorio/Marca</th>
+                    <th style={{ padding: "12px 8px" }}>Nro. Lote</th>
                     <th style={{ padding: "12px 8px", textAlign: "right" }}>Comprado (U)</th>
-                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Inversión Total</th>
                     <th style={{ padding: "12px 8px", textAlign: "right" }}>Costo Compra U.</th>
+                    <th style={{ padding: "12px 8px", textAlign: "right" }}>Valor Total Pagado</th>
                     <th style={{ padding: "12px 8px", textAlign: "right" }}>Precio Venta U.</th>
                     <th style={{ padding: "12px 8px", textAlign: "right" }}>Margen Unitario</th>
                     <th style={{ padding: "12px 8px", textAlign: "right" }}>Stock Act.</th>
@@ -1930,30 +1966,32 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
                   </tr>
                 </thead>
                 <tbody>
-                  {detailedConsolidatedItems.length === 0 ? (
+                  {detailedLotesForTab.length === 0 ? (
                     <tr>
-                      <td colSpan={10} style={{ padding: "24px 8px", textAlign: "center", color: "var(--slate-400)", fontSize: "13px" }}>
-                        Sin productos que cumplan con los filtros activos.
+                      <td colSpan={12} style={{ padding: "24px 8px", textAlign: "center", color: "var(--slate-400)", fontSize: "13px" }}>
+                        Sin lotes que cumplan con los filtros activos.
                       </td>
                     </tr>
                   ) : (
-                    detailedConsolidatedItems.map((item) => {
+                    detailedLotesForTab.map((l) => {
                       return (
-                        <tr key={item.id} style={{ borderBottom: "1px solid var(--slate-100)", fontSize: "13px", color: "var(--slate-700)" }}>
-                          <td style={{ padding: "12px 8px", fontWeight: 600 }}>{item.nombre}</td>
+                        <tr key={l.id} style={{ borderBottom: "1px solid var(--slate-100)", fontSize: "13px", color: "var(--slate-700)" }}>
+                          <td style={{ padding: "12px 8px" }}>{l.fechaCompra}</td>
+                          <td style={{ padding: "12px 8px", fontWeight: 600 }}>{l.nombre}</td>
                           <td style={{ padding: "12px 8px" }}>
-                            <span style={{ background: "var(--slate-100)", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 600 }}>{item.categoria}</span>
+                            <span style={{ background: "var(--slate-100)", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 600 }}>{l.categoria}</span>
                           </td>
-                          <td style={{ padding: "12px 8px" }}>{item.laboratorio}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right" }}>{item.cantidadComprada}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 600 }}>${item.inversionCompras.toLocaleString()}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right" }}>${item.costoPromUnitario.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right" }}>${item.precioVentaFinal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right", color: item.margenUnitario > 0 ? "#10b981" : "#ef4444", fontWeight: 700 }}>
-                            ${item.margenUnitario.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})} ({item.margenPorcentaje.toFixed(0)}%)
+                          <td style={{ padding: "12px 8px" }}>{l.laboratorio}</td>
+                          <td style={{ padding: "12px 8px", fontFamily: "monospace" }}>{l.numeroLote}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right" }}>{l.cantidadComprada}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right" }}>${l.costoCompraUnitario.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 600 }}>${l.valorTotalPagado.toLocaleString()}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right" }}>${l.precioVentaFinal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right", color: l.margenUnitario > 0 ? "#10b981" : "#ef4444", fontWeight: 700 }}>
+                            ${l.margenUnitario.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})} ({l.margenPorcentaje.toFixed(0)}%)
                           </td>
-                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 700 }}>{item.stockActual}</td>
-                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 700 }}>${item.valorizacionInventario.toLocaleString()}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 700 }}>{l.stockActual}</td>
+                          <td style={{ padding: "12px 8px", textAlign: "right", fontWeight: 700 }}>${l.valorizacionInventario.toLocaleString()}</td>
                         </tr>
                       );
                     })
