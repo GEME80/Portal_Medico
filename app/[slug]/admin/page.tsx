@@ -48,23 +48,34 @@ export default async function TenantAdminDashboard({ params }: Props) {
     .lte("stock_actual", 5); // Simplification: we'd ideally compare stock_actual <= stock_minimo but PostgREST can't do column comparison easily without RPC, so we fetch low stock or assume a generic threshold, or we fetch all and filter.
     
   // Fetch all items, categories and movements
-  const [inventarioRes, categoriasRes, movimientosRes] = await Promise.all([
+  const [
+    { data: inventarioData, error: invErr },
+    { data: categoriasData },
+    { data: movimientosData },
+    { data: lotesData }
+  ] = await Promise.all([
     supabase.from("inventario_medico").select("*").eq("tenant_id", tenant.id),
     supabase.from("categorias_inventario").select("*").eq("tenant_id", tenant.id),
-    supabase.from("movimientos_inventario").select("*").eq("tenant_id", tenant.id)
+    supabase.from("movimientos_inventario").select("*").eq("tenant_id", tenant.id),
+    supabase.from("lotes_inventario").select("*").eq("tenant_id", tenant.id).order("fecha_registro", { ascending: false })
   ]);
-  
-  
-  const inventarioData = inventarioRes.data || [];
-  const categoriasData = categoriasRes.data || [];
-  const movimientosData = movimientosRes.data || [];
+
+  if (invErr) {
+    console.error(invErr);
+    return <div style={{ padding: "40px", color: "red" }}>Error al cargar datos del dashboard.</div>;
+  }
+
+  const safeCategorias = categoriasData || [];
+  const safeMovimientos = movimientosData || [];
+  const safeInventario = inventarioData || [];
+  const safeLotes = lotesData || [];
     
   // --- KPI Calculations ---
   
   // 1. Capital Invertido y Desglose
   let capitalInvertido = 0;
   const capitalPorCategoria: Record<string, {nombre: string, total: number}> = {};
-  categoriasData.forEach((c: any) => capitalPorCategoria[c.id] = { nombre: c.nombre, total: 0 });
+  safeCategorias.forEach((c: any) => capitalPorCategoria[c.id] = { nombre: c.nombre, total: 0 });
 
   // 4. Ítems en Riesgo Crítico
   const itemsEnRiesgo: any[] = [];
@@ -72,7 +83,7 @@ export default async function TenantAdminDashboard({ params }: Props) {
   // 3. Top Margen de Contribución
   const margenItems: any[] = [];
 
-  inventarioData.forEach(item => {
+  safeInventario.forEach(item => {
     // Capital
     const valorItem = (item.stock_actual * (item.valor_mayorista || 0));
     capitalInvertido += valorItem;
@@ -113,10 +124,16 @@ export default async function TenantAdminDashboard({ params }: Props) {
   inicioAnio.setHours(0, 0, 0, 0);
 
   const itemsConSalidaReciente = new Set();
+  
+  const categoriasMap: Record<string, string> = {};
+  safeCategorias.forEach(c => {
+    categoriasMap[c.id] = c.nombre;
+  });
 
-  movimientosData.forEach(m => {
+  // Iterar movimientos de salida para varios cálculos
+  safeMovimientos.forEach(m => {
     const fechaMov = new Date(m.fecha);
-    const item = inventarioData.find(i => i.id === m.item_id);
+    const item = safeInventario.find(i => i.id === m.item_id);
     const costoUnitario = item?.valor_mayorista || 0;
 
     // Mermas
@@ -136,10 +153,10 @@ export default async function TenantAdminDashboard({ params }: Props) {
     }
   });
 
-  const itemsInactivos = inventarioData.filter(i => !itemsConSalidaReciente.has(i.id)).length;
+  const itemsInactivos = safeInventario.filter(i => !itemsConSalidaReciente.has(i.id)).length;
   
-  const totalUnidadesInventario = inventarioData.reduce((acc, v) => acc + (v.stock_actual || 0), 0);
-  const itemsAgotados = inventarioData.filter(v => v.stock_actual === 0).length;
+  const totalUnidadesInventario = safeInventario.reduce((acc, v) => acc + (v.stock_actual || 0), 0);
+  const itemsAgotados = safeInventario.filter(v => v.stock_actual === 0).length;
   // Lotes por vencer (90 días)
   const noventaDias = new Date();
   noventaDias.setDate(noventaDias.getDate() + 90);
@@ -238,9 +255,10 @@ export default async function TenantAdminDashboard({ params }: Props) {
         
 
         <DashboardCharts 
-          inventario={inventarioData}
-          categorias={categoriasData}
-          movimientos={movimientosData}
+          inventario={safeInventario}
+          categorias={safeCategorias}
+          movimientos={safeMovimientos}
+          lotes={safeLotes}
           primaryColor={primaryColor}
           accentColor={accentColor}
         />
