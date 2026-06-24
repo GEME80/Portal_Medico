@@ -112,6 +112,7 @@ export default function PersonalizarPage({ params }: Props) {
     vacunas_inventario_titulo: "Vacunas Disponibles y Esquemas de Aplicación"
   });
   const [lineas, setLineas] = useState<Linea[]>([]);
+  const [affiliationsList, setAffiliationsList] = useState<{ name: string; abbr: string }[]>([]);
   const [hitos, setHitos] = useState<Hito[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -151,6 +152,40 @@ export default function PersonalizarPage({ params }: Props) {
           ...prev,
           ...cfgRes.data
         }));
+
+        // Deserialize affiliations list from hero_subtitulo JSON string, or fall back to defaults
+        if (cfgRes.data.hero_subtitulo) {
+          try {
+            const parsed = JSON.parse(cfgRes.data.hero_subtitulo);
+            if (Array.isArray(parsed)) {
+              setAffiliationsList(parsed);
+            } else {
+              setAffiliationsList([
+                { name: "Sociedad Colombiana de Infectología", abbr: "SCI" },
+                { name: "Sociedad Latinoamericana de Infectología Pediátrica", abbr: "SLIPE" },
+                { name: "Organización Panamericana de la Salud", abbr: "OPS/OMS" },
+                { name: "International Society for Infectious Diseases", abbr: "ISID" },
+                { name: "Asociación Colombiana de Pediatría", abbr: "SCP" },
+              ]);
+            }
+          } catch (e) {
+            setAffiliationsList([
+              { name: "Sociedad Colombiana de Infectología", abbr: "SCI" },
+              { name: "Sociedad Latinoamericana de Infectología Pediátrica", abbr: "SLIPE" },
+              { name: "Organización Panamericana de la Salud", abbr: "OPS/OMS" },
+              { name: "International Society for Infectious Diseases", abbr: "ISID" },
+              { name: "Asociación Colombiana de Pediatría", abbr: "SCP" },
+            ]);
+          }
+        } else {
+          setAffiliationsList([
+            { name: "Sociedad Colombiana de Infectología", abbr: "SCI" },
+            { name: "Sociedad Latinoamericana de Infectología Pediátrica", abbr: "SLIPE" },
+            { name: "Organización Panamericana de la Salud", abbr: "OPS/OMS" },
+            { name: "International Society for Infectious Diseases", abbr: "ISID" },
+            { name: "Asociación Colombiana de Pediatría", abbr: "SCP" },
+          ]);
+        }
       }
       if (lineasRes.data) setLineas(lineasRes.data as Linea[]);
       if (hitosRes.data) setHitos(hitosRes.data as Hito[]);
@@ -168,13 +203,16 @@ export default function PersonalizarPage({ params }: Props) {
 
   const saveConfig = () => {
     startTransition(async () => {
+      // Serialize affiliations list as JSON string
+      const serializedAffiliations = JSON.stringify(affiliationsList);
+      
       // Build payload from known DB keys (excluding reserved keys)
       const payload: Record<string, any> = {};
       const excludedKeys = ["id", "tenant_id", "created_at"];
       if (dbKeys.length > 0) {
         dbKeys.forEach(key => {
           if (key in config && !excludedKeys.includes(key)) {
-            payload[key] = (config as any)[key];
+            payload[key] = key === "hero_subtitulo" ? serializedAffiliations : (config as any)[key];
           }
         });
       } else {
@@ -193,10 +231,13 @@ export default function PersonalizarPage({ params }: Props) {
         ];
         safeKeys.forEach(key => {
           if (key in config && !excludedKeys.includes(key)) {
-            payload[key] = (config as any)[key];
+            payload[key] = key === "hero_subtitulo" ? serializedAffiliations : (config as any)[key];
           }
         });
       }
+
+      // Also update local state
+      setConfig(prev => ({ ...prev, hero_subtitulo: serializedAffiliations }));
 
       // Use server action (admin client) to save — avoids RLS + client 500
       const result = await saveConfigAction(tenantId, slug, payload);
@@ -486,7 +527,7 @@ export default function PersonalizarPage({ params }: Props) {
                   
                   {/* Subtabs */}
                   <div style={{ display: "flex", gap: "2px", borderBottom: "1px solid transparent", overflowX: "auto" }}>
-                    {[{id: "textos", label: "Textos y Globos"}, {id: "estadisticas", label: "Estadísticas"}, {id: "biografia", label: "Biografía"}, {id: "seo", label: "SEO"}, {id: "estilos", label: "Estilos y Alerta"}].map(sub => (
+                    {[{id: "textos", label: "Textos y Globos"}, {id: "estadisticas", label: "Estadísticas"}, {id: "biografia", label: "Biografía"}, {id: "afiliaciones", label: "Afiliaciones (Membresías)"}, {id: "seo", label: "SEO"}, {id: "estilos", label: "Estilos y Alerta"}].map(sub => (
                       <button
                         key={sub.id}
                         type="button"
@@ -542,6 +583,72 @@ export default function PersonalizarPage({ params }: Props) {
                         <label className="form-label" htmlFor="bio_larga">Biografía extensa (página "Sobre el Doctor")</label>
                         <textarea id="bio_larga" className="form-textarea" value={config.bio_larga} onChange={e => setConfig(c => ({ ...c, bio_larga: e.target.value }))} rows={6} placeholder="Descripción detallada de tu labor médica..." style={{ background: "var(--slate-50)" }} />
                       </div>
+                    </div>
+                  )}
+
+                  {activeSubTab === "afiliaciones" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <h4 style={{ fontSize: "14px", fontWeight: 700, margin: 0, color: "var(--slate-900)" }}>Afiliaciones (Membresías)</h4>
+                          <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "4px 0 0 0" }}>Estas membresías y asociaciones aparecerán en la sección "Afiliaciones" y en la tarjeta flotante de la foto.</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-emerald"
+                          style={{ padding: "8px 16px", fontSize: "13px" }}
+                          onClick={() => setAffiliationsList(prev => [...prev, { name: "", abbr: "" }])}
+                        >
+                          ＋ Agregar Membresía
+                        </button>
+                      </div>
+
+                      {affiliationsList.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "40px", border: "2px dashed var(--slate-200)", borderRadius: "12px", color: "var(--slate-400)" }}>
+                          <span style={{ fontSize: "32px" }}>🎖️</span>
+                          <p style={{ margin: "12px 0 0 0", fontSize: "13px", fontWeight: 600 }}>No hay membresías agregadas.</p>
+                          <p style={{ margin: "4px 0 0 0", fontSize: "12px" }}>Haz clic en "Agregar Membresía" para añadir tu primera afiliación.</p>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          {affiliationsList.map((aff, i) => (
+                            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 2.5fr auto", gap: "16px", alignItems: "end", background: "var(--slate-50)", padding: "16px", borderRadius: "12px", border: "1px solid var(--slate-200)" }}>
+                              <div>
+                                <label className="form-label" style={{ fontSize: "12px", fontWeight: 700, marginBottom: "6px" }}>Abreviación</label>
+                                <input
+                                  className="form-input"
+                                  style={{ padding: "8px 12px", fontSize: "13px", background: "white" }}
+                                  value={aff.abbr}
+                                  onChange={e => setAffiliationsList(prev => prev.map((x, idx) => idx === i ? { ...x, abbr: e.target.value } : x))}
+                                  placeholder="Ej: SCI"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="form-label" style={{ fontSize: "12px", fontWeight: 700, marginBottom: "6px" }}>Nombre de la Asociación</label>
+                                <input
+                                  className="form-input"
+                                  style={{ padding: "8px 12px", fontSize: "13px", background: "white" }}
+                                  value={aff.name}
+                                  onChange={e => setAffiliationsList(prev => prev.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))}
+                                  placeholder="Ej: Sociedad Colombiana de Infectología"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline"
+                                  style={{ padding: "10px 14px", borderColor: "var(--rose-200)", color: "var(--rose-600)", background: "white", fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                  onClick={() => setAffiliationsList(prev => prev.filter((_, idx) => idx !== i))}
+                                >
+                                  🗑️ Eliminar
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
