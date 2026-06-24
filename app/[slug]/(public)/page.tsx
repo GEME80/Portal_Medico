@@ -247,11 +247,7 @@ export default async function TenantHomePage({ params }: PageProps) {
                     ))}
                   </div>
                 )}
-                <div style={{ marginTop: "40px" }}>
-                  <Link href={`/${slug}/sobre-el-doctor`} className="btn btn-outline" style={{ display: "inline-flex", borderRadius: "0px", padding: "12px 24px", fontWeight: 600, fontSize: "14px", textDecoration: "none" }}>
-                    Ver currículum completo →
-                  </Link>
-                </div>
+
               </div>
 
               {/* Columna Derecha: Líneas de Investigación */}
@@ -320,11 +316,7 @@ export default async function TenantHomePage({ params }: PageProps) {
             </div>
           </div>
           
-          <div style={{ textAlign: "center", marginTop: "56px" }}>
-             <Link href={`/${slug}/vacunas`} className="btn btn-primary" style={{ padding: "14px 32px", fontSize: "15px", borderRadius: "0px", boxShadow: "none" }}>
-                Conocer el esquema de vacunación →
-             </Link>
-          </div>
+
         </div>
       </section>
 
@@ -372,11 +364,7 @@ export default async function TenantHomePage({ params }: PageProps) {
               ))}
             </div>
             
-            <div style={{ display: "flex", justifyContent: "center", marginTop: "56px" }}>
-              <Link href={`/${slug}/noticias`} className="btn btn-outline" style={{ borderRadius: "0px", padding: "12px 32px", fontSize: "14px", fontWeight: 700 }}>
-                Ver todas las publicaciones
-              </Link>
-            </div>
+
           </div>
         </section>
       )}
