@@ -36,9 +36,9 @@ export default function Navbar({
             <Link href={base || "/"} className="navbar-brand">
               <div className="navbar-logo-icon" aria-hidden="true" style={logoUrl ? { background: "none", border: "none", width: "auto", height: "auto", display: "flex", alignItems: "center" } : undefined}>
                  {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" style={{ height: "108px", width: "auto", borderRadius: "12px", objectFit: "contain" }} />
+                  <img src={logoUrl} alt="Logo" style={{ height: "72px", width: "auto", borderRadius: "0px", objectFit: "contain" }} />
                 ) : (
-                  <svg width="54" height="54" viewBox="0 0 24 24" fill="none"
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2L13.5 8.5H20L14.5 12.5L16 19L12 15L8 19L9.5 12.5L4 8.5H10.5Z"/>
                     <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
@@ -62,10 +62,10 @@ export default function Navbar({
 
             {/* CTA */}
             <div className="navbar-cta">
-              <Link href={`${base}/admin`} className="btn btn-ghost" style={{ padding: "10px 20px", fontSize: "13px", color: scrolled ? "var(--slate-500)" : "var(--slate-500)", border: "none", background: "transparent", boxShadow: "none" }}>
+              <Link href={`${base}/admin`} className="btn btn-ghost" style={{ padding: "10px 20px", fontSize: "13px", color: "var(--slate-500)", border: "none", background: "transparent", boxShadow: "none" }}>
                 Admin
               </Link>
-              <Link href={`${base}/#contacto`} className="btn btn-primary" style={{ padding: "12px 24px", fontSize: "14px", borderRadius: "100px", boxShadow: "0 8px 24px rgba(17, 122, 145, 0.25)" }}>
+              <Link href={`${base}/#contacto`} className="btn btn-primary" style={{ padding: "12px 24px", fontSize: "14px", borderRadius: "0px", boxShadow: "none" }}>
                 Agenda tu cita
               </Link>
             </div>
