@@ -62,8 +62,11 @@ export default function Navbar({
 
             {/* CTA */}
             <div className="navbar-cta">
-              <Link href={`${base}/admin`} className="btn btn-primary" style={{ padding: "10px 20px", fontSize: "13px" }}>
-                Panel Admin
+              <Link href={`${base}/admin`} className="btn btn-ghost" style={{ padding: "10px 20px", fontSize: "13px", color: scrolled ? "var(--slate-500)" : "var(--slate-500)", border: "none", background: "transparent", boxShadow: "none" }}>
+                Admin
+              </Link>
+              <Link href={`${base}/#contacto`} className="btn btn-primary" style={{ padding: "12px 24px", fontSize: "14px", borderRadius: "100px", boxShadow: "0 8px 24px rgba(17, 122, 145, 0.25)" }}>
+                Agenda tu cita
               </Link>
             </div>
 

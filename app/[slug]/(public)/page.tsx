@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
+import ScrollObserver from "@/components/ScrollObserver";
 import { notFound } from "next/navigation";
 
 interface PageProps {
@@ -51,6 +52,7 @@ export default async function TenantHomePage({ params }: PageProps) {
       const parts = title.split(target);
       return (
         <>
+      <ScrollObserver />
           {parts[0]}
           <span className="hero-title-accent" style={{
             background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
@@ -85,7 +87,7 @@ export default async function TenantHomePage({ params }: PageProps) {
           <div className="hero-inner">
             <div className="hero-content animate-left">
               {heroData.badge && (
-                <div className="hero-kicker" style={{
+                <div className="hero-kicker fade-up delay-100" style={{
                   background: "rgba(0, 212, 170, 0.08)",
                   border: "1px solid rgba(0, 212, 170, 0.2)",
                   borderRadius: "30px",
@@ -104,17 +106,17 @@ export default async function TenantHomePage({ params }: PageProps) {
                   {heroData.badge}
                 </div>
               )}
-              <h1 className="hero-title" style={{ fontFamily: "Outfit, sans-serif", fontSize: "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.03em", color: "#ffffff", marginBottom: "24px" }}>
+              <h1 className="hero-title fade-up delay-200" style={{ fontFamily: "Outfit, sans-serif", fontSize: "clamp(38px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.03em", color: "#ffffff", marginBottom: "24px" }}>
                 {renderTitle(config?.hero_titulo || config?.nombre_doctor || tenant.nombre)}
               </h1>
 
               {config?.bio_corta && (
-                <p className="hero-subtitle" style={{ fontSize: "17px", color: "rgba(255,255,255,.65)", lineHeight: 1.7, marginBottom: "36px", fontWeight: 400, maxWidth: "480px" }}>
+                <p className="hero-subtitle fade-up delay-300" style={{ fontSize: "17px", color: "rgba(255,255,255,.65)", lineHeight: 1.7, marginBottom: "36px", fontWeight: 400, maxWidth: "480px" }}>
                   {config.bio_corta}
                 </p>
               )}
 
-              <div className="hero-actions" style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "40px" }}>
+              <div className="hero-actions fade-up delay-300" style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "40px" }}>
                 <Link href={`/${slug}/vacunas`} className="btn" style={{
                   padding: "14px 28px",
                   background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
@@ -223,18 +225,12 @@ export default async function TenantHomePage({ params }: PageProps) {
                   <span style={{ color: primaryColor }}>evidencia científica</span>
                 </h2>
                 {hitos.length > 0 && (
-                  <div className="timeline">
+                  <div className="clinical-timeline">
                     {hitos.map((hito) => (
-                      <div key={hito.id} className="timeline-item" style={{ paddingBottom: "24px" }}>
-                        <div className="timeline-line">
-                          <div className="timeline-dot" style={{ background: primaryColor, border: "3px solid var(--white)", boxShadow: `0 0 0 3px ${primaryColor}22` }} />
-                          <div className="timeline-connector" />
-                        </div>
-                        <div className="timeline-content" style={{ paddingLeft: "12px" }}>
-                          <div className="timeline-year" style={{ color: primaryColor, fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em" }}>{hito.anio}</div>
-                          <h3 className="timeline-title" style={{ fontSize: "14px", fontWeight: 700, margin: "2px 0" }}>{hito.titulo}</h3>
-                          {hito.institucion && <p className="timeline-sub" style={{ fontSize: "12px", color: "var(--slate-500)" }}>{hito.institucion}</p>}
-                        </div>
+                      <div key={hito.id} className="clinical-timeline-item fade-up">
+                        <div className="clinical-year">{hito.anio}</div>
+                        <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "2px 0", color: "var(--slate-900)" }}>{hito.titulo}</h3>
+                        {hito.institucion && <p style={{ fontSize: "14px", color: "var(--slate-500)", margin: 0 }}>{hito.institucion}</p>}
                       </div>
                     ))}
                   </div>
@@ -277,6 +273,53 @@ export default async function TenantHomePage({ params }: PageProps) {
         </section>
       )}
 
+      
+      {/* ── ECOVACCINE PROGRAMA DE CUIDADO ────────────────────── */}
+      <section className="section" style={{ background: "var(--slate-50)", padding: "100px 0" }}>
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "64px" }} className="fade-up">
+            <h2 className="section-heading" style={{ color: "var(--slate-900)" }}>
+              Programa Integral <span style={{ color: "var(--emerald-500)" }}>EcoVaccine</span>
+            </h2>
+            <p style={{ color: "var(--slate-500)", fontSize: "18px", maxWidth: "600px", margin: "16px auto 0" }}>
+              Protección inteligente y seguimiento continuo para la salud de tu familia, respaldado por décadas de experiencia.
+            </p>
+          </div>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "32px" }}>
+            <div className="soft-card fade-up delay-100">
+              <div className="soft-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "var(--slate-900)", marginBottom: "12px" }}>Seguridad Total</h3>
+              <p style={{ color: "var(--slate-600)", fontSize: "15px", margin: 0 }}>Aplicamos los esquemas más actualizados garantizando el bienestar de sus pequeños.</p>
+            </div>
+            
+            <div className="soft-card fade-up delay-200">
+              <div className="soft-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "var(--slate-900)", marginBottom: "12px" }}>Cuidado Familiar</h3>
+              <p style={{ color: "var(--slate-600)", fontSize: "15px", margin: 0 }}>Atención cálida y humana, resolviendo cada duda de los padres en todo momento.</p>
+            </div>
+            
+            <div className="soft-card fade-up delay-300">
+              <div className="soft-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "var(--slate-900)", marginBottom: "12px" }}>Evidencia Científica</h3>
+              <p style={{ color: "var(--slate-600)", fontSize: "15px", margin: 0 }}>Decisiones basadas en la evidencia clínica y lineamientos de organizaciones internacionales.</p>
+            </div>
+          </div>
+          
+          <div style={{ textAlign: "center", marginTop: "48px" }} className="fade-up delay-300">
+             <Link href={`/${slug}/vacunas`} className="btn btn-emerald" style={{ padding: "14px 32px", fontSize: "15px" }}>
+                Conocer el esquema de vacunación →
+             </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── NOTICIAS RECIENTES (CARRUSEL) ────────────────────── */}
       {noticias.length > 0 && (
         <section className="section" style={{ background: "var(--slate-50)" }} aria-label="Publicaciones recientes">
@@ -291,54 +334,38 @@ export default async function TenantHomePage({ params }: PageProps) {
               </p>
             </div>
             
-            <div 
-              className="news-carousel-scroller" 
-              style={{
-                display: "flex",
-                gap: "24px",
-                overflowX: "auto",
-                scrollSnapType: "x mandatory",
-                padding: "16px 4px 32px 4px",
-                scrollbarWidth: "none",
-                msOverflowStyle: "none"
-              }}
-            >
-              {noticias.map((post) => (
-                <article key={post.id} className="news-card" style={{ flex: "0 0 360px", scrollSnapAlign: "start" }}>
-                  <div className="news-card-img" style={{ height: "200px", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${primaryColor}10, ${accentColor}08)` }}>
-                    {post.imagen_portada_url ? (
-                      <img src={post.imagen_portada_url} alt={post.titulo} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <span style={{ fontSize: "56px" }}>{post.emoji || "📄"}</span>
-                    )}
-                  </div>
-                  <div className="news-card-body">
-                    <div className="news-card-meta">
-                      <span className={`badge ${post.categoria === "Académico" ? "badge-teal" : post.categoria === "Epidemiología" ? "badge-rose" : "badge-emerald"}`}>
-                        {post.categoria}
-                      </span>
-                      <span style={{ fontSize: "12px", color: "var(--slate-400)", fontWeight: 600 }}>
-                        {new Date(post.created_at).toLocaleDateString("es-ES", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric"
-                        })}
-                      </span>
+            <div className="mosaic-grid">
+              {noticias.slice(0, 3).map((post, index) => (
+                <article key={post.id} className={`mosaic-card fade-up delay-${(index + 1) * 100}`}>
+                  <Link href={`/${slug}/noticias/${post.slug}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                    <div className="mosaic-card-img" style={{ background: `linear-gradient(135deg, ${primaryColor}10, ${accentColor}08)` }}>
+                      {post.imagen_portada_url ? (
+                        <img src={post.imagen_portada_url} alt={post.titulo} />
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "48px" }}>{post.emoji || "📄"}</div>
+                      )}
                     </div>
-                    <h3 className="news-card-title" style={{ fontSize: "16px", minHeight: "44px" }}>{post.titulo}</h3>
-                    <p className="news-card-excerpt" style={{ fontSize: "13px", height: "64px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
-                      {post.resumen}
-                    </p>
-                    <Link href={`/${slug}/noticias/${post.slug}`} className="news-card-link" style={{ color: primaryColor }}>
-                      Leer artículo completo →
-                    </Link>
-                  </div>
+                    <div style={{ padding: "24px" }}>
+                      <div style={{ fontSize: "12px", color: "var(--teal-600)", fontWeight: 700, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        {post.categoria} • {new Date(post.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                      </div>
+                      <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--slate-900)", marginBottom: "12px", lineHeight: 1.3 }}>
+                        {post.titulo}
+                      </h3>
+                      <p style={{ fontSize: "14px", color: "var(--slate-500)", marginBottom: "20px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {post.resumen}
+                      </p>
+                      <div style={{ color: "var(--teal-600)", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
+                        Leer artículo completo <span style={{ fontSize: "16px" }}>→</span>
+                      </div>
+                    </div>
+                  </Link>
                 </article>
               ))}
             </div>
-
-            <div style={{ display: "flex", justifyContent: "center", marginTop: "32px" }}>
-              <Link href={`/${slug}/noticias`} className="btn btn-outline" style={{ borderRadius: "var(--radius-full)", padding: "12px 32px", fontSize: "14px", fontWeight: 700, borderColor: primaryColor, color: primaryColor }}>
+            
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "48px" }} className="fade-up">
+              <Link href={`/${slug}/noticias`} className="btn btn-outline" style={{ borderRadius: "100px", padding: "12px 32px", fontSize: "14px", fontWeight: 700 }}>
                 Ver todas las publicaciones
               </Link>
             </div>
