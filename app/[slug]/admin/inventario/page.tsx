@@ -149,6 +149,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const [catIsP, setCatIsP] = useState(true);
   const [catTipo, setCatTipo] = useState<"v" | "i">("v");
 
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   const selectedVacuna = vacunas.find(v => v.id === selectedId);
 
   // Toast helper
@@ -504,7 +507,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       if (newStock === 0) {
         addToast(`⚠️ ${selectedVacuna?.nombre} agotada. Solicitar lote.`, "error");
       } else {
-        addToast(`Dosis registrada como aplicada.`);
+        addToast(`Dosis de "${selectedVacuna?.nombre}" descontada correctamente.`);
       }
       await loadData(tenantId);
     } catch (err: any) {
@@ -766,13 +769,17 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                 </h3>
                 {filtered.filter(v => getStockStatus(v) !== "ok").map(v => {
                   const status = getStockStatus(v);
+                  const isCritical = status === "critical";
                   return (
                     <div key={v.id} style={{
-                      display: "flex", alignItems: "center", gap: "12px",
-                      padding: "14px 20px", borderRadius: "var(--radius-lg)",
-                      background: status === "critical" ? "rgba(244,63,94,.06)" : "rgba(245,158,11,.06)",
-                      border: `1px solid ${status === "critical" ? "rgba(244,63,94,.2)" : "rgba(245,158,11,.2)"}`,
-                    }}>
+                        display: "flex", alignItems: "center", gap: "12px",
+                        padding: "14px 20px", borderRadius: "var(--radius-lg)",
+                        background: isCritical 
+                          ? "linear-gradient(90deg, rgba(244,63,94,0.07) 0%, rgba(244,63,94,0.01) 100%)" 
+                          : "linear-gradient(90deg, rgba(245,158,11,0.07) 0%, rgba(245,158,11,0.01) 100%)",
+                        border: `1px solid ${isCritical ? "rgba(244,63,94,0.2)" : "rgba(245,158,11,0.2)"}`,
+                        borderLeft: `4px solid ${isCritical ? "#f43f5e" : "#f59e0b"}`
+                      }}>
                       <span style={{ fontSize: "20px" }}>{status === "critical" ? "🔴" : "🟠"}</span>
                       <div style={{ flex: 1 }}>
                         <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--slate-800)" }}>
@@ -816,9 +823,99 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             )}
 
             {/* ── INVENTORY TABLE ───────────────────────────────────── */}
-            <div className="section-header">
+            <div className="section-header" style={{ marginBottom: "12px" }}>
               <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Catálogo de Ítems</h2>
             </div>
+
+            {/* Category Filter Chips */}
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
+              <button
+                onClick={() => setSelectedCategoryFilter("all")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  border: `1px solid ${selectedCategoryFilter === "all" ? primaryColor : "var(--slate-200)"}`,
+                  background: selectedCategoryFilter === "all" ? `${primaryColor}11` : "white",
+                  color: selectedCategoryFilter === "all" ? primaryColor : "var(--slate-600)",
+                  transition: "all 0.2s"
+                }}
+                type="button"
+              >
+                Todos
+              </button>
+              {categorias.map(c => {
+                const pc = parseCategory(c);
+                const isSelected = selectedCategoryFilter === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedCategoryFilter(c.id)}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "20px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      border: `1px solid ${isSelected ? pc.color || primaryColor : "var(--slate-200)"}`,
+                      background: isSelected ? `${pc.color || primaryColor}11` : "white",
+                      color: isSelected ? pc.color || primaryColor : "var(--slate-600)",
+                      transition: "all 0.2s"
+                    }}
+                    type="button"
+                  >
+                    {pc.nombre}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Bulk Actions Panel */}
+            {selectedIds.length > 0 && (
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "12px 24px", background: "rgba(10, 77, 92, 0.05)",
+                border: `1px dashed ${primaryColor}`, borderRadius: "12px", marginBottom: "16px",
+                gap: "16px", flexWrap: "wrap"
+              }}>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: primaryColor }}>
+                  Seleccionados: {selectedIds.length} ítems
+                </span>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    className="btn btn-outline"
+                    style={{ padding: "6px 12px", fontSize: "12px", borderColor: primaryColor, color: primaryColor, background: "white" }}
+                    onClick={() => {
+                      const selectedItems = vacunas.filter(v => selectedIds.includes(v.id));
+                      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+                        + ["Item,Categoria,Stock,StockMinimo,PrecioVenta"].join(",") + "\n"
+                        + selectedItems.map(v => {
+                          const catName = categorias.find(c => c.id === v.categoria_id)?.nombre || "Sin Categoría";
+                          return `"${v.nombre}","${catName}",${v.stockActual},${v.stockMinimo},${v.precioVenta}`;
+                        }).join("\n");
+                      const encodedUri = encodeURI(csvContent);
+                      const link = document.createElement("a");
+                      link.setAttribute("href", encodedUri);
+                      link.setAttribute("download", `reporte_seleccion_inventario_${today()}.csv`);
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                  >
+                    📥 Exportar Selección
+                  </button>
+                  <button
+                    className="btn btn-outline"
+                    style={{ padding: "6px 12px", fontSize: "12px", borderColor: "#ef4444", color: "#ef4444", background: "white" }}
+                    onClick={() => setSelectedIds([])}
+                  >
+                    Desmarcar Todos
+                  </button>
+                </div>
+              </div>
+            )}
 
         <div className="inv-table-wrap">
           {filtered.length === 0 ? (
@@ -836,6 +933,20 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               <caption>Inventario de vacunas — {filtered.length} registros</caption>
               <thead>
                 <tr>
+                  <th scope="col" style={{ width: "40px" }}>
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && selectedIds.length === filtered.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(filtered.map(v => v.id));
+                        } else {
+                          setSelectedIds([]);
+                        }
+                      }}
+                      style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                    />
+                  </th>
                   <th scope="col">Vacuna</th>
                   <th scope="col">Lote Activo</th>
                   <th scope="col">Stock</th>
@@ -871,7 +982,21 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   }
 
                   return (
-                    <tr key={v.id}>
+                    <tr key={v.id} style={v.stockActual === 0 ? { backgroundColor: "rgba(244, 63, 94, 0.03)" } : undefined}>
+                      <td style={{ width: "40px" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(v.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds(prev => [...prev, v.id]);
+                            } else {
+                              setSelectedIds(prev => prev.filter(id => id !== v.id));
+                            }
+                          }}
+                          style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                        />
+                      </td>
                       <td>
                         <div className="vaccine-name-cell">
                           <span className="vaccine-name-main">{v.nombre}</span>
@@ -904,7 +1029,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                         </span>
                       </td>
                       <td style={{ color: "var(--slate-500)" }}>
-                        ${pUnitarioCompra.toLocaleString("es-CO")}
+                        {pUnitarioCompra > 0 ? `$${pUnitarioCompra.toLocaleString("es-CO")}` : "—"}
                       </td>
                       <td style={{ fontWeight: 700, color: primaryColor }}>
                         {(() => {
@@ -917,44 +1042,75 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                         ${pTotalCompra.toLocaleString("es-CO")}
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        <div className="action-row" style={{ justifyContent: "flex-end" }}>
+                        <div style={{ position: "relative", display: "inline-block", textAlign: "left" }}>
                           <button
-                            className="action-btn action-btn-ghost"
-                            onClick={() => openComprasHistoricasModal(v.id)}
-                            title="Ver compras históricas (lotes)"
-                            type="button"
-                            style={{ borderColor: primaryColor, color: primaryColor, background: "transparent" }}
-                          >
-                            📋 Compras
-                          </button>
-                          <button
-                            className="action-btn action-btn-emerald"
-                            onClick={() => openLoteModal(v.id)}
-                            title="Agregar nuevo lote de dosis o ver historial"
+                            className="action-btn"
+                            style={{ background: "var(--slate-100)", color: "var(--slate-700)", border: "1px solid var(--slate-200)", padding: "6px 12px", borderRadius: "8px", fontWeight: 600 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdownId(activeDropdownId === v.id ? null : v.id);
+                            }}
                             type="button"
                           >
-                            ＋ Lote
+                            Acciones ▾
                           </button>
-                          <button
-                            className="action-btn action-btn-primary"
-                            onClick={() => openUsarModal(v.id)}
-                            disabled={v.stockActual === 0}
-                            style={v.stockActual > 0 ? { background: primaryColor } : undefined}
-                            title={v.stockActual === 0 ? "Sin stock disponible" : "Registrar una dosis aplicada"}
-                            type="button"
-                          >
-                            💉 Usar
-                          </button>
-                          <button
-                            className="action-btn action-btn-danger"
-                            onClick={() => openMermaModal(v.id)}
-                            disabled={v.stockActual === 0}
-                            style={v.stockActual > 0 ? { background: "#ef4444", color: "white" } : undefined}
-                            title={v.stockActual === 0 ? "Sin stock disponible" : "Registrar pérdida o merma"}
-                            type="button"
-                          >
-                            🗑️ Merma
-                          </button>
+                          {activeDropdownId === v.id && (
+                            <>
+                              <div 
+                                style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 40 }}
+                                onClick={() => setActiveDropdownId(null)}
+                              />
+                              <div className="card" style={{ 
+                                position: "absolute", right: 0, marginTop: "4px", width: "160px", 
+                                background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)",
+                                boxShadow: "var(--shadow-lg)", zIndex: 50, padding: "4px 0",
+                                display: "flex", flexDirection: "column", gap: "2px"
+                              }}>
+                                <button
+                                  className="dropdown-item"
+                                  style={{ padding: "8px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: "var(--slate-700)", display: "flex", alignItems: "center", gap: "8px" }}
+                                  onClick={() => {
+                                    setActiveDropdownId(null);
+                                    openComprasHistoricasModal(v.id);
+                                  }}
+                                >
+                                  📋 Compras
+                                </button>
+                                <button
+                                  className="dropdown-item"
+                                  style={{ padding: "8px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: "var(--slate-700)", display: "flex", alignItems: "center", gap: "8px" }}
+                                  onClick={() => {
+                                    setActiveDropdownId(null);
+                                    openLoteModal(v.id);
+                                  }}
+                                >
+                                  ＋ Lote
+                                </button>
+                                <button
+                                  className="dropdown-item"
+                                  style={{ padding: "8px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: v.stockActual === 0 ? "var(--slate-400)" : "var(--slate-700)", display: "flex", alignItems: "center", gap: "8px" }}
+                                  disabled={v.stockActual === 0}
+                                  onClick={() => {
+                                    setActiveDropdownId(null);
+                                    openUsarModal(v.id);
+                                  }}
+                                >
+                                  💉 Usar
+                                </button>
+                                <button
+                                  className="dropdown-item"
+                                  style={{ padding: "8px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: v.stockActual === 0 ? "var(--slate-400)" : "#ef4444", display: "flex", alignItems: "center", gap: "8px" }}
+                                  disabled={v.stockActual === 0}
+                                  onClick={() => {
+                                    setActiveDropdownId(null);
+                                    openMermaModal(v.id);
+                                  }}
+                                >
+                                  🗑️ Merma
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1115,7 +1271,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               Cancelar
             </button>
             <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>
-              ✓ Registrar Vacuna
+              ✓ Registrar
             </button>
           </div>
         </form>

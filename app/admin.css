@@ -313,8 +313,21 @@
   transition: background .15s;
 }
 
+.inv-table tbody tr:nth-child(even) {
+  background-color: rgba(248, 250, 252, 0.4);
+}
+
 .inv-table tbody tr:last-child { border-bottom: none; }
-.inv-table tbody tr:hover { background: var(--slate-50); }
+.inv-table tbody tr:hover { background: rgba(241, 245, 249, 0.7) !important; }
+
+.dropdown-item {
+  transition: background 0.15s, color 0.15s;
+}
+
+.dropdown-item:hover {
+  background-color: var(--slate-50) !important;
+  color: var(--slate-900) !important;
+}
 
 .inv-table tbody td {
   padding: 14px 20px;
