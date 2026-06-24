@@ -827,50 +827,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Catálogo de Ítems</h2>
             </div>
 
-            {/* Category Filter Chips */}
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>
-              <button
-                onClick={() => setSelectedCategoryFilter("all")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  border: `1px solid ${selectedCategoryFilter === "all" ? primaryColor : "var(--slate-200)"}`,
-                  background: selectedCategoryFilter === "all" ? `${primaryColor}11` : "white",
-                  color: selectedCategoryFilter === "all" ? primaryColor : "var(--slate-600)",
-                  transition: "all 0.2s"
-                }}
-                type="button"
-              >
-                Todos
-              </button>
-              {categorias.map(c => {
-                const pc = parseCategory(c);
-                const isSelected = selectedCategoryFilter === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => setSelectedCategoryFilter(c.id)}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "20px",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      border: `1px solid ${isSelected ? pc.color || primaryColor : "var(--slate-200)"}`,
-                      background: isSelected ? `${pc.color || primaryColor}11` : "white",
-                      color: isSelected ? pc.color || primaryColor : "var(--slate-600)",
-                      transition: "all 0.2s"
-                    }}
-                    type="button"
-                  >
-                    {pc.nombre}
-                  </button>
-                );
-              })}
-            </div>
+
 
             {/* Bulk Actions Panel */}
             {selectedIds.length > 0 && (
