@@ -191,68 +191,7 @@ export default async function TenantAdminDashboard({ params }: Props) {
           </p>
         </div>
 
-        {/* KPIs Operativos (Globales) */}
-        <div style={{ marginBottom: "24px" }}>
-          <h3 style={{ fontFamily: "Outfit, sans-serif", fontSize: "18px", fontWeight: 700, color: "var(--slate-800)", marginBottom: "16px" }}>📦 Estado Físico del Inventario (Global)</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
-            
-            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.1)", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📦</div>
-              <div>
-                <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>{totalUnidadesInventario}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Total Unidades Físicas
-                  <span title="Suma total de todas las dosis de todos los ítems almacenados." style={{cursor: "help", fontSize: "14px"}}>ⓘ</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: itemsAgotados > 0 ? "rgba(239, 68, 68, 0.1)" : "rgba(34, 197, 94, 0.1)", color: itemsAgotados > 0 ? "#ef4444" : "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>{itemsAgotados > 0 ? "🛑" : "✅"}</div>
-              <div>
-                <div style={{ fontSize: "20px", fontWeight: 800, color: itemsAgotados > 0 ? "#ef4444" : "var(--slate-900)", lineHeight: 1 }}>{itemsAgotados}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Ítems Agotados (Stock 0)
-                  <span title="Medicamentos que no tienen ninguna dosis disponible actualmente." style={{cursor: "help", fontSize: "14px"}}>ⓘ</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", border: itemsEnRiesgo.length > 0 ? "1px solid rgba(245, 158, 11, 0.3)" : "" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: itemsEnRiesgo.length > 0 ? "rgba(245, 158, 11, 0.1)" : "rgba(34, 197, 94, 0.1)", color: itemsEnRiesgo.length > 0 ? "#f59e0b" : "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>{itemsEnRiesgo.length > 0 ? "⚠️" : "✅"}</div>
-                <div>
-                  <div style={{ fontSize: "20px", fontWeight: 800, color: itemsEnRiesgo.length > 0 ? "#d97706" : "var(--slate-900)", lineHeight: 1 }}>{itemsEnRiesgo.length}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Ítems en Riesgo Crítico
-                    <span title="Ítems cuyo stock actual es menor o igual a su stock mínimo de alerta." style={{cursor: "help", fontSize: "14px"}}>ⓘ</span>
-                  </div>
-                </div>
-              </div>
-              {itemsEnRiesgo.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {itemsEnRiesgo.map((item, idx) => (
-                    <span key={idx} style={{ background: "#fef3c7", color: "#b45309", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 600 }}>{item.nombre}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(100, 116, 139, 0.1)", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>⏳</div>
-              <div>
-                <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>{itemsInactivos}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Ítems Inactivos (30d)
-                  <span title="Medicamentos que no han tenido ninguna salida (aplicación) en los últimos 30 días." style={{cursor: "help", fontSize: "14px"}}>ⓘ</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        
 
         <DashboardCharts 
           inventario={safeInventario}
