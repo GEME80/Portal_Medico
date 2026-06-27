@@ -129,13 +129,7 @@ export default async function NoticiasPostDetailPage({ params }: PageProps) {
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 0", borderBottom: "1px solid var(--slate-100)", marginBottom: "32px" }}>
-              <div style={{ fontSize: "32px" }}>{post.emoji || "📄"}</div>
-              <div>
-                <div style={{ fontSize: "12px", color: "var(--slate-400)", fontWeight: 600, textTransform: "uppercase" }}>Escrito por</div>
-                <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)" }}>{config?.nombre_doctor || "Dr. Carlos Torres"}</div>
-              </div>
-            </div>
+
 
             <ArticleContent content={post.contenido_markdown || ""} />
 

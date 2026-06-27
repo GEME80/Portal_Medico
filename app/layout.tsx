@@ -23,6 +23,14 @@ export const metadata: Metadata = {
     locale: "es_CO",
     siteName: "HubMed Platform",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "1024x1024" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: { url: "/icon.png", sizes: "1024x1024", type: "image/png" },
+  },
 };
 
 export default function RootLayout({
