@@ -6,7 +6,16 @@ import { uploadImageAction } from "../noticias/actions";
 
 const TABS = [
   { id: "identidad", label: "👨‍⚕️ Identidad y Estilos", desc: "Logo, contacto, redes, estilos" },
-  { id: "home_config", label: "🏠 Configuración del Home", desc: "Textos, biografía, pestaña extra" },
+  { 
+    id: "home_config", 
+    label: "🏠 Configuración del Home", 
+    desc: "Portada, doctor, pestaña extra",
+    subitems: [
+      { id: "home_portal", label: "🖥️ Portada Principal" },
+      { id: "sobre_doctor_portal", label: "👨‍⚕️ Sobre el Doctor" },
+      { id: "extra_portal", label: "✨ Pestaña Extra" }
+    ]
+  },
   { id: "investigacion", label: "🔬 Líneas Invest.", desc: "Gestor de tarjetas y títulos" },
   { id: "trayectoria", label: "🎓 Trayectoria", desc: "Hitos académicos y títulos" },
 ];
@@ -22,13 +31,15 @@ interface Config {
   linkedin_url: string; instagram_url: string;
   color_primario: string; color_acento: string;
   meta_titulo: string; meta_descripcion: string;
-  // new settings:
   habilitar_menu_vacunas?: boolean;
   nombre_menu_vacunas?: string;
   vacunas_hero_titulo?: string;
   vacunas_hero_subtitulo?: string;
   vacunas_hero_descripcion?: string;
+  vacunas_mitos_badge?: string;
+  vacunas_mitos_prefijo?: string;
   vacunas_mitos_titulo?: string;
+  vacunas_mitos_descripcion?: string;
   vacunas_inventario_titulo?: string;
 }
 
@@ -119,7 +130,10 @@ const defaultHeroData = {
   vacunas_hero_titulo: "Vacunas seguras, niños protegidos",
   vacunas_hero_subtitulo: "HubMed — Vacunación Basada en Evidencia",
   vacunas_hero_descripcion: "El doctor responde con evidencia científica los mitos más comunes sobre la vacunación.",
+  vacunas_mitos_badge: "🔍 Información y Evidencia",
+  vacunas_mitos_prefijo: "Decodificador de",
   vacunas_mitos_titulo: "Mitos Vacunales",
+  vacunas_mitos_descripcion: "Respuestas detalladas a las preguntas y mitos más frecuentes que surgen en la consulta.",
   vacunas_inventario_titulo: "Vacunas Disponibles y Esquemas de Aplicación",
   vacunas_mostrar_mitos: true,
   vacunas_mostrar_inventario: true,
@@ -148,6 +162,7 @@ export default function PersonalizarPage({ params }: Props) {
   const [tenantId, setTenantId] = useState("");
   const [activeTab, setActiveTab] = useState("identidad");
   const [activeSubTab, setActiveSubTab] = useState("info");
+  const [homeMenuExpanded, setHomeMenuExpanded] = useState(true);
   const [dbKeys, setDbKeys] = useState<string[]>([]);
   const [config, setConfig] = useState<Config>({
     nombre_doctor: "", titulo_doctor: "", especialidad: "",
@@ -163,7 +178,10 @@ export default function PersonalizarPage({ params }: Props) {
     vacunas_hero_titulo: "Vacunas seguras, niños protegidos",
     vacunas_hero_subtitulo: "HubMed — Vacunación Basada en Evidencia",
     vacunas_hero_descripcion: "El doctor responde con evidencia científica los mitos más comunes sobre la vacunación.",
+    vacunas_mitos_badge: "🔍 Información y Evidencia",
+    vacunas_mitos_prefijo: "Decodificador de",
     vacunas_mitos_titulo: "Mitos Vacunales",
+    vacunas_mitos_descripcion: "Respuestas detalladas a las preguntas y mitos más frecuentes que surgen en la consulta.",
     vacunas_inventario_titulo: "Vacunas Disponibles y Esquemas de Aplicación"
   });
   const [lineas, setLineas] = useState<Linea[]>([]);
@@ -203,7 +221,7 @@ export default function PersonalizarPage({ params }: Props) {
         supabase.from("hitos_timeline").select("*").eq("tenant_id", tenant.id).order("orden"),
         supabase.from("alertas_epidemiologicas").select("*").eq("tenant_id", tenant.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("mitos_vacunales").select("*").eq("tenant_id", tenant.id).order("orden"),
-        supabase.from("inventario_vacunas").select("*").eq("tenant_id", tenant.id).order("nombre")
+        supabase.from("inventario_medico").select("*").eq("tenant_id", tenant.id).order("nombre")
       ]);
 
       if (cfgRes.data) {
@@ -719,35 +737,95 @@ export default function PersonalizarPage({ params }: Props) {
       </div>
 
       <div className="admin-content">
-        <div style={{ display: "grid", gridTemplateColumns: "250px 1fr", gap: "24px", alignItems: "start" }}>
+        <div className="personalizar-layout">
 
           {/* TABS SIDEBAR */}
           <div style={{ background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-xl)", overflow: "hidden", position: "sticky", top: "88px" }}>
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  if (tab.id === "identidad") {
-                    setActiveSubTab("info");
-                  } else if (tab.id === "home_config") {
-                    setActiveSubTab("home");
-                  }
-                }}
-                style={{
-                  display: "flex", flexDirection: "column", width: "100%", padding: "14px 18px",
-                  textAlign: "left", border: "none", borderBottom: "1px solid var(--slate-100)",
-                  background: activeTab === tab.id ? "rgba(10,77,92,.06)" : "transparent",
-                  borderLeft: activeTab === tab.id ? "3px solid var(--teal-700)" : "3px solid transparent",
-                  cursor: "pointer", transition: "background .15s", fontFamily: "inherit",
-                }}>
-                <span style={{ fontSize: "13px", fontWeight: 700, color: activeTab === tab.id ? "var(--teal-800)" : "var(--slate-700)" }}>
-                  {tab.label}
-                </span>
-                <span style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "2px" }}>{tab.desc}</span>
-              </button>
-            ))}
+            {TABS.map((tab) => {
+              const isHomeConfig = tab.id === "home_config";
+              const isSelected = activeTab === tab.id || 
+                (isHomeConfig && ["home_portal", "sobre_doctor_portal", "extra_portal"].includes(activeTab));
+
+              return (
+                <div key={tab.id} style={{ borderBottom: "1px solid var(--slate-100)" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isHomeConfig) {
+                        setHomeMenuExpanded(!homeMenuExpanded);
+                        // Auto-select first subitem
+                        setActiveTab("home_portal");
+                        setActiveSubTab("hero");
+                      } else {
+                        setActiveTab(tab.id);
+                        if (tab.id === "identidad") {
+                          setActiveSubTab("info");
+                        }
+                      }
+                    }}
+                    style={{
+                      display: "flex", flexDirection: "column", width: "100%", padding: "14px 18px",
+                      textAlign: "left", border: "none",
+                      background: isSelected ? "rgba(10,77,92,.04)" : "transparent",
+                      borderLeft: isSelected ? "3px solid var(--teal-700)" : "3px solid transparent",
+                      cursor: "pointer", transition: "background .15s", fontFamily: "inherit",
+                    }}>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: isSelected ? "var(--teal-800)" : "var(--slate-700)", display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+                      {tab.label}
+                      {isHomeConfig && (
+                        <span style={{ fontSize: "10px", transform: homeMenuExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }}>
+                          ▼
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "2px" }}>{tab.desc}</span>
+                  </button>
+
+                  {/* Render Subitems if expanded */}
+                  {isHomeConfig && homeMenuExpanded && tab.subitems && (
+                    <div style={{ background: "var(--slate-50)", padding: "4px 0", display: "flex", flexDirection: "column" }}>
+                      {tab.subitems.map((sub) => {
+                        const isSubActive = activeTab === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveTab(sub.id);
+                              if (sub.id === "home_portal") {
+                                setActiveSubTab("hero");
+                              } else if (sub.id === "sobre_doctor_portal") {
+                                setActiveSubTab("biografia");
+                              } else if (sub.id === "extra_portal") {
+                                setActiveSubTab("menu_portada");
+                              }
+                            }}
+                            style={{
+                              display: "flex",
+                              padding: "10px 18px 10px 32px",
+                              width: "100%",
+                              border: "none",
+                              background: isSubActive ? "rgba(10,77,92,.08)" : "transparent",
+                              color: isSubActive ? "var(--teal-800)" : "var(--slate-600)",
+                              fontWeight: isSubActive ? 700 : 500,
+                              fontSize: "12px",
+                              textAlign: "left",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease",
+                              alignItems: "center",
+                              gap: "8px"
+                            }}
+                          >
+                            <span style={{ color: isSubActive ? "var(--teal-600)" : "var(--slate-400)" }}>•</span>
+                            {sub.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* FORM PANEL */}
@@ -812,7 +890,7 @@ export default function PersonalizarPage({ params }: Props) {
                         <Field label="País" id="pais" value={config.pais} onChange={v => setConfig(c => ({ ...c, pais: v }))} placeholder="Colombia" />
                         
                         <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, marginTop: "16px", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Chat Directo</h3>
-                        <div className="form-group full-width" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        <div className="form-grid form-group full-width">
                           <div>
                             <label className="form-label">Canal de Atención</label>
                             <select className="form-input" value={waData.t} onChange={e => setWaData(waData.n, e.target.value)} style={{ background: "white" }}>
@@ -838,7 +916,7 @@ export default function PersonalizarPage({ params }: Props) {
                 {activeSubTab === "foto" && (
                   <div>
                     <div className="modal-body" style={{ maxHeight: "none" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", padding: "20px 0 32px 0", borderBottom: "1px solid var(--slate-100)", marginBottom: "24px" }}>
+                      <div className="form-grid" style={{ gap: "32px", padding: "20px 0 32px 0", borderBottom: "1px solid var(--slate-100)", marginBottom: "24px" }}>
                         
                         {/* Foto del Home */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "16px", alignItems: "center" }}>
@@ -937,18 +1015,21 @@ export default function PersonalizarPage({ params }: Props) {
               </div>
             )}
 
-
-
-            {/* ── CONFIGURACION DEL HOME ──────────────────────── */}
-            {activeTab === "home_config" && (
+            {/* ── PORTADA PRINCIPAL (HOME) ───────────────────── */}
+            {activeTab === "home_portal" && (
               <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
                 <div style={{ padding: "24px 28px 0 28px", borderBottom: "1px solid var(--slate-200)" }}>
-                  <h2 style={{ fontFamily: "Outfit, sans-serif", fontWeight: 800, fontSize: "18px" }}>🏠 Configuración del Home</h2>
-                  <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "4px", marginBottom: "16px" }}>Administra los textos, estadísticas, biografías y páginas secundarias de tu portal.</p>
+                  <h2 style={{ fontFamily: "Outfit, sans-serif", fontWeight: 800, fontSize: "18px" }}>🖥️ Portada Principal (Home)</h2>
+                  <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "4px", marginBottom: "16px" }}>Administra los textos, estadísticas, botones y secciones de la portada de tu portal público.</p>
                   
                   {/* Subtabs */}
                   <div style={{ display: "flex", gap: "2px", borderBottom: "1px solid transparent", overflowX: "auto" }}>
-                    {[{id: "home", label: "Home (Secciones y SEO)"}, {id: "sobre_doctor", label: "Sobre el Doctor"}, {id: "extra", label: "Pestaña Extra"}].map(sub => (
+                    {[
+                      { id: "hero", label: "Hero y Portada" },
+                      { id: "stats", label: "Estadísticas" },
+                      { id: "servicios", label: "Programa / Servicios" },
+                      { id: "cta_seo", label: "CTA y SEO" }
+                    ].map(sub => (
                       <button
                         key={sub.id}
                         type="button"
@@ -970,14 +1051,14 @@ export default function PersonalizarPage({ params }: Props) {
                 </div>
 
                 <div className="modal-body" style={{ maxHeight: "none", flex: 1 }}>
-                  {activeSubTab === "home" && (
+                  {activeSubTab === "hero" && (
                     <div className="form-grid">
                       <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Sección Hero</h3>
                       <Field label="Texto del badge superior" id="hero_badge" value={heroData.badge} onChange={v => setHeroData("badge", v)} placeholder="Infectólogo · +30 años de experiencia" fullWidth />
                       <Field label="Título principal del Hero" id="hero_titulo" value={config.hero_titulo} onChange={v => setConfig(c => ({ ...c, hero_titulo: v }))} placeholder="Ciencia, prevención y cuidado para cada familia" fullWidth />
                       
                       <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, marginTop: "16px", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Mensajes Flotantes (Globos)</h3>
-                      <div className="form-group full-width" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", background: "var(--slate-50)", padding: "16px", borderRadius: "12px" }}>
+                      <div className="form-grid form-group full-width" style={{ background: "var(--slate-50)", padding: "16px", borderRadius: "12px" }}>
                         <Field label="Globo 1: Título" id="g1_t" value={heroData.g1_t} onChange={v => setHeroData("g1_t", v)} placeholder="15K+" />
                         <Field label="Globo 1: Subtítulo" id="g1_s" value={heroData.g1_s} onChange={v => setHeroData("g1_s", v)} placeholder="Pacientes" />
                         <Field label="Globo 2: Título" id="g2_t" value={heroData.g2_t} onChange={v => setHeroData("g2_t", v)} placeholder="100%" />
@@ -987,23 +1068,31 @@ export default function PersonalizarPage({ params }: Props) {
                       <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, marginTop: "16px", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Botones del Hero</h3>
                       <Field label="Botón Principal (Ej: Explorar HubMed)" id="hero_btn_prim" value={heroData.hero_btn_prim} onChange={v => setHeroData("hero_btn_prim", v)} placeholder="Explorar HubMed" />
                       <Field label="Botón Secundario (Ej: Ver Publicaciones)" id="hero_btn_sec" value={heroData.hero_btn_sec} onChange={v => setHeroData("hero_btn_sec", v)} placeholder="Ver Publicaciones" />
+                    </div>
+                  )}
 
-                      <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, marginTop: "16px", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Estadísticas del Home</h3>
-                      <div className="form-group full-width" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  {activeSubTab === "stats" && (
+                    <div className="form-grid">
+                      <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Estadísticas del Home</h3>
+                      <div className="form-grid form-group full-width">
                         <Field label="Años de experiencia" id="stat_anos" value={config.stat_anos_experiencia} onChange={v => setConfig(c => ({ ...c, stat_anos_experiencia: v }))} placeholder="30+" />
                         <Field label="Publicaciones científicas" id="stat_pub" value={config.stat_publicaciones} onChange={v => setConfig(c => ({ ...c, stat_publicaciones: v }))} placeholder="50+" />
                         <Field label="Pacientes al año" id="stat_pac" value={config.stat_pacientes_anio} onChange={v => setConfig(c => ({ ...c, stat_pacientes_anio: v }))} placeholder="2,000+" />
                         <Field label="Consultorios / Clínicas" id="stat_cons" value={config.stat_consultorios} onChange={v => setConfig(c => ({ ...c, stat_consultorios: v }))} placeholder="3" />
                       </div>
+                    </div>
+                  )}
 
-                      <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, marginTop: "16px", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Sección Programa HubMed / Servicios</h3>
+                  {activeSubTab === "servicios" && (
+                    <div className="form-grid">
+                      <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Sección Programa HubMed / Servicios</h3>
                       <Field label="Título de la Sección" id="servicios_titulo" value={heroData.servicios_titulo} onChange={v => setHeroData("servicios_titulo", v)} placeholder="Programa Integral de Vacunación" fullWidth />
                       <div className="form-group full-width">
                         <label className="form-label" htmlFor="servicios_desc">Descripción de la Sección</label>
                         <textarea id="servicios_desc" className="form-textarea" value={heroData.servicios_desc} onChange={e => setHeroData("servicios_desc", e.target.value)} placeholder="Protección inteligente y seguimiento continuo..." rows={2} />
                       </div>
                       
-                      <div className="form-group full-width" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", background: "var(--slate-50)", padding: "16px", borderRadius: "12px" }}>
+                      <div className="form-grid form-group full-width" style={{ background: "var(--slate-50)", padding: "16px", borderRadius: "12px" }}>
                         <h4 style={{ gridColumn: "1 / -1", fontSize: "14px", fontWeight: 700, margin: 0 }}>Tarjeta 1</h4>
                         <Field label="Título Tarjeta 1" id="servicios_c1_title" value={heroData.servicios_c1_title} onChange={v => setHeroData("servicios_c1_title", v)} placeholder="Seguridad Total" />
                         <Field label="Texto Tarjeta 1" id="servicios_c1_text" value={heroData.servicios_c1_text} onChange={v => setHeroData("servicios_c1_text", v)} placeholder="Aplicamos los esquemas más actualizados..." />
@@ -1016,8 +1105,12 @@ export default function PersonalizarPage({ params }: Props) {
                         <Field label="Título Tarjeta 3" id="servicios_c3_title" value={heroData.servicios_c3_title} onChange={v => setHeroData("servicios_c3_title", v)} placeholder="Evidencia Científica" />
                         <Field label="Texto Tarjeta 3" id="servicios_c3_text" value={heroData.servicios_c3_text} onChange={v => setHeroData("servicios_c3_text", v)} placeholder="Decisiones basadas en la evidencia..." />
                       </div>
+                    </div>
+                  )}
 
-                      <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, marginTop: "16px", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Sección CTA de Consulta</h3>
+                  {activeSubTab === "cta_seo" && (
+                    <div className="form-grid">
+                      <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Sección CTA de Consulta</h3>
                       <div className="form-group full-width" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px", background: "var(--slate-50)", borderRadius: "var(--radius-lg)" }}>
                         <input type="checkbox" id="cta_mostrar" checked={heroData.cta_mostrar !== false} onChange={e => setHeroData("cta_mostrar", e.target.checked)} style={{ width: "18px", height: "18px", cursor: "pointer" }} />
                         <label htmlFor="cta_mostrar" style={{ fontSize: "14px", fontWeight: 700, color: "var(--slate-900)", cursor: "pointer" }}>Mostrar sección de consulta (CTA) en el Home</label>
@@ -1037,8 +1130,46 @@ export default function PersonalizarPage({ params }: Props) {
                       </div>
                     </div>
                   )}
+                </div>
+                <SaveBar onSave={saveConfig} isPending={isPending} />
+              </div>
+            )}
 
-                  {activeSubTab === "sobre_doctor" && (
+            {/* ── SOBRE EL DOCTOR ──────────────────────────────── */}
+            {activeTab === "sobre_doctor_portal" && (
+              <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                <div style={{ padding: "24px 28px 0 28px", borderBottom: "1px solid var(--slate-200)" }}>
+                  <h2 style={{ fontFamily: "Outfit, sans-serif", fontWeight: 800, fontSize: "18px" }}>👨‍⚕️ Sobre el Doctor</h2>
+                  <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "4px", marginBottom: "16px" }}>Administra las biografías y las membresías/afiliaciones profesionales del doctor.</p>
+                  
+                  {/* Subtabs */}
+                  <div style={{ display: "flex", gap: "2px", borderBottom: "1px solid transparent", overflowX: "auto" }}>
+                    {[
+                      { id: "biografia", label: "Biografía Profesional" },
+                      { id: "afiliaciones", label: "Membresías y Afiliaciones" }
+                    ].map(sub => (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => setActiveSubTab(sub.id)}
+                        style={{
+                          padding: "10px 16px",
+                          background: activeSubTab === sub.id ? "var(--slate-100)" : "transparent",
+                          border: "none",
+                          borderTopLeftRadius: "8px", borderTopRightRadius: "8px",
+                          fontSize: "13px", fontWeight: 700,
+                          color: activeSubTab === sub.id ? "var(--slate-900)" : "var(--slate-500)",
+                          cursor: "pointer", transition: "background .2s, color .2s"
+                        }}
+                      >
+                        {sub.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="modal-body" style={{ maxHeight: "none", flex: 1 }}>
+                  {activeSubTab === "biografia" && (
                     <div className="form-grid">
                       <div className="form-group full-width" style={{ marginBottom: "16px" }}>
                         <label className="form-label" htmlFor="bio_corta">Biografía corta (aparece en la portada principal)</label>
@@ -1048,7 +1179,11 @@ export default function PersonalizarPage({ params }: Props) {
                         <label className="form-label" htmlFor="bio_larga">Biografía extensa (página "Sobre el Doctor")</label>
                         <textarea id="bio_larga" className="form-textarea" value={config.bio_larga} onChange={e => setConfig(c => ({ ...c, bio_larga: e.target.value }))} rows={6} placeholder="Descripción detallada de tu labor médica..." style={{ background: "var(--slate-50)" }} />
                       </div>
+                    </div>
+                  )}
 
+                  {activeSubTab === "afiliaciones" && (
+                    <div className="form-grid">
                       <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "20px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div>
@@ -1128,21 +1263,55 @@ export default function PersonalizarPage({ params }: Props) {
                       </div>
                     </div>
                   )}
+                </div>
+                <SaveBar onSave={saveConfig} isPending={isPending} />
+              </div>
+            )}
 
-                  {activeSubTab === "extra" && (
+            {/* ── PESTAÑA EXTRA ───────────────────────────────── */}
+            {activeTab === "extra_portal" && (
+              <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                <div style={{ padding: "24px 28px 0 28px", borderBottom: "1px solid var(--slate-200)" }}>
+                  <h2 style={{ fontFamily: "Outfit, sans-serif", fontWeight: 800, fontSize: "18px" }}>✨ Pestaña Extra</h2>
+                  <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "4px", marginBottom: "16px" }}>Configura la página adicional de catálogo comercial, mitos/verdades y banners de marketing.</p>
+                  
+                  {/* Subtabs */}
+                  <div style={{ display: "flex", gap: "2px", borderBottom: "1px solid transparent", overflowX: "auto" }}>
+                    {[
+                      { id: "menu_portada", label: "Menú y Portada" },
+                      { id: "mitos", label: "Preguntas y Mitos (FAQs)" },
+                      { id: "catalogo", label: "Catálogo de Servicios" },
+                      { id: "banner", label: "Banner Promocional" }
+                    ].map(sub => (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => setActiveSubTab(sub.id)}
+                        style={{
+                          padding: "10px 16px",
+                          background: activeSubTab === sub.id ? "var(--slate-100)" : "transparent",
+                          border: "none",
+                          borderTopLeftRadius: "8px", borderTopRightRadius: "8px",
+                          fontSize: "13px", fontWeight: 700,
+                          color: activeSubTab === sub.id ? "var(--slate-900)" : "var(--slate-500)",
+                          cursor: "pointer", transition: "background .2s, color .2s"
+                        }}
+                      >
+                        {sub.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="modal-body" style={{ maxHeight: "none", flex: 1 }}>
+                  {activeSubTab === "menu_portada" && (
                     <div className="form-grid">
                       <div className="form-group full-width" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "16px", background: "var(--emerald-50)", border: "1px solid var(--emerald-200)", borderRadius: "var(--radius-lg)" }}>
                         <input type="checkbox" id="habilitar_menu_vacunas" checked={heroData.habilitar_menu_vacunas !== false} onChange={e => setHeroData("habilitar_menu_vacunas", e.target.checked)} style={{ width: "20px", height: "20px", cursor: "pointer" }} />
                         <label htmlFor="habilitar_menu_vacunas" style={{ fontSize: "15px", fontWeight: 700, color: "var(--emerald-900)", cursor: "pointer" }}>Habilitar página de "Servicios/Preguntas" en el menú público</label>
                       </div>
 
-                      {heroData.habilitar_menu_vacunas === false ? (
-                        <div style={{ gridColumn: "1 / -1", padding: "32px", border: "1px dashed var(--slate-300)", borderRadius: "12px", background: "var(--slate-50)", textAlign: "center", color: "var(--slate-500)", marginTop: "16px" }}>
-                          <span style={{ fontSize: "36px" }}>🔕</span>
-                          <h4 style={{ marginTop: "12px", fontSize: "14px", fontWeight: 700, color: "var(--slate-700)" }}>La página de "Servicios/Preguntas" está desactivada</h4>
-                          <p style={{ fontSize: "12px", marginTop: "4px" }}>Activa la casilla superior para habilitarla y configurar su contenido público.</p>
-                        </div>
-                      ) : (
+                      {heroData.habilitar_menu_vacunas !== false && (
                         <>
                           <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, marginTop: "16px", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Configuración del Menú y Portada</h3>
                           <Field label="Nombre del botón en el menú de navegación *" id="nombre_menu_vacunas" value={heroData.nombre_menu_vacunas || "Servicios"} onChange={v => setHeroData("nombre_menu_vacunas", v)} placeholder="HubMed, Servicios, Tratamientos, etc." fullWidth />
@@ -1152,20 +1321,29 @@ export default function PersonalizarPage({ params }: Props) {
                             <label className="form-label" htmlFor="vacunas_hero_descripcion">Descripción detallada</label>
                             <textarea id="vacunas_hero_descripcion" className="form-textarea" value={heroData.vacunas_hero_descripcion || ""} onChange={e => setHeroData("vacunas_hero_descripcion", e.target.value)} placeholder="Descripción de los servicios de vacunación o procedimientos..." rows={3} />
                           </div>
+                        </>
+                      )}
+                    </div>
+                  )}
 
-                          <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, marginTop: "16px", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Configuración y Títulos de Secciones</h3>
-                          <div className="form-group" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  {activeSubTab === "mitos" && (
+                    <div className="form-grid">
+                      {heroData.habilitar_menu_vacunas === false ? (
+                        <div style={{ gridColumn: "1 / -1", padding: "24px", border: "1px dashed var(--slate-300)", borderRadius: "12px", background: "var(--slate-50)", textAlign: "center", color: "var(--slate-500)" }}>
+                          <span style={{ fontSize: "28px" }}>🔕</span>
+                          <p style={{ marginTop: "12px", fontSize: "13px", fontWeight: 600 }}>La página extra está desactivada.</p>
+                          <p style={{ fontSize: "11px", marginTop: "4px" }}>Habilite la página extra en la pestaña 'Menú y Portada' para configurar esta sección.</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="form-group full-width" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <input type="checkbox" id="vacunas_mostrar_mitos" checked={heroData.vacunas_mostrar_mitos !== false} onChange={e => setHeroData("vacunas_mostrar_mitos", e.target.checked)} style={{ width: "18px", height: "18px", cursor: "pointer" }} />
                             <label htmlFor="vacunas_mostrar_mitos" style={{ fontSize: "14px", fontWeight: 700, color: "var(--slate-700)", cursor: "pointer" }}>Habilitar sección de Preguntas/Mitos</label>
                           </div>
-                          <div className="form-group" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <input type="checkbox" id="vacunas_mostrar_inventario" checked={heroData.vacunas_mostrar_inventario !== false} onChange={e => setHeroData("vacunas_mostrar_inventario", e.target.checked)} style={{ width: "18px", height: "18px", cursor: "pointer" }} />
-                            <label htmlFor="vacunas_mostrar_inventario" style={{ fontSize: "14px", fontWeight: 700, color: "var(--slate-700)", cursor: "pointer" }}>Habilitar catálogo de servicios/productos</label>
-                          </div>
 
                           {heroData.vacunas_mostrar_mitos !== false && (
-                            <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "20px", marginTop: "16px", background: "var(--slate-50)", padding: "20px", borderRadius: "12px", border: "1px solid var(--slate-200)" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "20px", marginTop: "8px", background: "var(--slate-50)", padding: "20px", borderRadius: "12px", border: "1px solid var(--slate-200)" }}>
+                              <div className="personalizar-card-header">
                                 <div>
                                   <h4 style={{ fontSize: "14px", fontWeight: 700, margin: 0, color: "var(--slate-900)" }}>Preguntas Frecuentes / Mitos y Verdades</h4>
                                   <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "4px 0 0 0" }}>Agrega y edita las preguntas que los pacientes suelen hacer en consulta.</p>
@@ -1180,7 +1358,17 @@ export default function PersonalizarPage({ params }: Props) {
                                 </button>
                               </div>
 
-                              <Field label="Título para la sección de Preguntas/Mitos *" id="vacunas_mitos_titulo" value={heroData.vacunas_mitos_titulo || "Preguntas Frecuentes"} onChange={v => setHeroData("vacunas_mitos_titulo", v)} placeholder="Mitos Vacunales, Preguntas Frecuentes, etc." fullWidth />
+                              <div className="form-grid">
+                                <Field label="Badge superior de la sección *" id="vacunas_mitos_badge" value={heroData.vacunas_mitos_badge || "🔍 Información y Evidencia"} onChange={v => setHeroData("vacunas_mitos_badge", v)} placeholder="🔍 Información y Evidencia" />
+                                <Field label="Prefijo del título *" id="vacunas_mitos_prefijo" value={heroData.vacunas_mitos_prefijo || "Decodificador de"} onChange={v => setHeroData("vacunas_mitos_prefijo", v)} placeholder="Decodificador de, Respuestas a, etc." />
+                              </div>
+
+                              <Field label="Título de la sección *" id="vacunas_mitos_titulo" value={heroData.vacunas_mitos_titulo || "Mitos Vacunales"} onChange={v => setHeroData("vacunas_mitos_titulo", v)} placeholder="Mitos Vacunales, Preguntas Frecuentes, etc." fullWidth />
+
+                              <div className="form-group full-width">
+                                <label className="form-label" htmlFor="vacunas_mitos_descripcion">Descripción corta de la sección *</label>
+                                <textarea id="vacunas_mitos_descripcion" className="form-textarea" value={heroData.vacunas_mitos_descripcion || "Respuestas detalladas a las preguntas y mitos más frecuentes que surgen en la consulta."} onChange={e => setHeroData("vacunas_mitos_descripcion", e.target.value)} placeholder="Respuestas detalladas a las preguntas..." rows={2} />
+                              </div>
 
                               {mitos.length === 0 ? (
                                 <div style={{ textAlign: "center", padding: "30px", border: "2px dashed var(--slate-200)", borderRadius: "12px", color: "var(--slate-400)", background: "white" }}>
@@ -1242,258 +1430,364 @@ export default function PersonalizarPage({ params }: Props) {
                               )}
                             </div>
                           )}
+                        </>
+                      )}
+                    </div>
+                  )}
 
-                          {heroData.vacunas_mostrar_inventario !== false && (
-                            <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "16px", background: "var(--slate-50)", padding: "20px", borderRadius: "12px", border: "1px solid var(--slate-200)", marginTop: "8px" }}>
-                              <h4 style={{ fontSize: "14px", fontWeight: 700, margin: 0, color: "var(--slate-900)" }}>Configuración del Catálogo</h4>
-                              
+                  {activeSubTab === "catalogo" && (
+                    <div className="form-grid">
+                      {heroData.habilitar_menu_vacunas === false ? (
+                        <div style={{ gridColumn: "1 / -1", padding: "24px", border: "1px dashed var(--slate-300)", borderRadius: "12px", background: "var(--slate-50)", textAlign: "center", color: "var(--slate-500)" }}>
+                          <span style={{ fontSize: "28px" }}>🔕</span>
+                          <p style={{ marginTop: "12px", fontSize: "13px", fontWeight: 600 }}>La página extra está desactivada.</p>
+                          <p style={{ fontSize: "11px", marginTop: "4px" }}>Habilite la página extra en la pestaña 'Menú y Portada' para configurar esta sección.</p>
+                        </div>
+                      ) : (
+                        <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "16px", background: "var(--slate-50)", padding: "20px", borderRadius: "12px", border: "1px solid var(--slate-200)", marginTop: "8px" }}>
+                          <h4 style={{ fontSize: "14px", fontWeight: 700, margin: 0, color: "var(--slate-900)" }}>Configuración del Catálogo</h4>
+                          
+                          <div className="form-group full-width">
+                            <label className="form-label" htmlFor="vacunas_catalog_tipo">Origen del Contenido del Catálogo</label>
+                            <select
+                              id="vacunas_catalog_tipo"
+                              className="form-input"
+                              style={{ padding: "6px 10px", fontSize: "12px", height: "34px", background: "white", width: "100%" }}
+                              value={heroData.vacunas_catalog_tipo || "dynamic"}
+                              onChange={e => setHeroData("vacunas_catalog_tipo", e.target.value)}
+                            >
+                              <option value="dynamic">Catálogo Interactivo de Servicios y Productos (Dinámico)</option>
+                              <option value="image">Imagen Promocional del Catálogo</option>
+                              <option value="pdf">Archivo PDF del Catálogo</option>
+                            </select>
+                          </div>
+
+                          {heroData.vacunas_catalog_tipo === "image" && (
+                            <div style={{ background: "white", padding: "20px", borderRadius: "8px", border: "1px solid var(--slate-200)", marginTop: "8px" }}>
+                              <label className="form-label" style={{ fontWeight: 700 }}>Imagen Promocional del Catálogo</label>
+                              <div style={{ display: "flex", gap: "16px", alignItems: "center", marginTop: "8px" }}>
+                                <div style={{ width: "150px", height: "150px", border: "1px dashed var(--slate-300)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--slate-50)", overflow: "hidden" }}>
+                                  {heroData.vacunas_catalog_imagen_url ? (
+                                    <img src={heroData.vacunas_catalog_imagen_url} alt="Catálogo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                  ) : (
+                                    <span style={{ fontSize: "32px" }}>🖼️</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <input type="file" accept="image/*" id="catalog-image-upload" style={{ display: "none" }} onChange={handleCatalogImageUpload} />
+                                  <label htmlFor="catalog-image-upload" className="btn btn-outline" style={{ cursor: "pointer", fontSize: "13px", display: "inline-block" }}>
+                                    {isPending ? "Subiendo..." : "Subir Imagen del Catálogo"}
+                                  </label>
+                                  {heroData.vacunas_catalog_imagen_url && (
+                                    <p style={{ fontSize: "11px", color: "var(--emerald-600)", marginTop: "6px" }}>
+                                      ✓ Archivo cargado: <a href={heroData.vacunas_catalog_imagen_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>Ver imagen actual</a>
+                                    </p>
+                                  )}
+                                  <p style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "6px" }}>Formatos recomendados: PNG, JPG, WebP. Se mostrará en lugar del catálogo en la vista pública.</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {heroData.vacunas_catalog_tipo === "pdf" && (
+                            <div style={{ background: "white", padding: "20px", borderRadius: "8px", border: "1px solid var(--slate-200)", marginTop: "8px" }}>
+                              <label className="form-label" style={{ fontWeight: 700 }}>Archivo PDF del Catálogo</label>
+                              <div style={{ display: "flex", gap: "16px", alignItems: "center", marginTop: "8px" }}>
+                                <div style={{ width: "150px", height: "150px", border: "1px dashed var(--slate-300)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--slate-50)", overflow: "hidden" }}>
+                                  {heroData.vacunas_catalog_pdf_url ? (
+                                    <span style={{ fontSize: "48px" }}>📄</span>
+                                  ) : (
+                                    <span style={{ fontSize: "32px" }}>📁</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <input type="file" accept="application/pdf" id="catalog-pdf-upload" style={{ display: "none" }} onChange={handleCatalogPdfUpload} />
+                                  <label htmlFor="catalog-pdf-upload" className="btn btn-outline" style={{ cursor: "pointer", fontSize: "13px", display: "inline-block" }}>
+                                    {isPending ? "Subiendo..." : "Subir Archivo PDF"}
+                                  </label>
+                                  {heroData.vacunas_catalog_pdf_url && (
+                                    <p style={{ fontSize: "11px", color: "var(--emerald-600)", marginTop: "6px" }}>
+                                      ✓ Archivo cargado: <a href={heroData.vacunas_catalog_pdf_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>Descargar/Ver PDF actual</a>
+                                    </p>
+                                  )}
+                                  <p style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "6px" }}>Formatos recomendados: PDF. Se mostrará un botón de descarga en la vista pública.</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {(heroData.vacunas_catalog_tipo === "dynamic" || !heroData.vacunas_catalog_tipo) && (
+                            <>
                               <Field label="Título para la tabla de Catálogo/Inventario *" id="vacunas_inventario_titulo" value={heroData.vacunas_inventario_titulo || "Servicios Disponibles"} onChange={v => setHeroData("vacunas_inventario_titulo", v)} placeholder="Servicios Disponibles, Portafolio de Tratamientos, etc." fullWidth />
 
-                              <div className="form-group full-width">
-                                <label className="form-label" htmlFor="vacunas_catalog_tipo">Origen del Contenido del Catálogo</label>
-                                <select
-                                  id="vacunas_catalog_tipo"
-                                  className="form-input"
-                                  value={heroData.vacunas_catalog_tipo || "dynamic"}
-                                  onChange={e => setHeroData("vacunas_catalog_tipo", e.target.value)}
-                                  style={{ background: "white", height: "46px" }}
-                                >
-                                  <option value="dynamic">📦 Productos uno a uno (desde el módulo de Inventario y personalizado)</option>
-                                  <option value="image">🖼️ Imagen promocional (subir una imagen con la lista o catálogo)</option>
-                                  <option value="pdf">📄 Documento PDF (subir archivo PDF interactivo)</option>
-                                </select>
+                              <div className="form-group full-width" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                <input type="checkbox" id="vacunas_mostrar_inventario" checked={heroData.vacunas_mostrar_inventario !== false} onChange={e => setHeroData("vacunas_mostrar_inventario", e.target.checked)} style={{ width: "18px", height: "18px", cursor: "pointer" }} />
+                                <label htmlFor="vacunas_mostrar_inventario" style={{ fontSize: "14px", fontWeight: 700, color: "var(--slate-700)", cursor: "pointer" }}>Habilitar catálogo de servicios/productos</label>
                               </div>
 
-                              {(heroData.vacunas_catalog_tipo || "dynamic") === "dynamic" && (
-                                <>
-                                  {/* 1. SELECCION DE INVENTARIO */}
-                                  <div style={{ background: "white", padding: "16px", borderRadius: "8px", border: "1px solid var(--slate-200)" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                                      <div>
-                                        <h5 style={{ fontSize: "13px", fontWeight: 700, margin: 0, color: "var(--slate-800)" }}>1. Seleccionar del Inventario a Publicar</h5>
-                                        <p style={{ fontSize: "11px", color: "var(--slate-400)", margin: "2px 0 0 0" }}>Selecciona cuáles de tus vacunas o productos del inventario físico se deben mostrar en la página pública.</p>
-                                      </div>
-                                      <div style={{ display: "flex", gap: "8px" }}>
-                                        <button
-                                          type="button"
-                                          style={{ fontSize: "11px", color: "var(--emerald-600)", border: "none", background: "transparent", cursor: "pointer", fontWeight: 600 }}
-                                          onClick={() => setHeroData("vacunas_catalog_selected_ids", inventoryItems.map(item => item.id))}
-                                        >
-                                          ✓ Todos
-                                        </button>
-                                        <span style={{ fontSize: "11px", color: "var(--slate-300)" }}>|</span>
-                                        <button
-                                          type="button"
-                                          style={{ fontSize: "11px", color: "var(--rose-600)", border: "none", background: "transparent", cursor: "pointer", fontWeight: 600 }}
-                                          onClick={() => setHeroData("vacunas_catalog_selected_ids", [])}
-                                        >
-                                          🗑 Ninguno
-                                        </button>
-                                      </div>
+                              {heroData.vacunas_mostrar_inventario !== false && (
+                                <div style={{ background: "white", padding: "20px", borderRadius: "8px", border: "1px solid var(--slate-200)", marginTop: "8px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                                    <div>
+                                      <h5 style={{ fontSize: "14px", fontWeight: 700, margin: 0, color: "var(--slate-800)" }}>Servicios del Catálogo Comercial</h5>
+                                      <p style={{ fontSize: "11px", color: "var(--slate-400)", margin: "2px 0 0 0" }}>Administra los servicios comerciales. Dentro de cada servicio puedes asociar múltiples vacunas/productos configurados en tu inventario.</p>
                                     </div>
-                                    {inventoryItems.length === 0 ? (
-                                      <div style={{ textAlign: "center", padding: "16px", color: "var(--slate-400)", border: "1px dashed var(--slate-200)", borderRadius: "6px" }}>
-                                        No hay productos en inventario. <a href={`/${slug}/admin/inventario`} className="btn btn-link" style={{ textDecoration: "underline", color: "var(--emerald-600)", fontWeight: 700 }}>Ir a Inventario</a>
-                                      </div>
-                                    ) : (
-                                      <div style={{ maxHeight: "350px", overflowY: "auto", border: "1px solid var(--slate-100)", borderRadius: "6px", padding: "8px" }}>
-                                        {inventoryItems.map((item) => {
-                                          const selectedIds = heroData.vacunas_catalog_selected_ids || [];
-                                          const isChecked = selectedIds.includes(item.id);
-                                          return (
-                                            <div key={item.id} style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "8px", borderBottom: "1px solid var(--slate-50)" }}>
-                                              <input
-                                                type="checkbox"
-                                                id={`inv-${item.id}`}
-                                                checked={isChecked}
-                                                onChange={() => {
-                                                  const current = heroData.vacunas_catalog_selected_ids || [];
-                                                  let next;
-                                                  if (current.includes(item.id)) {
-                                                    next = current.filter((x: string) => x !== item.id);
-                                                  } else {
-                                                    next = [...current, item.id];
-                                                  }
-                                                  setHeroData("vacunas_catalog_selected_ids", next);
-                                                }}
-                                                style={{ width: "16px", height: "16px", cursor: "pointer", marginTop: "2px" }}
-                                              />
-                                              <label htmlFor={`inv-${item.id}`} style={{ fontSize: "12px", color: "var(--slate-700)", cursor: "pointer", display: "block", width: "100%" }}>
-                                                <strong>{item.nombre}</strong> {item.nombre_generico ? `(${item.nombre_generico})` : ""} — <span style={{ color: "var(--slate-500)", fontSize: "11px" }}>{item.laboratorio || "Sin laboratorio"}</span>
-                                              </label>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* 2. SERVICIOS COMERCIALES PERSONALIZADOS */}
-                                  <div style={{ background: "white", padding: "16px", borderRadius: "8px", border: "1px solid var(--slate-200)", marginTop: "12px" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                                      <div>
-                                        <h5 style={{ fontSize: "13px", fontWeight: 700, margin: 0, color: "var(--slate-800)" }}>2. Servicios y Productos Comerciales Personalizados</h5>
-                                        <p style={{ fontSize: "11px", color: "var(--slate-400)", margin: "2px 0 0 0" }}>Agrega servicios comerciales de consulta u otros procedimientos que no correspondan a inventario físico.</p>
-                                      </div>
+                                    <div style={{ display: "flex", gap: "8px" }}>
                                       <button
                                         type="button"
-                                        className="btn btn-emerald"
-                                        style={{ padding: "6px 12px", fontSize: "12px" }}
+                                        className="btn btn-outline"
+                                        style={{ padding: "6px 12px", fontSize: "12px", background: "white", borderColor: "var(--slate-300)" }}
                                         onClick={() => {
                                           const currentCustom = heroData.vacunas_catalog_custom_items || [];
-                                          const newItem = { id: uid(), nombre: "", descripcion: "", categoria: "", precio: "" };
+                                          const newItem = { id: uid(), tipo: "servicio", nombre: "", descripcion: "", categoria: "Servicios", precio: "", productos: [] };
                                           setHeroData("vacunas_catalog_custom_items", [...currentCustom, newItem]);
                                         }}
                                       >
                                         ＋ Agregar Servicio
                                       </button>
                                     </div>
-                                    {(heroData.vacunas_catalog_custom_items || []).length === 0 ? (
-                                      <div style={{ textAlign: "center", padding: "20px", border: "2px dashed var(--slate-200)", borderRadius: "8px", color: "var(--slate-400)" }}>
-                                        <p style={{ margin: 0, fontSize: "12px" }}>No has agregado servicios personalizados aún.</p>
-                                      </div>
-                                    ) : (
-                                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "350px", overflowY: "auto", paddingRight: "4px" }}>
-                                        {(heroData.vacunas_catalog_custom_items || []).map((item: any, idx: number) => (
-                                          <div key={item.id || idx} style={{ border: "1px solid var(--slate-100)", borderRadius: "8px", padding: "12px", background: "var(--slate-50)", position: "relative" }}>
-                                            <button
-                                              type="button"
-                                              style={{ position: "absolute", top: "12px", right: "12px", background: "transparent", border: "none", color: "var(--rose-600)", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}
-                                              onClick={() => {
-                                                const currentCustom = heroData.vacunas_catalog_custom_items || [];
-                                                const updated = currentCustom.filter((x: any) => x.id !== item.id);
-                                                setHeroData("vacunas_catalog_custom_items", updated);
-                                              }}
-                                            >
-                                              🗑 Eliminar
-                                            </button>
-                                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", width: "90%" }}>
-                                              <div>
-                                                <label className="form-label" style={{ fontSize: "11px", fontWeight: 700 }}>Nombre del Servicio *</label>
-                                                <input
-                                                  className="form-input"
-                                                  style={{ padding: "6px 10px", fontSize: "12px", height: "34px", background: "white" }}
-                                                  value={item.nombre}
-                                                  onChange={e => {
-                                                    const currentCustom = heroData.vacunas_catalog_custom_items || [];
-                                                    const updated = currentCustom.map((x: any) => x.id === item.id ? { ...x, nombre: e.target.value } : x);
-                                                    setHeroData("vacunas_catalog_custom_items", updated);
-                                                  }}
-                                                  placeholder="Ej: Consulta Especializada"
-                                                  required
-                                                />
-                                              </div>
-                                              <div>
-                                                <label className="form-label" style={{ fontSize: "11px", fontWeight: 700 }}>Categoría *</label>
-                                                <input
-                                                  className="form-input"
-                                                  style={{ padding: "6px 10px", fontSize: "12px", height: "34px", background: "white" }}
-                                                  value={item.categoria}
-                                                  onChange={e => {
-                                                    const currentCustom = heroData.vacunas_catalog_custom_items || [];
-                                                    const updated = currentCustom.map((x: any) => x.id === item.id ? { ...x, categoria: e.target.value } : x);
-                                                    setHeroData("vacunas_catalog_custom_items", updated);
-                                                  }}
-                                                  placeholder="Ej: Consulta, Valoración, etc."
-                                                  required
-                                                />
-                                              </div>
-                                              <div style={{ gridColumn: "1 / -1" }}>
-                                                <label className="form-label" style={{ fontSize: "11px", fontWeight: 700 }}>Descripción</label>
-                                                <textarea
-                                                  className="form-textarea"
-                                                  style={{ padding: "6px 10px", fontSize: "12px", background: "white" }}
-                                                  value={item.descripcion}
-                                                  onChange={e => {
-                                                    const currentCustom = heroData.vacunas_catalog_custom_items || [];
-                                                    const updated = currentCustom.map((x: any) => x.id === item.id ? { ...x, descripcion: e.target.value } : x);
-                                                    setHeroData("vacunas_catalog_custom_items", updated);
-                                                  }}
-                                                  placeholder="Breve descripción del servicio o lo que incluye..."
-                                                  rows={2}
-                                                />
-                                              </div>
-                                              <div>
-                                                <label className="form-label" style={{ fontSize: "11px", fontWeight: 700 }}>Precio (Opcional)</label>
-                                                <input
-                                                  className="form-input"
-                                                  style={{ padding: "6px 10px", fontSize: "12px", height: "34px", background: "white" }}
-                                                  value={item.precio}
-                                                  onChange={e => {
-                                                    const currentCustom = heroData.vacunas_catalog_custom_items || [];
-                                                    const updated = currentCustom.map((x: any) => x.id === item.id ? { ...x, precio: e.target.value } : x);
-                                                    setHeroData("vacunas_catalog_custom_items", updated);
-                                                  }}
-                                                  placeholder="Ej: $150.000 o Gratis"
-                                                />
-                                              </div>
+                                  </div>
+
+                                  {(heroData.vacunas_catalog_custom_items || []).length === 0 ? (
+                                    <div style={{ textAlign: "center", padding: "30px", border: "2px dashed var(--slate-200)", borderRadius: "8px", color: "var(--slate-400)", background: "white" }}>
+                                      <p style={{ margin: 0, fontSize: "12px" }}>No has agregado ningún servicio al catálogo comercial aún.</p>
+                                      <p style={{ margin: "4px 0 0 0", fontSize: "11px" }}>Usa el botón superior para agregar un servicio y luego asociar productos del inventario.</p>
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxHeight: "450px", overflowY: "auto", paddingRight: "4px" }}>
+                                      {(heroData.vacunas_catalog_custom_items || []).map((item: any, idx: number) => {
+                                        const isProduct = item.tipo === "producto";
+                                        return (
+                                          <div key={item.id || idx} style={{ border: "1px solid var(--slate-200)", borderRadius: "8px", padding: "16px", background: "var(--slate-50)", position: "relative" }}>
+                                            <div style={{ position: "absolute", top: "12px", right: "12px", display: "flex", gap: "8px", alignItems: "center", zIndex: 10 }}>
+                                              <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: isProduct ? "rgba(16, 185, 129, 0.1)" : "rgba(79, 70, 229, 0.1)", color: isProduct ? "var(--emerald-700)" : "var(--indigo-700)" }}>
+                                                {isProduct ? "📦 Producto de Inventario" : "💼 Servicio con Productos"}
+                                              </span>
+                                              <button
+                                                type="button"
+                                                style={{ background: "transparent", border: "none", color: "var(--rose-600)", cursor: "pointer", fontSize: "12px", fontWeight: 700 }}
+                                                onClick={() => {
+                                                  const currentCustom = heroData.vacunas_catalog_custom_items || [];
+                                                  const updated = currentCustom.filter((x: any) => x.id !== item.id);
+                                                  setHeroData("vacunas_catalog_custom_items", updated);
+                                                }}
+                                              >
+                                                🗑 Eliminar
+                                              </button>
                                             </div>
+
+                                            {isProduct ? (
+                                              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "8px", width: "85%" }}>
+                                                <div>
+                                                  <label className="form-label" style={{ fontSize: "11px", fontWeight: 700 }}>Seleccionar Producto del Inventario *</label>
+                                                  <select
+                                                    className="form-input"
+                                                    style={{ padding: "6px 10px", fontSize: "12px", height: "34px", background: "white", width: "100%" }}
+                                                    value={item.productoId || ""}
+                                                    onChange={e => {
+                                                      const currentCustom = heroData.vacunas_catalog_custom_items || [];
+                                                      const updated = currentCustom.map((x: any) => x.id === item.id ? { ...x, productoId: e.target.value } : x);
+                                                      setHeroData("vacunas_catalog_custom_items", updated);
+                                                    }}
+                                                    required
+                                                  >
+                                                    <option value="">-- Seleccione un Producto --</option>
+                                                    {inventoryItems.map(inv => (
+                                                      <option key={inv.id} value={inv.id}>
+                                                        {inv.nombre} {inv.nombre_generico ? `(${inv.nombre_generico})` : ""} — {inv.laboratorio || "Sin laboratorio"}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                </div>
+                                                {item.productoId && (() => {
+                                                  const selectedProd = inventoryItems.find(x => x.id === item.productoId);
+                                                  if (!selectedProd) return null;
+                                                  return (
+                                                    <div style={{ marginTop: "4px", background: "white", padding: "10px", borderRadius: "6px", border: "1px solid var(--slate-200)", fontSize: "11px", color: "var(--slate-600)" }}>
+                                                      <div><strong>Nombre Genérico / Subtítulo:</strong> {selectedProd.nombre_generico || "Ninguno"}</div>
+                                                      <div><strong>Laboratorio / Categoría:</strong> {selectedProd.laboratorio || "Ninguno"}</div>
+                                                      <div><strong>Esquema / Detalles:</strong> {selectedProd.esquema_dosis || "Ninguno"}</div>
+                                                      <div><strong>Stock disponible:</strong> {selectedProd.stock_actual} unidades ({selectedProd.stock_actual > 0 ? "🟢 Disponible" : "🔴 Agotado"})</div>
+                                                      {selectedProd.descripcion && <div style={{ marginTop: "4px" }}><strong>Descripción:</strong> {selectedProd.descripcion}</div>}
+                                                    </div>
+                                                  );
+                                                })()}
+                                              </div>
+                                            ) : (
+                                              <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "95%" }}>
+                                                <div className="form-grid" style={{ gap: "8px" }}>
+                                                  <div>
+                                                    <label className="form-label" style={{ fontSize: "11px", fontWeight: 700 }}>Nombre del Servicio *</label>
+                                                    <input
+                                                      className="form-input"
+                                                      style={{ padding: "6px 10px", fontSize: "12px", height: "34px", background: "white" }}
+                                                      value={item.nombre || ""}
+                                                      onChange={e => {
+                                                        const currentCustom = heroData.vacunas_catalog_custom_items || [];
+                                                        const updated = currentCustom.map((x: any) => x.id === item.id ? { ...x, nombre: e.target.value } : x);
+                                                        setHeroData("vacunas_catalog_custom_items", updated);
+                                                      }}
+                                                      placeholder="Ej: Vacunación Infantil o Consulta de Control"
+                                                      required
+                                                    />
+                                                  </div>
+                                                  <div>
+                                                    <label className="form-label" style={{ fontSize: "11px", fontWeight: 700 }}>Categoría *</label>
+                                                    <input
+                                                      className="form-input"
+                                                      style={{ padding: "6px 10px", fontSize: "12px", height: "34px", background: "white" }}
+                                                      value={item.categoria || ""}
+                                                      onChange={e => {
+                                                        const currentCustom = heroData.vacunas_catalog_custom_items || [];
+                                                        const updated = currentCustom.map((x: any) => x.id === item.id ? { ...x, categoria: e.target.value } : x);
+                                                        setHeroData("vacunas_catalog_custom_items", updated);
+                                                      }}
+                                                      placeholder="Ej: Vacunas, Consulta, Pediatría"
+                                                      required
+                                                    />
+                                                  </div>
+                                                  <div style={{ gridColumn: "1 / -1" }}>
+                                                    <label className="form-label" style={{ fontSize: "11px", fontWeight: 700 }}>Descripción del Servicio</label>
+                                                    <textarea
+                                                      className="form-textarea"
+                                                      style={{ padding: "6px 10px", fontSize: "12px", background: "white" }}
+                                                      value={item.descripcion || ""}
+                                                      onChange={e => {
+                                                        const currentCustom = heroData.vacunas_catalog_custom_items || [];
+                                                        const updated = currentCustom.map((x: any) => x.id === item.id ? { ...x, descripcion: e.target.value } : x);
+                                                        setHeroData("vacunas_catalog_custom_items", updated);
+                                                      }}
+                                                      placeholder="Breve descripción del servicio o lo que incluye..."
+                                                      rows={2}
+                                                    />
+                                                  </div>
+                                                  <div>
+                                                    <label className="form-label" style={{ fontSize: "11px", fontWeight: 700 }}>Precio (Opcional)</label>
+                                                    <input
+                                                      className="form-input"
+                                                      style={{ padding: "6px 10px", fontSize: "12px", height: "34px", background: "white" }}
+                                                      value={item.precio || ""}
+                                                      onChange={e => {
+                                                        const currentCustom = heroData.vacunas_catalog_custom_items || [];
+                                                        const updated = currentCustom.map((x: any) => x.id === item.id ? { ...x, precio: e.target.value } : x);
+                                                        setHeroData("vacunas_catalog_custom_items", updated);
+                                                      }}
+                                                      placeholder="Ej: $150.000 o Gratis"
+                                                    />
+                                                  </div>
+                                                </div>
+
+                                                {/* nested products selector */}
+                                                <div style={{ marginTop: "12px", borderTop: "1px dashed var(--slate-300)", paddingTop: "12px" }}>
+                                                  <label className="form-label" style={{ fontSize: "11px", fontWeight: 700, display: "block", marginBottom: "6px", color: "var(--slate-700)" }}>
+                                                    Asociar Productos del Inventario a este Servicio
+                                                  </label>
+                                                  <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                                                    <select
+                                                      id={`select-prod-${item.id}`}
+                                                      className="form-input"
+                                                      style={{ padding: "6px 10px", fontSize: "12px", height: "34px", background: "white", flex: 1 }}
+                                                      defaultValue=""
+                                                    >
+                                                      <option value="">-- Seleccione un Producto --</option>
+                                                      {inventoryItems.map(inv => (
+                                                        <option key={inv.id} value={inv.id}>
+                                                          {inv.nombre} {inv.nombre_generico ? `(${inv.nombre_generico})` : ""} — {inv.laboratorio || "Sin laboratorio"}
+                                                        </option>
+                                                      ))}
+                                                    </select>
+                                                    <button
+                                                      type="button"
+                                                      className="btn btn-emerald"
+                                                      style={{ padding: "6px 12px", fontSize: "12px", whiteSpace: "nowrap" }}
+                                                      onClick={() => {
+                                                        const selectEl = document.getElementById(`select-prod-${item.id}`) as HTMLSelectElement;
+                                                        const selectedProdId = selectEl?.value;
+                                                        if (!selectedProdId) return;
+
+                                                        const currentCustom = heroData.vacunas_catalog_custom_items || [];
+                                                        const updated = currentCustom.map((x: any) => {
+                                                          if (x.id === item.id) {
+                                                            const currentProds = x.productos || [];
+                                                            if (currentProds.includes(selectedProdId)) return x;
+                                                            return { ...x, productos: [...currentProds, selectedProdId] };
+                                                          }
+                                                          return x;
+                                                        });
+                                                        setHeroData("vacunas_catalog_custom_items", updated);
+                                                        if (selectEl) selectEl.value = "";
+                                                      }}
+                                                    >
+                                                      ＋ Asociar
+                                                    </button>
+                                                  </div>
+
+                                                  {/* List of associated products */}
+                                                  {(!item.productos || item.productos.length === 0) ? (
+                                                    <p style={{ fontSize: "11px", color: "var(--slate-400)", margin: 0, fontStyle: "italic" }}>
+                                                      No hay productos de inventario asociados a este servicio.
+                                                    </p>
+                                                  ) : (
+                                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" }}>
+                                                      {item.productos.map((prodId: string) => {
+                                                        const prod = inventoryItems.find((x: any) => x.id === prodId);
+                                                        if (!prod) return null;
+                                                        return (
+                                                          <div key={prodId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "white", padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--slate-200)" }}>
+                                                            <div style={{ fontSize: "11px", color: "var(--slate-700)" }}>
+                                                              <strong>{prod.nombre}</strong> {prod.nombre_generico ? `(${prod.nombre_generico})` : ""} — <span style={{ color: "var(--slate-400)" }}>{prod.laboratorio || "Sin laboratorio"}</span>
+                                                            </div>
+                                                            <button
+                                                              type="button"
+                                                              style={{ background: "transparent", border: "none", color: "var(--rose-600)", cursor: "pointer", fontSize: "10px", fontWeight: 700 }}
+                                                              onClick={() => {
+                                                                const currentCustom = heroData.vacunas_catalog_custom_items || [];
+                                                                const updated = currentCustom.map((x: any) => {
+                                                                  if (x.id === item.id) {
+                                                                    return { ...x, productos: (x.productos || []).filter((id: string) => id !== prodId) };
+                                                                  }
+                                                                  return x;
+                                                                });
+                                                                setHeroData("vacunas_catalog_custom_items", updated);
+                                                              }}
+                                                            >
+                                                              Desasociar
+                                                            </button>
+                                                          </div>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-
-                              {heroData.vacunas_catalog_tipo === "image" && (
-                                <div style={{ background: "white", padding: "16px", borderRadius: "8px", border: "1px solid var(--slate-200)" }}>
-                                  <label className="form-label" style={{ fontWeight: 700 }}>Imagen del Catálogo</label>
-                                  <div style={{ display: "flex", gap: "16px", alignItems: "center", marginTop: "8px" }}>
-                                    <div style={{ width: "120px", height: "120px", border: "1px dashed var(--slate-300)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--slate-50)", overflow: "hidden" }}>
-                                      {heroData.vacunas_catalog_imagen_url ? (
-                                        <img src={heroData.vacunas_catalog_imagen_url} alt="Catálogo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                                      ) : (
-                                        <span style={{ fontSize: "32px" }}>🖼️</span>
-                                      )}
+                                        );
+                                      })}
                                     </div>
-                                    <div>
-                                      <input type="file" accept="image/*" id="catalog-image-upload" style={{ display: "none" }} onChange={handleCatalogImageUpload} />
-                                      <label htmlFor="catalog-image-upload" className="btn btn-outline" style={{ cursor: "pointer", fontSize: "13px", display: "inline-block" }}>
-                                        {isPending ? "Subiendo..." : "Subir Imagen de Catálogo"}
-                                      </label>
-                                      <p style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "6px" }}>Formatos recomendados: PNG, JPG, WebP. Máx. 5MB.</p>
-                                    </div>
-                                  </div>
+                                  )}
                                 </div>
                               )}
-
-                              {heroData.vacunas_catalog_tipo === "pdf" && (
-                                <div style={{ background: "white", padding: "16px", borderRadius: "8px", border: "1px solid var(--slate-200)" }}>
-                                  <label className="form-label" style={{ fontWeight: 700 }}>Documento PDF del Catálogo</label>
-                                  <div style={{ display: "flex", gap: "16px", alignItems: "center", marginTop: "8px" }}>
-                                    <div style={{ width: "120px", height: "120px", border: "1px dashed var(--slate-300)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--slate-50)", overflow: "hidden" }}>
-                                      {heroData.vacunas_catalog_pdf_url ? (
-                                        <div style={{ textAlign: "center", padding: "8px" }}>
-                                          <span style={{ fontSize: "32px" }}>📄</span>
-                                          <p style={{ fontSize: "10px", color: "var(--slate-500)", marginTop: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100px" }}>Catálogo PDF</p>
-                                        </div>
-                                      ) : (
-                                        <span style={{ fontSize: "32px" }}>📄</span>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <input type="file" accept="application/pdf" id="catalog-pdf-upload" style={{ display: "none" }} onChange={handleCatalogPdfUpload} />
-                                      <label htmlFor="catalog-pdf-upload" className="btn btn-outline" style={{ cursor: "pointer", fontSize: "13px", display: "inline-block" }}>
-                                        {isPending ? "Subiendo..." : "Subir Archivo PDF"}
-                                      </label>
-                                      {heroData.vacunas_catalog_pdf_url && (
-                                        <a href={heroData.vacunas_catalog_pdf_url} target="_blank" rel="noopener noreferrer" style={{ display: "block", fontSize: "12px", color: "var(--emerald-600)", fontWeight: 700, marginTop: "8px" }}>
-                                          👁️ Ver archivo actual
-                                        </a>
-                                      )}
-                                      <p style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "6px" }}>Formatos recomendados: PDF. Máx. 10MB.</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                            </>
                           )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                          <h3 style={{ gridColumn: "1 / -1", fontSize: "15px", fontWeight: 700, marginTop: "24px", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px" }}>Banner Informativo / Promocional Personalizado</h3>
+                  {activeSubTab === "banner" && (
+                    <div className="form-grid">
+                      {heroData.habilitar_menu_vacunas === false ? (
+                        <div style={{ gridColumn: "1 / -1", padding: "24px", border: "1px dashed var(--slate-300)", borderRadius: "12px", background: "var(--slate-50)", textAlign: "center", color: "var(--slate-500)" }}>
+                          <span style={{ fontSize: "28px" }}>🔕</span>
+                          <p style={{ marginTop: "12px", fontSize: "13px", fontWeight: 600 }}>La página extra está desactivada.</p>
+                          <p style={{ fontSize: "11px", marginTop: "4px" }}>Habilite la página extra en la pestaña 'Menú y Portada' para configurar esta sección.</p>
+                        </div>
+                      ) : (
+                        <>
                           <div className="form-group full-width" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "16px", background: "var(--emerald-50)", border: "1px solid var(--emerald-200)", borderRadius: "var(--radius-lg)" }}>
                             <input type="checkbox" id="vacunas_mostrar_banner" checked={heroData.vacunas_mostrar_banner === true} onChange={e => setHeroData("vacunas_mostrar_banner", e.target.checked)} style={{ width: "20px", height: "20px", cursor: "pointer" }} />
-                            <label htmlFor="vacunas_mostrar_banner" style={{ fontSize: "15px", fontWeight: 700, color: "var(--emerald-900)", cursor: "pointer" }}>Habilitar banner promocional personalizado en el pie de la página</label>
+                            <label htmlFor="vacunas_mostrar_banner" style={{ fontSize: "15px", fontWeight: 700, color: "var(--emerald-900)", cursor: "pointer" }}>Habilitar banner promocional personalizado</label>
                           </div>
 
                           {heroData.vacunas_mostrar_banner && (
@@ -1525,7 +1819,7 @@ export default function PersonalizarPage({ params }: Props) {
                                 </div>
                               </div>
 
-                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", gridColumn: "1 / -1" }}>
+                              <div className="form-grid" style={{ gridColumn: "1 / -1" }}>
                                 <div style={{ background: "white", padding: "16px", borderRadius: "8px", border: "1px solid var(--slate-200)" }}>
                                   <h5 style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 12px 0", color: "var(--slate-800)" }}>Configuración de Botón Principal (Botón 1)</h5>
                                   <Field label="Texto del Botón 1 *" id="vacunas_banner_btn_text" value={heroData.vacunas_banner_btn_text || "Agendar Cita"} onChange={v => setHeroData("vacunas_banner_btn_text", v)} placeholder="Ej: Agendar Cita, Contactar, etc." />

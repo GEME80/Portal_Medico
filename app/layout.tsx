@@ -3,11 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "EcoVaccine Platform | Gestión Vacunal y Portales Médicos SaaS",
-    template: "%s | EcoVaccine",
+    default: "HubMed Platform | Gestión Vacunal y Portales Médicos SaaS",
+    template: "%s | HubMed",
   },
   description:
-    "EcoVaccine es la plataforma SaaS multi-tenant definitiva para consultorios y clínicas médicas. Administra inventario de vacunas, lotes, dosis aplicadas y personaliza tu marca personal con portales médicos dinámicos y dominios propios.",
+    "HubMed es la plataforma SaaS multi-tenant definitiva para consultorios y clínicas médicas. Administra inventario de vacunas, lotes, dosis aplicadas y personaliza tu marca personal con portales médicos dinámicos y dominios propios.",
   keywords: [
     "SaaS médico",
     "gestión de vacunas",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "es_CO",
-    siteName: "EcoVaccine Platform",
+    siteName: "HubMed Platform",
   },
 };
 

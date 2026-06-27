@@ -28,7 +28,7 @@ export default async function TenantAdminLayout({ children, params }: Props) {
     .eq("tenant_id", tenant.id)
     .single();
 
-  const doctorName = config?.nombre_doctor || "Doctor";
+  const doctorName = config?.nombre_doctor || tenant.nombre || "Doctor";
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
   const inventoryName = config?.nombre_menu_vacunas || "Inventario Médico";

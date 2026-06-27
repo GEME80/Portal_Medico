@@ -701,7 +701,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="admin-tabs" style={{ display: "flex", gap: "16px", padding: "0 40px", borderBottom: "1px solid var(--slate-200)", marginBottom: "24px", background: "white" }}>
+      <div className="admin-tabs">
         <button 
           className={`tab-btn ${activeTab === "catalogo" ? "active" : ""}`} 
           onClick={() => setActiveTab("catalogo")}
@@ -772,45 +772,46 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   const status = getStockStatus(v);
                   const isCritical = status === "critical";
                   return (
-                    <div key={v.id} style={{
-                        display: "flex", alignItems: "center", gap: "12px",
-                        padding: "14px 20px", borderRadius: "var(--radius-lg)",
+                    <div key={v.id} className="inventory-alert-card" style={{
                         background: isCritical 
                           ? "linear-gradient(90deg, rgba(244,63,94,0.07) 0%, rgba(244,63,94,0.01) 100%)" 
                           : "linear-gradient(90deg, rgba(245,158,11,0.07) 0%, rgba(245,158,11,0.01) 100%)",
                         border: `1px solid ${isCritical ? "rgba(244,63,94,0.2)" : "rgba(245,158,11,0.2)"}`,
                         borderLeft: `4px solid ${isCritical ? "#f43f5e" : "#f59e0b"}`
                       }}>
-                      <span style={{ fontSize: "20px" }}>{status === "critical" ? "🔴" : "🟠"}</span>
-                      <div style={{ flex: 1 }}>
-                        <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--slate-800)" }}>
-                          {status === "critical"
-                            ? `AGOTADO: ${v.nombre}`
-                            : `Stock bajo: ${v.nombre}`}
-                        </span>
-                        {(() => {
-                          const cat = categorias.find(c => c.id === v.categoria_id);
-                          const parsedCat = cat ? parseCategory(cat) : null;
-                          return parsedCat ? (
-                            <span style={{
-                              marginLeft: "8px",
-                              padding: "2px 8px",
-                              fontSize: "11px",
-                              borderRadius: "12px",
-                              background: `${parsedCat.color || primaryColor}22`,
-                              color: parsedCat.color || primaryColor,
-                              fontWeight: 700
-                            }}>
-                              {parsedCat.nombre}
+                      <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", flex: 1 }}>
+                        <span style={{ fontSize: "20px", lineHeight: "1.2" }}>{status === "critical" ? "🔴" : "🟠"}</span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                            <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--slate-800)" }}>
+                              {status === "critical"
+                                ? `AGOTADO: ${v.nombre}`
+                                : `Stock bajo: ${v.nombre}`}
                             </span>
-                          ) : null;
-                        })()}
-                        <span style={{ fontSize: "12px", color: "var(--slate-500)", marginLeft: "8px" }}>
-                          {v.stockActual} unidades restantes (mín. {v.stockMinimo})
-                        </span>
+                            {(() => {
+                              const cat = categorias.find(c => c.id === v.categoria_id);
+                              const parsedCat = cat ? parseCategory(cat) : null;
+                              return parsedCat ? (
+                                <span style={{
+                                  padding: "2px 8px",
+                                  fontSize: "11px",
+                                  borderRadius: "12px",
+                                  background: `${parsedCat.color || primaryColor}22`,
+                                  color: parsedCat.color || primaryColor,
+                                  fontWeight: 700
+                                }}>
+                                  {parsedCat.nombre}
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "var(--slate-500)" }}>
+                            {v.stockActual} unidades restantes <span style={{ opacity: 0.7 }}>(mín. {v.stockMinimo})</span>
+                          </div>
+                        </div>
                       </div>
                       <button
-                        className="action-btn action-btn-ghost"
+                        className="action-btn action-btn-ghost inventory-alert-btn"
                         type="button"
                         style={{ color: primaryColor }}
                         onClick={() => openLoteModal(v.id)}

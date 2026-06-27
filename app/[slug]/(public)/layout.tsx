@@ -68,8 +68,21 @@ export default async function TenantLayout({ children, params }: TenantLayoutPro
   const config = configRes.data;
   const alerta = alertRes.data?.[0] || null;
 
-  const nombreMenuVacunas = config?.nombre_menu_vacunas || "EcoVaccine";
-  const habilitarMenuVacunas = config?.habilitar_menu_vacunas !== false;
+  let heroData = {
+    habilitar_menu_vacunas: true,
+    nombre_menu_vacunas: "HubMed"
+  };
+  if (config?.hero_badge_texto) {
+    try {
+      const parsed = JSON.parse(config.hero_badge_texto);
+      if (parsed) {
+        heroData = { ...heroData, ...parsed };
+      }
+    } catch (e) {}
+  }
+
+  const nombreMenuVacunas = heroData.nombre_menu_vacunas || "HubMed";
+  const habilitarMenuVacunas = heroData.habilitar_menu_vacunas !== false;
   const logoUrl = config?.logo_url || "";
 
   return (
@@ -93,13 +106,14 @@ export default async function TenantLayout({ children, params }: TenantLayoutPro
               <span className="badge" style={{
                 background: "rgba(180, 83, 9, 0.1)",
                 color: "#b45309",
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.05em",
-                padding: "4px 10px",
-                borderRadius: "30px"
+                fontSize: "12px",
+                fontWeight: 800,
+                letterSpacing: "0.02em",
+                padding: "6px 12px",
+                borderRadius: "30px",
+                whiteSpace: "nowrap"
               }}>
-                ACTUALIZADO
+                {new Date(alerta.created_at).toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric" }).toUpperCase()}
               </span>
             </div>
           </div>

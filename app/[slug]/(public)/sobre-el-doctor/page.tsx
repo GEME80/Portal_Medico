@@ -3,6 +3,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import CanvasParticles from "@/components/CanvasParticles";
+import PublicationsCarousel from "@/components/PublicationsCarousel";
+
+const parseInstitucion = (instStr: string) => {
+  if (instStr && instStr.includes("|")) {
+    const [name, logo] = instStr.split("|");
+    return { name: name || "", logo: logo || "" };
+  }
+  return { name: instStr || "", logo: "" };
+};
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -45,7 +54,7 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
     : `https://wa.me/${waData.n?.replace(/[^0-9]/g, "")}`;
 
   // Parse affiliations from DB config or fallback to static defaults
-  let affiliations = [
+  let affiliations: { name: string; abbr: string; logo_url?: string }[] = [
     { name: "Sociedad Colombiana de Infectología", abbr: "SCI" },
     { name: "Sociedad Latinoamericana de Infectología Pediátrica", abbr: "SLIPE" },
     { name: "Organización Panamericana de la Salud", abbr: "OPS/OMS" },
@@ -61,13 +70,23 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
     } catch (e) {}
   }
 
+  let fotoSobreDoctor = "";
+  if (config?.hero_badge_texto) {
+    try {
+      const parsed = JSON.parse(config.hero_badge_texto);
+      if (parsed && parsed.foto_sobre_doctor_url) {
+        fotoSobreDoctor = parsed.foto_sobre_doctor_url;
+      }
+    } catch (e) {}
+  }
+
   return (
     <>
       {/* ── PAGE HEADER ─────────────────────────────────────────────── */}
       <section
+        className="about-hero-section"
         style={{
           background: `linear-gradient(160deg, ${primaryColor}f0, ${primaryColor}cc 60%, var(--slate-900))`,
-          padding: "80px 0 100px",
           position: "relative",
           overflow: "hidden",
         }}
@@ -80,7 +99,7 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
         <div className="hero-glow-1" aria-hidden="true" style={{ opacity: 0.5 }}/>
 
         <div className="container" style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: "64px", alignItems: "center" }}>
+          <div className="about-hero-grid">
             {/* Photo */}
             <div className="animate-left" style={{ position: "relative" }}>
               <div style={{
@@ -89,12 +108,12 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
                 boxShadow: "0 40px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08)",
               }}>
                 <Image
-                  src={config?.foto_url || "/doctor-torres.png"}
+                  src={fotoSobreDoctor || config?.foto_url || "/doctor-torres-sobre.png"}
                   alt={config?.nombre_doctor || "Dr. Carlos Torres Martínez"}
                   width={460}
                   height={460}
                   priority
-                  style={{ width: "100%", height: "460px", objectFit: "cover", objectPosition: "center top" }}
+                  style={{ width: "100%", height: "auto", objectFit: "cover", objectPosition: "center top" }}
                 />
               </div>
               {/* Floating card */}
@@ -194,32 +213,44 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
           <div className="container">
             <div className="text-center mb-8">
               <span className="badge badge-teal mb-4" style={{ display: "inline-flex" }}>Formación Académica</span>
-              <h2 className="section-heading">Formación y<br/><span className="text-teal">hitos académicos</span></h2>
+              <h2 className="section-heading">Formación y<br/><span style={{ color: accentColor }}>hitos académicos</span></h2>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
-              {hitos.map((hito, i) => (
-                <div key={hito.id || i} className="card" style={{ padding: "24px" }}>
-                  <div style={{
-                    width: "52px", height: "52px",
-                    background: "linear-gradient(135deg, var(--teal-50), var(--teal-100))",
-                    borderRadius: "var(--radius-md)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "24px", marginBottom: "16px"
-                  }}>🎓</div>
-                  <div style={{ fontSize: "11px", fontWeight: 800, color: primaryColor, fontFamily: "Outfit, sans-serif", marginBottom: "4px" }}>
-                    {hito.anio}
+            <div className="grid-3" style={{ gap: "20px" }}>
+              {hitos.map((hito, i) => {
+                const parsedInst = parseInstitucion(hito.institucion);
+                return (
+                  <div key={hito.id || i} className="card" style={{ padding: "24px" }}>
+                    <div style={{
+                      width: "120px", height: "60px",
+                      background: "white",
+                      borderRadius: "var(--radius-md)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "28px", marginBottom: "16px",
+                      border: "1px solid var(--slate-200)",
+                      overflow: "hidden",
+                      padding: "6px"
+                    }}>
+                      {parsedInst.logo ? (
+                        <img src={parsedInst.logo} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      ) : (
+                        "🎓"
+                      )}
+                    </div>
+                    <div style={{ fontSize: "11px", fontWeight: 800, color: primaryColor, fontFamily: "Outfit, sans-serif", marginBottom: "4px" }}>
+                      {hito.anio}
+                    </div>
+                    <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "6px", fontFamily: "Outfit, sans-serif" }}>
+                      {hito.titulo}
+                    </h3>
+                    {parsedInst.name && (
+                      <p style={{ fontSize: "13px", color: "var(--slate-500)", lineHeight: 1.5 }}>
+                        {parsedInst.name}
+                      </p>
+                    )}
                   </div>
-                  <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "6px", fontFamily: "Outfit, sans-serif" }}>
-                    {hito.titulo}
-                  </h3>
-                  {hito.institucion && (
-                    <p style={{ fontSize: "13px", color: "var(--slate-500)", lineHeight: 1.5 }}>
-                      {hito.institucion}
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -228,7 +259,7 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
       {/* ── Parallelized Sections: Investigaciones & Afiliaciones ────────────────── */}
       <section className="section" style={{ background: "var(--white)", borderTop: "1px solid var(--slate-100)", padding: "80px 0" }} aria-label="Estudios e Investigaciones">
         <div className="container">
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "48px" }}>
+          <div className="about-info-grid">
             {/* Left Column: Publications */}
             <div>
               {publicaciones.length > 0 && (
@@ -236,40 +267,17 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "32px" }}>
                     <div>
                       <span className="badge badge-emerald mb-3" style={{ display: "inline-flex" }}>Publicaciones Seleccionadas</span>
-                      <h2 className="section-heading" style={{ fontSize: "clamp(24px, 3.5vw, 32px)", margin: 0 }}>Investigación científica<br/><span className="text-teal">publicada</span></h2>
+                      <h2 className="section-heading" style={{ fontSize: "clamp(24px, 3.5vw, 32px)", margin: 0 }}>Investigación científica<br/><span style={{ color: accentColor }}>publicada</span></h2>
                     </div>
                     <Link href={`/${slug}/noticias`} className="btn btn-outline" style={{ padding: "8px 16px", fontSize: "13px" }}>Ver todas →</Link>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {publicaciones.map((pub, i) => (
-                      <div key={pub.id || i} className="soft-card" style={{ display: "flex", gap: "20px", alignItems: "flex-start", padding: "24px" }}>
-                        <div style={{
-                          fontSize: "13px", fontWeight: 800, color: "var(--teal-700)",
-                          fontFamily: "Outfit, sans-serif", letterSpacing: ".04em",
-                          background: "var(--teal-50)", padding: "6px 12px",
-                          borderRadius: "var(--radius-sm)", flexShrink: 0,
-                        }}>
-                          {pub.created_at ? new Date(pub.created_at).getFullYear() : "Reciente"}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ marginBottom: "6px" }}>
-                            <span className={`badge ${
-                              pub.categoria === "Académico" ? "badge-teal" :
-                              pub.categoria === "Epidemiología" ? "badge-rose" : "badge-emerald"
-                            }`}>{pub.categoria}</span>
-                          </div>
-                          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-900)", marginBottom: "6px", fontFamily: "Outfit, sans-serif", lineHeight: 1.4 }}>
-                            {pub.titulo}
-                          </h3>
-                          <p style={{ fontSize: "13px", color: "var(--slate-500)", lineHeight: 1.5 }}>{pub.resumen}</p>
-                          <Link href={`/${slug}/noticias/${pub.slug}`} style={{ display: "inline-block", marginTop: "12px", fontSize: "13px", fontWeight: 700, color: primaryColor }}>
-                            Leer publicación →
-                          </Link>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <PublicationsCarousel
+                    publicaciones={publicaciones}
+                    slug={slug}
+                    primaryColor={primaryColor}
+                    accentColor={accentColor}
+                  />
                 </>
               )}
             </div>
@@ -280,18 +288,24 @@ export default async function DynamicSobreElDoctorPage({ params }: PageProps) {
                 <>
                   <div style={{ marginBottom: "32px" }}>
                     <span className="badge badge-teal mb-3" style={{ display: "inline-flex" }}>Membresías</span>
-                    <h2 className="section-heading" style={{ fontSize: "clamp(24px, 3.5vw, 32px)", margin: 0 }}>Afiliaciones<br/><span className="text-teal">internacionales</span></h2>
+                    <h2 className="section-heading" style={{ fontSize: "clamp(24px, 3.5vw, 32px)", margin: 0 }}>Afiliaciones<br/><span style={{ color: accentColor }}>internacionales</span></h2>
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     {affiliations.map((a, i) => (
                       <div key={i} className="soft-card" style={{ display: "flex", alignItems: "center", gap: "16px", padding: "20px 24px", cursor: "default" }}>
-                        <span style={{
-                          background: primaryColor, color: "white",
-                          padding: "6px 12px", borderRadius: "var(--radius-sm)",
-                          fontSize: "12px", fontWeight: 800, fontFamily: "Outfit, sans-serif",
-                          letterSpacing: ".04em", flexShrink: 0,
-                        }}>{a.abbr}</span>
+                        {a.logo_url ? (
+                          <div style={{ width: "90px", height: "54px", background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-md)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", padding: "4px" }}>
+                            <img src={a.logo_url} alt={a.abbr} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                          </div>
+                        ) : (
+                          <span style={{
+                            background: primaryColor, color: "white",
+                            padding: "6px 12px", borderRadius: "var(--radius-sm)",
+                            fontSize: "12px", fontWeight: 800, fontFamily: "Outfit, sans-serif",
+                            letterSpacing: ".04em", flexShrink: 0,
+                          }}>{a.abbr}</span>
+                        )}
                         <h3 style={{ fontSize: "14px", fontWeight: 700, color: "var(--slate-700)", margin: 0, fontFamily: "Outfit, sans-serif" }}>{a.name}</h3>
                       </div>
                     ))}

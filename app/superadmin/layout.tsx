@@ -44,7 +44,7 @@ export default async function SuperadminLayout({ children }: SuperadminLayoutPro
               fontSize: "18px",
             }}>🛡️</div>
             <div>
-              <div className="sidebar-brand-name" style={{ color: "#ffffff" }}>EcoVaccine</div>
+              <div className="sidebar-brand-name" style={{ color: "#ffffff" }}>HubMed</div>
               <div className="sidebar-brand-sub" style={{ color: "#00D4AA" }}>Super Admin</div>
             </div>
           </div>

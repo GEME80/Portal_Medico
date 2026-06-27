@@ -41,7 +41,7 @@ export default function MarketingLandingPage() {
               letterSpacing: "-0.02em",
               color: "#ffffff"
             }}>
-              EcoVaccine <span style={{ color: "#00D4AA", fontWeight: 500, fontSize: "14px" }}>Platform</span>
+              HubMed <span style={{ color: "#00D4AA", fontWeight: 500, fontSize: "14px" }}>Platform</span>
             </span>
           </div>
 
@@ -191,7 +191,7 @@ export default function MarketingLandingPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
           <div style={cardStyle}>
             <div style={iconWrapperStyle}>💉</div>
-            <h3 style={cardTitleStyle}>EcoVaccine POS</h3>
+            <h3 style={cardTitleStyle}>HubMed POS</h3>
             <p style={cardDescStyle}>
               Control de stock en tiempo real, alertas de stock mínimo, gestión de lotes por proveedor, fechas de vencimiento y registro rápido de dosis aplicadas.
             </p>
@@ -249,8 +249,8 @@ export default function MarketingLandingPage() {
               </div>
               <ul style={featuresListStyle}>
                 <li>✓ Portal Web Personalizado</li>
-                <li>✓ EcoVaccine POS básico (10 vacunas)</li>
-                <li>✓ Subdominio `.ecovaccine.app`</li>
+                <li>✓ HubMed POS básico (10 vacunas)</li>
+                <li>✓ Subdominio `.hubmed.app`</li>
                 <li>✓ Certificado SSL Gratuito</li>
                 <li>✗ Módulo CMS de Noticias</li>
               </ul>
@@ -277,7 +277,7 @@ export default function MarketingLandingPage() {
               </div>
               <ul style={featuresListStyle}>
                 <li>✓ Portal Web Personalizado</li>
-                <li>✓ EcoVaccine POS completo (ilimitado)</li>
+                <li>✓ HubMed POS completo (ilimitado)</li>
                 <li>✓ Dominio Personalizado propio</li>
                 <li>✓ CMS de Noticias y Artículos</li>
                 <li>✓ Alertas de Inventario automáticas</li>
@@ -304,11 +304,11 @@ export default function MarketingLandingPage() {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{ fontSize: "20px" }}>🛡️</span>
-            <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: "16px" }}>EcoVaccine SaaS</span>
+            <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 800, fontSize: "16px" }}>HubMed SaaS</span>
           </div>
           <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", margin: 0, textAlign: "center" }}>
-            © {new Date().getFullYear()} EcoVaccine Platform. Todos los derechos reservados.<br />
-            Para más información, contáctanos en soporte@ecovaccine.app
+            © {new Date().getFullYear()} HubMed Platform. Todos los derechos reservados.<br />
+            Para más información, contáctanos en soporte@hubmed.app
           </p>
         </div>
       </footer>

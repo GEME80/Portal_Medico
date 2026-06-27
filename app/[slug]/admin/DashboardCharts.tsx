@@ -776,7 +776,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
     const html = `
       <html>
         <head>
-          <title>Reporte Detallado de Compras e Inventario — EcoVaccine</title>
+          <title>Reporte Detallado de Compras e Inventario — HubMed</title>
           <style>
             body {
               font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -862,7 +862,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
         <body>
           <div class="header">
             <div>
-              <h1 class="header-title">ECOVACCINE CLINICAL REPORT</h1>
+              <h1 class="header-title">HUBMED CLINICAL REPORT</h1>
               <div style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 4px;">Detalle de Compras e Inventario por Lote</div>
             </div>
             <div class="header-meta">
@@ -919,7 +919,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
           </table>
 
           <div class="footer">
-            Documento de auditoría contable. Generado por la Plataforma Médica EcoVaccine. Todos los derechos reservados.
+            Documento de auditoría contable. Generado por la Plataforma Médica HubMed. Todos los derechos reservados.
           </div>
 
           <script>

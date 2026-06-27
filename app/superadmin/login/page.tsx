@@ -97,7 +97,7 @@ export default function SuperadminLoginPage() {
           margin: "0 0 8px 0",
           letterSpacing: "-0.02em"
         }}>
-          EcoVaccine Platform
+          HubMed Platform
         </h1>
         <p style={{
           fontSize: "14px",

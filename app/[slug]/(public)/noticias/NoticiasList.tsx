@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import CanvasParticles from "@/components/CanvasParticles";
 
 interface Post {
   id: string;
@@ -23,7 +24,6 @@ interface NoticiasListProps {
   posts: Post[];
 }
 
-const CATEGORIES = ["Todos", "Académico", "Prevención", "Epidemiología", "EcoVaccine"];
 
 export default function NoticiasList({
   tenantSlug,
@@ -33,6 +33,10 @@ export default function NoticiasList({
   posts
 }: NoticiasListProps) {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
+
+  // Build dynamic categories from posts
+  const uniqueCats = Array.from(new Set(posts.map(p => p.category).filter(Boolean)));
+  const CATEGORIES = ["Todos", ...uniqueCats];
 
   // We set the first post as featured if it's the "Todos" filter
   const processedPosts = posts.map((p, idx) => ({
@@ -58,6 +62,7 @@ export default function NoticiasList({
         overflow: "hidden",
       }} aria-label="Publicaciones y noticias">
         <div className="hero-bg-grid" aria-hidden="true"/>
+        <CanvasParticles />
         <div className="hero-glow-1" aria-hidden="true" style={{ opacity: 0.4 }}/>
         <div className="container" style={{ position: "relative", zIndex: 1 }}>
           <div className="text-center" style={{ maxWidth: "640px", margin: "0 auto" }}>
@@ -115,11 +120,8 @@ export default function NoticiasList({
               {featuredPost && (
                 <Link href={`/${tenantSlug}/noticias/${featuredPost.slug}`} style={{ textDecoration: "none" }}>
                   <article style={{
-                    display: "grid", gridTemplateColumns: "1fr 1fr",
-                    background: "white", border: "1px solid var(--slate-200)",
-                    borderRadius: "var(--radius-xl)", overflow: "hidden",
-                    marginBottom: "32px", transition: "box-shadow .25s, border-color .25s",
-                    cursor: "pointer",
+                    display: "grid", gridTemplateColumns: "1.2fr 1fr",
+                    marginBottom: "32px", cursor: "pointer",
                   }}
                     className="featured-article"
                   >
@@ -161,34 +163,36 @@ export default function NoticiasList({
               {regularPosts.length > 0 && (
                 <div className="news-grid">
                   {regularPosts.map((post) => (
-                    <article className="news-card" key={post.id}>
-                      <div className="news-card-img" role="img" aria-hidden="true" style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${accentColor}10)`, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {post.imagenPortadaUrl ? (
-                          <img src={post.imagenPortadaUrl} alt={post.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        ) : (
-                          <span style={{ fontSize: "56px" }}>{post.emoji}</span>
-                        )}
-                      </div>
-                      <div className="news-card-body">
-                        <div className="news-card-meta">
-                          <span className="badge badge-teal" style={{ background: `${primaryColor}12`, color: primaryColor }}>
-                            {post.category}
-                          </span>
-                          <span style={{ fontSize: "11px", color: "var(--slate-400)" }}>{post.readTime}</span>
+                    <Link href={`/${tenantSlug}/noticias/${post.slug}`} key={post.id} style={{ textDecoration: "none", display: "block" }}>
+                      <article className="news-card">
+                        <div className="news-card-img" role="img" aria-hidden="true" style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${accentColor}10)`, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {post.imagenPortadaUrl ? (
+                            <img src={post.imagenPortadaUrl} alt={post.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <span style={{ fontSize: "56px" }}>{post.emoji}</span>
+                          )}
                         </div>
-                        <h3 className="news-card-title">{post.title}</h3>
-                        <p className="news-card-excerpt">{post.excerpt}</p>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: "11px", color: "var(--slate-400)" }}>{post.date}</span>
-                          <Link href={`/${tenantSlug}/noticias/${post.slug}`} className="news-card-link" style={{ color: primaryColor }}>
-                            Leer
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="M5 12h14M12 5l7 7-7 7"/>
-                            </svg>
-                          </Link>
+                        <div className="news-card-body">
+                          <div className="news-card-meta">
+                            <span className="badge badge-teal" style={{ background: `${primaryColor}12`, color: primaryColor }}>
+                              {post.category}
+                            </span>
+                            <span style={{ fontSize: "11px", color: "var(--slate-400)" }}>{post.readTime}</span>
+                          </div>
+                          <h3 className="news-card-title">{post.title}</h3>
+                          <p className="news-card-excerpt">{post.excerpt}</p>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <span style={{ fontSize: "11px", color: "var(--slate-400)" }}>{post.date}</span>
+                            <span className="news-card-link" style={{ color: primaryColor }}>
+                              Leer
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                              </svg>
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </article>
+                      </article>
+                    </Link>
                   ))}
                 </div>
               )}

@@ -30,7 +30,7 @@ export default async function SuperadminConfigPage() {
             Configuración de Infraestructura
           </h1>
           <p style={{ fontSize: "14px", color: "#9ca3af", margin: 0 }}>
-            Visualiza y verifica el estado de integración de base de datos y hosting de EcoVaccine.
+            Visualiza y verifica el estado de integración de base de datos y hosting de HubMed.
           </p>
         </div>
       </header>

@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import TextReveal from "@/components/TextReveal";
 import CanvasParticles from "@/components/CanvasParticles";
 import { Activity, Syringe, BarChart3, Shield, FlaskConical, Dna, FileText } from "lucide-react";
+import NewsCarousel from "@/components/NewsCarousel";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -64,11 +65,43 @@ export default async function TenantHomePage({ params }: PageProps) {
   const primaryColor = config?.color_primario || "#0c111d";
   const accentColor = config?.color_acento || "#00D4AA";
 
-  let heroData: any = {};
-  if (config?.hero_badge_texto && config.hero_badge_texto.startsWith("{")) {
-    try { heroData = JSON.parse(config.hero_badge_texto); } catch (e) {}
-  } else {
-    heroData = { badge: config?.hero_badge_texto || "" };
+  const defaultHeroData = {
+    badge: "Infectólogo · +30 años de experiencia",
+    g1_t: "15K+",
+    g1_s: "Pacientes",
+    g2_t: "100%",
+    g2_s: "Seguro",
+    hero_btn_prim: "Explorar HubMed",
+    hero_btn_sec: "Ver Publicaciones",
+    tray_badge: "TRAYECTORIA E INVESTIGACIÓN",
+    tray_title_1: "Décadas construyendo",
+    tray_title_2: "evidencia científica",
+    inv_title_1: "Ciencia aplicada a la",
+    inv_title_2: "prevención",
+    servicios_titulo: "Programa Integral de Vacunación",
+    servicios_desc: "Protección inteligente y seguimiento continuo de esquemas de vacunación.",
+    servicios_c1_title: "Seguridad Total",
+    servicios_c1_text: "Aplicamos los esquemas más actualizados para proteger a quienes más quiere.",
+    servicios_c2_title: "Cuidado Familiar",
+    servicios_c2_text: "Atención cálida y humana centrada en el bienestar integral de su familia.",
+    servicios_c3_title: "Evidencia Científica",
+    servicios_c3_text: "Decisiones respaldadas por publicaciones académicas y consensos globales.",
+    cta_titulo: "¿Necesita una consulta?",
+    cta_desc: "El doctor atiende consultas presenciales y virtuales previa programación.",
+    cta_btn_text: "Contactar ahora →",
+    cta_mostrar: true
+  };
+
+  let heroData: any = { ...defaultHeroData };
+  if (config?.hero_badge_texto) {
+    if (config.hero_badge_texto.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(config.hero_badge_texto);
+        heroData = { ...heroData, ...parsed };
+      } catch (e) {}
+    } else {
+      heroData.badge = config.hero_badge_texto;
+    }
   }
 
   return (
@@ -127,7 +160,7 @@ export default async function TenantHomePage({ params }: PageProps) {
                   gap: "8px",
                   boxShadow: "none"
                 }}>
-                  Explorar EcoVaccine
+                  {heroData.hero_btn_prim}
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -140,7 +173,7 @@ export default async function TenantHomePage({ params }: PageProps) {
                   textDecoration: "none",
                   boxShadow: "none"
                 }}>
-                  Ver Publicaciones
+                  {heroData.hero_btn_sec}
                 </Link>
               </div>
             </div>
@@ -225,7 +258,7 @@ export default async function TenantHomePage({ params }: PageProps) {
                 letterSpacing: "0.15em",
                 display: "inline-flex"
               }}>
-                TRAYECTORIA E INVESTIGACIÓN
+                {heroData.tray_badge}
               </span>
             </div>
             <div className="about-grid">
@@ -233,8 +266,8 @@ export default async function TenantHomePage({ params }: PageProps) {
               {/* Columna Izquierda: Trayectoria / Timeline */}
               <div>
                 <h2 className="section-heading" style={{ fontFamily: "Outfit, sans-serif", fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 900, lineHeight: 1.15, color: "#000000", marginBottom: "36px" }}>
-                  Décadas construyendo<br/>
-                  <span style={{ color: accentColor }}>evidencia científica</span>
+                  {heroData.tray_title_1}<br/>
+                  <span style={{ color: accentColor }}>{heroData.tray_title_2}</span>
                 </h2>
                 {hitos.length > 0 && (
                   <div className="clinical-timeline">
@@ -253,8 +286,8 @@ export default async function TenantHomePage({ params }: PageProps) {
               {/* Columna Derecha: Líneas de Investigación */}
               <div>
                 <h2 className="section-heading" style={{ fontFamily: "Outfit, sans-serif", fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 900, lineHeight: 1.15, color: "#000000", marginBottom: "36px" }}>
-                  Ciencia aplicada a la<br/>
-                  <span style={{ color: accentColor }}>prevención</span>
+                  {heroData.inv_title_1}<br/>
+                  <span style={{ color: accentColor }}>{heroData.inv_title_2}</span>
                 </h2>
                 {lineas.length > 0 && (
                   <div className="research-lines" style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "32px" }}>
@@ -278,15 +311,36 @@ export default async function TenantHomePage({ params }: PageProps) {
         </section>
       )}
 
-      {/* ── ECOVACCINE PROGRAMA DE CUIDADO ────────────────────── */}
+      {/* ── HUBMED PROGRAMA DE CUIDADO ────────────────────── */}
       <section className="section" style={{ background: "var(--white)", borderTop: "1px solid var(--slate-100)", borderBottom: "1px solid var(--slate-100)", padding: "120px 0" }}>
         <div className="container">
           <div style={{ textAlign: "center", marginBottom: "64px" }}>
             <h2 className="section-heading" style={{ color: "#000000", fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 900 }}>
-              Programa Integral <span style={{ color: accentColor }}>EcoVaccine</span>
+              {(() => {
+                const title = heroData.servicios_titulo;
+                const highlightWords = ["HubMed", "Vacunación", "Vacunacion", "vacunación", "vacunacion"];
+                let foundWord = "";
+                for (const word of highlightWords) {
+                  if (title.includes(word)) {
+                    foundWord = word;
+                    break;
+                  }
+                }
+                if (foundWord) {
+                  const parts = title.split(foundWord);
+                  return (
+                    <>
+                      {parts[0]}
+                      <span style={{ color: accentColor }}>{foundWord}</span>
+                      {parts[1]}
+                    </>
+                  );
+                }
+                return title;
+              })()}
             </h2>
             <p style={{ color: "var(--slate-500)", fontSize: "17px", maxWidth: "600px", margin: "16px auto 0", lineHeight: 1.7 }}>
-              Protección inteligente y seguimiento continuo para la salud de tu familia, respaldado por décadas de experiencia.
+              {heroData.servicios_desc}
             </p>
           </div>
           
@@ -295,24 +349,24 @@ export default async function TenantHomePage({ params }: PageProps) {
               <div className="soft-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
-              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "#000000", marginBottom: "12px", fontFamily: "Outfit, sans-serif" }}>Seguridad Total</h3>
-              <p style={{ color: "var(--slate-600)", fontSize: "15px", margin: 0, lineHeight: 1.6 }}>Aplicamos los esquemas más actualizados garantizando el bienestar de sus pequeños.</p>
+              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "#000000", marginBottom: "12px", fontFamily: "Outfit, sans-serif" }}>{heroData.servicios_c1_title}</h3>
+              <p style={{ color: "var(--slate-600)", fontSize: "15px", margin: 0, lineHeight: 1.6 }}>{heroData.servicios_c1_text}</p>
             </div>
             
             <div className="soft-card">
               <div className="soft-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               </div>
-              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "#000000", marginBottom: "12px", fontFamily: "Outfit, sans-serif" }}>Cuidado Familiar</h3>
-              <p style={{ color: "var(--slate-600)", fontSize: "15px", margin: 0, lineHeight: 1.6 }}>Atención cálida y humana, resolviendo cada duda de los padres en todo momento.</p>
+              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "#000000", marginBottom: "12px", fontFamily: "Outfit, sans-serif" }}>{heroData.servicios_c2_title}</h3>
+              <p style={{ color: "var(--slate-600)", fontSize: "15px", margin: 0, lineHeight: 1.6 }}>{heroData.servicios_c2_text}</p>
             </div>
             
             <div className="soft-card">
               <div className="soft-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               </div>
-              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "#000000", marginBottom: "12px", fontFamily: "Outfit, sans-serif" }}>Evidencia Científica</h3>
-              <p style={{ color: "var(--slate-600)", fontSize: "15px", margin: 0, lineHeight: 1.6 }}>Decisiones basadas en la evidencia clínica y lineamientos de organizaciones internacionales.</p>
+              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "#000000", marginBottom: "12px", fontFamily: "Outfit, sans-serif" }}>{heroData.servicios_c3_title}</h3>
+              <p style={{ color: "var(--slate-600)", fontSize: "15px", margin: 0, lineHeight: 1.6 }}>{heroData.servicios_c3_text}</p>
             </div>
           </div>
           
@@ -330,39 +384,11 @@ export default async function TenantHomePage({ params }: PageProps) {
                 <span style={{ color: accentColor }}>boletines científicos</span>
               </h2>
               <p style={{ fontSize: "15px", color: "var(--slate-500)", marginTop: "12px", maxWidth: "600px", margin: "12px auto 0", lineHeight: 1.6 }}>
-                Artículos académicos, alertas epidemiológicas y actualizaciones del programa EcoVaccine.
+                Artículos académicos, alertas epidemiológicas y actualizaciones del programa HubMed.
               </p>
             </div>
             
-            <div className="mosaic-grid">
-              {noticias.slice(0, 3).map((post) => (
-                <article key={post.id} className="mosaic-card">
-                  <Link href={`/${slug}/noticias/${post.slug}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
-                    <div className="mosaic-card-img" style={{ background: "var(--slate-50)" }}>
-                      {post.imagen_portada_url ? (
-                        <img src={post.imagen_portada_url} alt={post.titulo} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "48px" }}>{post.emoji || "📄"}</div>
-                      )}
-                    </div>
-                    <div style={{ padding: "24px" }}>
-                      <div style={{ fontSize: "11px", color: accentColor, fontWeight: 700, marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                        {post.categoria} • {new Date(post.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
-                      </div>
-                      <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#000000", marginBottom: "12px", lineHeight: 1.35, fontFamily: "Outfit, sans-serif" }}>
-                        {post.titulo}
-                      </h3>
-                      <p style={{ fontSize: "14px", color: "var(--slate-500)", marginBottom: "20px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.6 }}>
-                        {post.resumen}
-                      </p>
-                      <div style={{ color: "#000000", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
-                        Leer artículo completo <span style={{ fontSize: "16px" }}>→</span>
-                      </div>
-                    </div>
-                  </Link>
-                </article>
-              ))}
-            </div>
+            <NewsCarousel noticias={noticias} slug={slug} accentColor={accentColor} />
             
 
           </div>
@@ -370,27 +396,29 @@ export default async function TenantHomePage({ params }: PageProps) {
       )}
 
       {/* ── CTA CONTACTO ─────────────────────────────────────── */}
-      <section style={{
-        background: "var(--white)",
-        borderTop: "1px solid var(--slate-100)",
-        padding: "100px 0", textAlign: "center", position: "relative", overflow: "hidden",
-      }} aria-label="Contactar al doctor">
-        <div className="container" style={{ position: "relative", zIndex: 1, maxWidth: "560px", margin: "0 auto" }}>
-          <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 900, color: "#000000", marginBottom: "16px", fontFamily: "Outfit, sans-serif" }}>
-            ¿Necesita una consulta?
-          </h2>
-          <p style={{ color: "var(--slate-600)", fontSize: "16px", lineHeight: 1.7, marginBottom: "32px" }}>
-            {config?.nombre_doctor || "El doctor"} atiende consultas de infectología pediátrica y vacunación. Contáctelo hoy.
-          </p>
-          {config?.email && (
-            <a href={`mailto:${config.email}`} className="btn btn-primary" style={{
-              padding: "16px 36px", fontSize: "16px", borderRadius: "0px", boxShadow: "none"
-            }}>
-              Contactar ahora →
-            </a>
-          )}
-        </div>
-      </section>
+      {heroData.cta_mostrar !== false && (
+        <section style={{
+          background: "var(--white)",
+          borderTop: "1px solid var(--slate-100)",
+          padding: "100px 0", textAlign: "center", position: "relative", overflow: "hidden",
+        }} aria-label="Contactar al doctor">
+          <div className="container" style={{ position: "relative", zIndex: 1, maxWidth: "560px", margin: "0 auto" }}>
+            <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 900, color: "#000000", marginBottom: "16px", fontFamily: "Outfit, sans-serif" }}>
+              {heroData.cta_titulo}
+            </h2>
+            <p style={{ color: "var(--slate-600)", fontSize: "16px", lineHeight: 1.7, marginBottom: "32px" }}>
+              {heroData.cta_desc.replace("{doctor}", config?.nombre_doctor || "El doctor").replace("{nombre_doctor}", config?.nombre_doctor || "El doctor")}
+            </p>
+            {config?.email && (
+              <a href={`mailto:${config.email}`} className="btn btn-primary" style={{
+                padding: "16px 36px", fontSize: "16px", borderRadius: "0px", boxShadow: "none"
+              }}>
+                {heroData.cta_btn_text}
+              </a>
+            )}
+          </div>
+        </section>
+      )}
     </>
   );
 }

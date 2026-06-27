@@ -18,7 +18,7 @@ export default function Footer({
   email,
   telefono,
   logoUrl,
-  nombreMenuVacunas = "EcoVaccine",
+  nombreMenuVacunas = "HubMed",
   habilitarMenuVacunas = true,
   direccion,
   whatsapp
@@ -37,10 +37,10 @@ export default function Footer({
 
   return (
     <footer className="footer" style={{
-      background: "var(--white)",
-      color: "var(--slate-600)",
+      background: "linear-gradient(90deg, #0a4d5c 0%, #6bbbb0 100%)",
+      color: "rgba(255, 255, 255, 0.95)",
       padding: "60px 0 40px",
-      borderTop: "1px solid var(--slate-100)"
+      borderTop: "none"
     }}>
       <div className="container">
         <div style={{
@@ -63,10 +63,10 @@ export default function Footer({
                 fontFamily: "Outfit, sans-serif",
                 fontSize: "18px",
                 fontWeight: 900,
-                color: "#000000"
+                color: "#ffffff"
               }}>{nombreDoctor || "Dr. Carlos Torres"}</div>
             </div>
-            <p style={{ fontSize: "14px", color: "var(--slate-500)", maxWidth: "320px", lineHeight: 1.6 }}>
+            <p style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.9)", maxWidth: "320px", lineHeight: 1.6 }}>
               Infectología Pediátrica y vacunación. Cuidado integral para el bienestar de su familia.
             </p>
           </div>
@@ -77,7 +77,7 @@ export default function Footer({
               fontFamily: "Outfit, sans-serif",
               fontSize: "11px",
               fontWeight: 800,
-              color: "#000000",
+              color: "#ffffff",
               letterSpacing: "0.1em",
               textTransform: "uppercase"
             }}>Contacto y Ubicación</h4>
@@ -89,7 +89,7 @@ export default function Footer({
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ display: "flex", gap: "10px", alignItems: "flex-start", color: "inherit", transition: "color 0.2s" }}
-                  className="hover-text-black"
+                  className="hover-text-white"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: "2px" }}>
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -117,8 +117,8 @@ export default function Footer({
                     href={chatUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: "inherit", textDecoration: "none" }}
-                    className="hover-text-black"
+                    style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }}
+                    className="hover-text-white"
                   >
                     {waData.t === "t" ? "Telegram" : "WhatsApp"} directo
                   </a>
@@ -133,19 +133,33 @@ export default function Footer({
               fontFamily: "Outfit, sans-serif",
               fontSize: "11px",
               fontWeight: 800,
-              color: "#000000",
+              color: "#ffffff",
               letterSpacing: "0.1em",
               textTransform: "uppercase"
             }}>Portal</h4>
-            <Link href={`${base}/login`} style={{ fontSize: "14px", color: "var(--slate-500)" }} className="hover-text-black">
-              Ingreso Administrativo
+            <Link href={`${base}/login`} style={{
+              fontSize: "13px",
+              color: "#0a4d5c",
+              background: "rgba(255,255,255,0.95)",
+              fontWeight: 800,
+              padding: "10px 20px",
+              borderRadius: "30px",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "10px",
+              transition: "transform 0.2s, box-shadow 0.2s",
+              boxShadow: "0 8px 16px rgba(0,0,0,0.15)"
+            }} 
+            className="hover-scale">
+              <img src="/icon.png" alt="Logo" style={{ width: "28px", height: "28px", borderRadius: "6px", objectFit: "cover" }} /> Acceso Administrativo
             </Link>
           </div>
         </div>
 
         {/* Bottom copyright */}
         <div style={{
-          borderTop: "1px solid var(--slate-100)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.2)",
           paddingTop: "24px",
           display: "flex",
           justifyContent: "space-between",
@@ -153,15 +167,15 @@ export default function Footer({
           flexWrap: "wrap",
           gap: "12px",
           fontSize: "13px",
-          color: "var(--slate-400)"
+          color: "rgba(255, 255, 255, 0.8)"
         }}>
-          <span>© {year} {nombreDoctor || "EcoVaccine"}. Todos los derechos reservados.</span>
+          <span>© {year} {nombreDoctor || "HubMed"}. Todos los derechos reservados.</span>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span>Desarrollado por</span>
             <a
               href="mailto:germanmoralesconsulting@gmail.com"
-              style={{ color: "var(--slate-600)", fontWeight: 700, textDecoration: "none" }}
-              className="hover-text-black"
+              style={{ color: "#ffffff", fontWeight: 700, textDecoration: "none", transition: "color 0.2s" }}
+              className="hover-text-white"
             >
               Germán Morales Consulting
             </a>

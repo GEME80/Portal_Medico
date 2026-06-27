@@ -14,7 +14,7 @@ export default function Navbar({
   tenantSlug,
   nombreClinica,
   logoUrl,
-  nombreMenuVacunas = "EcoVaccine",
+  nombreMenuVacunas = "HubMed",
   habilitarMenuVacunas = true
 }: NavbarProps = {}) {
   const base = tenantSlug ? `/${tenantSlug}` : "";
@@ -62,9 +62,7 @@ export default function Navbar({
 
             {/* CTA */}
             <div className="navbar-cta">
-              <Link href={`${base}/admin`} className="btn btn-ghost" style={{ padding: "10px 20px", fontSize: "13px", color: "var(--slate-500)", border: "none", background: "transparent", boxShadow: "none" }}>
-                Admin
-              </Link>
+              {/* Removed Admin Button */}
             </div>
 
             {/* Hamburger */}
@@ -96,11 +94,6 @@ export default function Navbar({
         {habilitarMenuVacunas && (
           <Link href={`${base}/vacunas`} onClick={() => setMenuOpen(false)}>{nombreMenuVacunas}</Link>
         )}
-        <Link href={`${base}/admin`} onClick={() => setMenuOpen(false)} style={{ marginTop: "8px" }}>
-          <span className="btn btn-primary" style={{ width: "100%", padding: "12px", fontSize: "14px" }}>
-            Panel Admin
-          </span>
-        </Link>
       </div>
     </>
   );

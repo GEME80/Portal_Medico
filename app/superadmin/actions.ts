@@ -105,7 +105,7 @@ export async function createTenantAction(input: CreateTenantInput) {
     ]);
 
     // 6. Auto-seed vaccine inventory items
-    await supabase.from("inventario_vacunas").insert([
+    await supabase.from("inventario_medico").insert([
       {
         tenant_id: tenant.id,
         nombre: "Hepatitis B Pediátrica",

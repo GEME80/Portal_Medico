@@ -32,10 +32,7 @@ export async function saveConfigAction(
   }
 
   try {
-    revalidatePath(`/${slug}`);
-    revalidatePath(`/${slug}/noticias`);
-    revalidatePath(`/${slug}/vacunas`);
-    revalidatePath(`/${slug}/sobre-el-doctor`);
+    revalidatePath(`/${slug}`, "layout");
   } catch (rv) {
     console.warn("revalidatePath warning:", rv);
   }
@@ -97,9 +94,7 @@ export async function saveAlertAction(
   }
 
   try {
-    revalidatePath(`/${slug}`);
-    revalidatePath(`/${slug}/noticias`);
-    revalidatePath(`/${slug}/vacunas`);
+    revalidatePath(`/${slug}`, "layout");
   } catch (rv) {
     console.warn("revalidatePath warning:", rv);
   }
