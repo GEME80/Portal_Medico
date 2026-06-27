@@ -10,6 +10,9 @@ import {
   type Categoria,
 } from "./actions";
 import EmojiPicker from 'emoji-picker-react';
+import dynamic from 'next/dynamic';
+
+const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ssr: false });
 
 interface Post {
   id: string;
@@ -559,73 +562,16 @@ export default function AdminNoticiasPage({ params }: Props) {
                   />
                 </div>
 
-                {/* Contenido del Artículo con Barra de Formato */}
+                {/* Contenido del Artículo — Editor WYSIWYG */}
                 <div>
                   <label style={labelStyle}>Contenido del artículo</label>
-                  <div style={{ border: "1px solid var(--slate-200)", borderRadius: "12px", overflow: "hidden" }}>
-                    {/* Formatting Toolbar */}
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", padding: "8px 10px", background: "var(--slate-50)", borderBottom: "1px solid var(--slate-200)" }}>
-                      {[
-                        { label: "N", title: "Negrita", prefix: "**", suffix: "**" },
-                        { label: "I", title: "Cursiva", prefix: "_", suffix: "_", italic: true },
-                        { label: "H2", title: "Título", prefix: "## ", suffix: "" },
-                        { label: "H3", title: "Subtítulo", prefix: "### ", suffix: "" },
-                        { label: "•", title: "Lista", prefix: "- ", suffix: "" },
-                        { label: "1.", title: "Lista numerada", prefix: "1. ", suffix: "" },
-                        { label: "❝", title: "Cita", prefix: "> ", suffix: "" },
-                        { label: "—", title: "Separador", prefix: "\n---\n", suffix: "" },
-                        { label: "🔗", title: "Enlace", prefix: "[texto](", suffix: "url)" },
-                      ].map((btn) => (
-                        <button
-                          key={btn.label}
-                          type="button"
-                          title={btn.title}
-                          onClick={() => {
-                            const ta = document.getElementById("post-content-editor") as HTMLTextAreaElement;
-                            if (!ta) return;
-                            const start = ta.selectionStart;
-                            const end = ta.selectionEnd;
-                            const text = ta.value;
-                            const selected = text.substring(start, end);
-                            const before = text.substring(0, start);
-                            const after = text.substring(end);
-                            const newText = before + btn.prefix + (selected || btn.title) + btn.suffix + after;
-                            setEditingPost(p => p ? { ...p, contenido_markdown: newText } : null);
-                            setTimeout(() => {
-                              ta.focus();
-                              const newPos = start + btn.prefix.length + (selected || btn.title).length + btn.suffix.length;
-                              ta.setSelectionRange(newPos, newPos);
-                            }, 10);
-                          }}
-                          style={{
-                            padding: "4px 10px", border: "1px solid var(--slate-200)", borderRadius: "6px",
-                            background: "white", cursor: "pointer", fontSize: "13px",
-                            fontWeight: btn.label === "N" ? 800 : 600,
-                            fontStyle: btn.italic ? "italic" : "normal",
-                            fontFamily: "inherit", color: "var(--slate-700)",
-                            transition: "background .15s, border-color .15s",
-                            minWidth: "32px", textAlign: "center" as const,
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.background = "var(--slate-100)"; e.currentTarget.style.borderColor = "var(--slate-400)"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "var(--slate-200)"; }}
-                        >
-                          {btn.label}
-                        </button>
-                      ))}
-                    </div>
-                    {/* Content Editor */}
-                    <textarea
-                      id="post-content-editor"
-                      className="form-textarea"
-                      placeholder={"Escribe tu artículo aquí...\n\nUsa los botones de arriba para dar formato:\n**Negrita**, _Cursiva_, ## Títulos, - Listas\n\nO simplemente escribe párrafos separados por líneas en blanco."}
-                      value={editingPost.contenido_markdown || ""}
-                      onChange={e => setEditingPost(p => p ? { ...p, contenido_markdown: e.target.value } : null)}
-                      rows={16}
-                      style={{ fontFamily: "'Inter', sans-serif", fontSize: "14px", lineHeight: 1.7, border: "none", borderRadius: 0, resize: "vertical", minHeight: "320px", padding: "16px" }}
-                    />
-                  </div>
+                  <RichTextEditor
+                    value={editingPost.contenido_markdown || ""}
+                    onChange={(html) => setEditingPost(p => p ? { ...p, contenido_markdown: html } : null)}
+                    placeholder="Escribe el contenido del artículo aquí. Usa la barra de herramientas para dar formato: negrita, cursiva, títulos, listas, colores y más."
+                  />
                   <p style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "6px" }}>
-                    💡 Tip: Usa doble salto de línea para separar párrafos. Los formatos se aplican con sintaxis Markdown.
+                    💡 Selecciona texto y usa la barra para aplicar negritas, colores, alineación y más.
                   </p>
                 </div>
 
