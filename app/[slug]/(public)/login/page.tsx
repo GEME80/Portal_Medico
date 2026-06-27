@@ -174,7 +174,7 @@ export default function TenantLoginPage({ params }: Props) {
         boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
         textAlign: "center"
       }}>
-        {/* Logo / Avatar */}
+        {/* Logo / Avatar — always the brand favicon */}
         <div style={{
           display: "inline-flex",
           alignItems: "center",
@@ -187,35 +187,22 @@ export default function TenantLoginPage({ params }: Props) {
           marginBottom: "24px",
           overflow: "hidden",
         }}>
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt="Logo del portal"
-              style={{ width: "64px", height: "64px", objectFit: "contain" }}
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-                const parent = e.currentTarget.parentElement;
-                if (parent) parent.innerHTML = `<img src="/icon.png" alt="Logo" style="width:64px;height:64px;object-fit:contain;" onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=font-size:36px;color:${accentColor}>⚕️</span>')" />`;
-              }}
-            />
-          ) : (
-            <img
-              src="/icon.png"
-              alt="Logo del portal"
-              style={{ width: "64px", height: "64px", objectFit: "contain" }}
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-                const parent = e.currentTarget.parentElement;
-                if (parent) {
-                  const span = document.createElement("span");
-                  span.style.fontSize = "36px";
-                  span.style.color = accentColor;
-                  span.textContent = "⚕️";
-                  parent.appendChild(span);
-                }
-              }}
-            />
-          )}
+          <img
+            src="/icon.png"
+            alt="Logo del portal"
+            style={{ width: "64px", height: "64px", objectFit: "contain" }}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                const span = document.createElement("span");
+                span.style.fontSize = "36px";
+                span.style.color = accentColor;
+                span.textContent = "⚕️";
+                parent.appendChild(span);
+              }
+            }}
+          />
         </div>
 
         <h1 style={{
