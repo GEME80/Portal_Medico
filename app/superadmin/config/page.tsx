@@ -1,9 +1,22 @@
 import ConnectionTester from "./components/ConnectionTester";
 import MaskedKey from "./components/MaskedKey";
 import Cie10Seeder from "./components/Cie10Seeder";
+import { createAdminClient } from "@/lib/supabase/server";
+
 
 
 export default async function SuperadminConfigPage() {
+  const adminClient = createAdminClient();
+  let cieCount = 0;
+  try {
+    const { count } = await adminClient
+      .from("catalogo_cie10")
+      .select("*", { count: "exact", head: true });
+    cieCount = count || 0;
+  } catch (e) {
+    console.error("Error reading CIE-10 count", e);
+  }
+
   // Read env vars securely on server side
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "No configurado";
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "No configurado";
@@ -56,7 +69,7 @@ export default async function SuperadminConfigPage() {
 
             <ConnectionTester serviceKey={supabaseServiceKey} />
 
-            <Cie10Seeder />
+            <Cie10Seeder initialCount={cieCount} />
           </div>
         </section>
 

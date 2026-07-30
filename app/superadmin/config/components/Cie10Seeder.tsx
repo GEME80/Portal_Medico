@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { seedCie10Action } from "../../actions";
 
-export default function Cie10Seeder() {
+export default function Cie10Seeder({ initialCount = 0 }: { initialCount?: number }) {
   const [seeding, setSeeding] = useState(false);
+  const [currentCount, setCurrentCount] = useState(initialCount);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleSeed = async () => {
@@ -17,6 +18,7 @@ export default function Cie10Seeder() {
       const res = await seedCie10Action();
       if (res.success) {
         setResult({ success: true, message: `¡Catálogo semillado con éxito! Se cargaron ${res.count} diagnósticos.` });
+        setCurrentCount(res.count || 0);
       } else {
         setResult({ success: false, message: `Error: ${res.error}` });
       }
@@ -33,9 +35,13 @@ export default function Cie10Seeder() {
         Base de Datos: Inicialización de Datos
       </h3>
       <p style={{ fontSize: "13px", color: "var(--slate-500)", margin: "0 0 16px 0", lineHeight: "1.5" }}>
-        Descarga e inyecta la última versión oficial del catálogo completo de diagnósticos CIE-10 (más de 12,000 registros) desde un repositorio confiable directo a tu base de datos de producción.
+        Descarga e inyecta la última versión oficial del catálogo completo de diagnósticos CIE-10 (más de 12,000 registros) desde un repositorio de GitHub directo a tu base de datos de producción.
       </p>
       
+      <div style={{ fontSize: "13px", color: "var(--slate-700)", marginBottom: "16px", fontWeight: "600" }}>
+        Registros actuales en catálogo CIE-10: <span style={{ color: currentCount > 0 ? "var(--emerald-600)" : "var(--rose-600)", fontFamily: "monospace", fontSize: "14px" }}>{currentCount}</span>
+      </div>
+
       <button
         onClick={handleSeed}
         disabled={seeding}
