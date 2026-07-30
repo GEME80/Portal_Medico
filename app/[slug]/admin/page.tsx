@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DashboardCharts from "./DashboardCharts";
@@ -9,27 +9,26 @@ interface Props {
 
 export default async function TenantAdminDashboard({ params }: Props) {
   const { slug } = await params;
-  const supabase = await createClient();
+  // Use admin client — suspended tenants (activo=false) are blocked by RLS
+  // for the regular client, causing a 404 instead of showing the overlay.
+  const supabase = createAdminClient();
 
-  // Load configuration and tenant in parallel for speed
-  const [tenantRes, configRes] = await Promise.all([
-    supabase
-      .from("tenants")
-      .select("id, nombre")
-      .eq("slug", slug)
-      .eq("activo", true)
-      .single(),
-    supabase
-      .from("configuracion_portal")
-      .select("nombre_doctor, color_primario, color_acento, nombre_menu_vacunas")
-      .eq("tenant_id", (await supabase.from('tenants').select('id').eq('slug', slug).single()).data?.id)
-      .single()
-  ]);
+  // Load tenant first to get the ID
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("id, nombre, activo, estado_pago")
+    .eq("slug", slug)
+    .single();
 
-  const tenant = tenantRes.data;
   if (!tenant) notFound();
-  
-  const config = configRes.data;
+
+  // Load config
+  const { data: config } = await supabase
+    .from("configuracion_portal")
+    .select("nombre_doctor, color_primario, color_acento, nombre_menu_vacunas")
+    .eq("tenant_id", tenant.id)
+    .single();
+
   const doctorName = config?.nombre_doctor || "Doctor";
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";

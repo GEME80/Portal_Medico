@@ -47,13 +47,13 @@ export default function ConnectionTester({ serviceKey }: ConnectionTesterProps) 
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-          <span style={labelStyle}>API Key Privada (Service Role Key)</span>
+          <span className="form-label" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--slate-500)" }}>API Key Privada (Service Role Key)</span>
           <button
             onClick={() => setShowKey(!showKey)}
             style={{
               background: "none",
               border: "none",
-              color: "#00D4AA",
+              color: "var(--teal-600)",
               fontSize: "12px",
               fontWeight: 600,
               cursor: "pointer",
@@ -64,26 +64,33 @@ export default function ConnectionTester({ serviceKey }: ConnectionTesterProps) 
           </button>
         </div>
         <code style={{
-          ...codeStyle,
+          display: "block",
+          padding: "10px 14px",
+          background: "var(--slate-50)",
+          border: "1px solid var(--slate-200)",
+          borderRadius: "10px",
+          color: "var(--slate-700)",
+          fontFamily: "monospace",
+          fontSize: "13px",
           whiteSpace: showKey ? "pre-wrap" : "nowrap",
           textOverflow: "ellipsis",
-          overflow: "hidden",
-          display: "block"
+          overflow: "hidden"
         }}>
           {showKey ? serviceKey : "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"}
         </code>
       </div>
 
-      <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", paddingTop: "16px", marginTop: "4px" }}>
+      <div style={{ borderTop: "1px solid var(--slate-200)", paddingTop: "16px", marginTop: "4px" }}>
         <button
           onClick={handleTest}
           disabled={testing}
+          className="action-btn"
           style={{
             padding: "10px 16px",
-            background: testing ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 212, 170, 0.15)",
-            border: `1px solid ${testing ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 212, 170, 0.25)"}`,
+            background: testing ? "var(--slate-50)" : "var(--emerald-50)",
+            border: `1px solid ${testing ? "var(--slate-200)" : "var(--emerald-200)"}`,
             borderRadius: "10px",
-            color: testing ? "#6b7280" : "#00D4AA",
+            color: testing ? "var(--slate-500)" : "var(--emerald-700)",
             fontSize: "13px",
             fontWeight: 700,
             cursor: testing ? "not-allowed" : "pointer",
@@ -101,9 +108,9 @@ export default function ConnectionTester({ serviceKey }: ConnectionTesterProps) 
             borderRadius: "8px",
             fontSize: "13px",
             lineHeight: 1.4,
-            background: status.type === "success" ? "rgba(0, 212, 170, 0.05)" : "rgba(239, 68, 68, 0.05)",
-            border: `1px solid ${status.type === "success" ? "rgba(0, 212, 170, 0.15)" : "rgba(239, 68, 68, 0.15)"}`,
-            color: status.type === "success" ? "#00d4aa" : "#f87171",
+            background: status.type === "success" ? "var(--emerald-50)" : "var(--rose-50)",
+            border: `1px solid ${status.type === "success" ? "var(--emerald-200)" : "var(--rose-200)"}`,
+            color: status.type === "success" ? "var(--emerald-900)" : "var(--rose-900)",
           }}>
             {status.type === "success" ? "✅ " : "❌ "}
             {status.msg}
@@ -113,21 +120,3 @@ export default function ConnectionTester({ serviceKey }: ConnectionTesterProps) 
     </div>
   );
 }
-
-const labelStyle = {
-  fontSize: "12px",
-  fontWeight: 600,
-  color: "#9ca3af",
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.05em",
-};
-
-const codeStyle = {
-  padding: "10px 14px",
-  background: "rgba(0, 0, 0, 0.2)",
-  border: "1px solid rgba(255, 255, 255, 0.05)",
-  borderRadius: "10px",
-  color: "#e2e8f0",
-  fontFamily: "monospace",
-  fontSize: "13px",
-};

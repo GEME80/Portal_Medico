@@ -195,9 +195,24 @@ export async function toggleTenantActiveAction(tenantId: string, currentStatus: 
 export async function updateTenantPaymentStatusAction(tenantId: string, estadoPago: "activo" | "mora" | "suspendido") {
   const supabase = createAdminClient();
 
+  const updates: any = { estado_pago: estadoPago };
+
+  if (estadoPago === "suspendido") {
+    updates.activo = false;
+    updates.fecha_vencimiento = null;
+  } else if (estadoPago === "mora") {
+    // 5 days of grace period
+    const graceDate = new Date();
+    graceDate.setDate(graceDate.getDate() + 5);
+    updates.fecha_vencimiento = graceDate.toISOString();
+  } else if (estadoPago === "activo") {
+    updates.activo = true;
+    updates.fecha_vencimiento = null;
+  }
+
   const { error } = await supabase
     .from("tenants")
-    .update({ estado_pago: estadoPago })
+    .update(updates)
     .eq("id", tenantId);
 
   if (error) {

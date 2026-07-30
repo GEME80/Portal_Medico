@@ -395,30 +395,7 @@ export default async function TenantHomePage({ params }: PageProps) {
         </section>
       )}
 
-      {/* ── CTA CONTACTO ─────────────────────────────────────── */}
-      {heroData.cta_mostrar !== false && (
-        <section style={{
-          background: "var(--white)",
-          borderTop: "1px solid var(--slate-100)",
-          padding: "100px 0", textAlign: "center", position: "relative", overflow: "hidden",
-        }} aria-label="Contactar al doctor">
-          <div className="container" style={{ position: "relative", zIndex: 1, maxWidth: "560px", margin: "0 auto" }}>
-            <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 900, color: "#000000", marginBottom: "16px", fontFamily: "Outfit, sans-serif" }}>
-              {heroData.cta_titulo}
-            </h2>
-            <p style={{ color: "var(--slate-600)", fontSize: "16px", lineHeight: 1.7, marginBottom: "32px" }}>
-              {heroData.cta_desc.replace("{doctor}", config?.nombre_doctor || "El doctor").replace("{nombre_doctor}", config?.nombre_doctor || "El doctor")}
-            </p>
-            {config?.email && (
-              <a href={`mailto:${config.email}`} className="btn btn-primary" style={{
-                padding: "16px 36px", fontSize: "16px", borderRadius: "0px", boxShadow: "none"
-              }}>
-                {heroData.cta_btn_text}
-              </a>
-            )}
-          </div>
-        </section>
-      )}
+
     </>
   );
 }

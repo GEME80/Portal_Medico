@@ -60,18 +60,20 @@ export async function middleware(request: NextRequest) {
   const isCustomDomain = hostname !== mainDomain && !isVercelDomain && !isLocalhost;
 
   let tenantSlug: string | null = null;
+  let tenantId: string | null = null;
   let isSuspended = false;
 
   if (isCustomDomain) {
     // Look up tenant slug by custom domain
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("slug, activo, estado_pago")
+      .select("id, slug, activo, estado_pago")
       .eq("custom_domain", hostname)
       .single();
 
     if (tenant) {
       tenantSlug = tenant.slug;
+      tenantId = tenant.id;
       if (!tenant.activo || tenant.estado_pago === "suspendido") {
         isSuspended = true;
       }
@@ -84,15 +86,18 @@ export async function middleware(request: NextRequest) {
     if (potentialSlug && !RESERVED_SLUGS.has(potentialSlug)) {
       tenantSlug = potentialSlug;
       
-      // Look up tenant to check suspension state
+      // Look up tenant to check suspension state and get ID
       const { data: tenant } = await supabase
         .from("tenants")
-        .select("activo, estado_pago")
+        .select("id, activo, estado_pago")
         .eq("slug", potentialSlug)
         .single();
 
-      if (tenant && (!tenant.activo || tenant.estado_pago === "suspendido")) {
-        isSuspended = true;
+      if (tenant) {
+        tenantId = tenant.id;
+        if (!tenant.activo || tenant.estado_pago === "suspendido") {
+          isSuspended = true;
+        }
       }
     }
   }
@@ -101,70 +106,8 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // 5. Handle Suspension (Except if the user is a superadmin, allowing supervision)
+  // Suspended status is handled visually inside layouts for a better UX (modal popup overlay)
   const isSuperadminUser = user?.email === process.env.SUPERADMIN_EMAIL || user?.app_metadata?.role === "superadmin";
-
-  if (isSuspended && !isSuperadminUser) {
-    // If suspended and not superadmin, render suspended notice or 404
-    // We rewrite to a generic /suspended route or return a 404 page
-    // Let's rewrite to /suspended if we have a suspended page, or return 404
-    return new NextResponse(
-      `
-      <!DOCTYPE html>
-      <html lang="es">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Portal Suspendido</title>
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
-        <style>
-          body {
-            font-family: 'Outfit', sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-          }
-          .container {
-            max-width: 500px;
-            padding: 40px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-          }
-          h1 {
-            color: #ef4444;
-            font-size: 28px;
-            margin-top: 0;
-          }
-          p {
-            font-size: 16px;
-            color: #9ca3af;
-            line-height: 1.6;
-          }
-          .icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="icon">🔒</div>
-          <h1>Servicio Suspendido</h1>
-          <p>Este portal médico no está disponible temporalmente por falta de pago.</p>
-          <p>Si eres el administrador del sitio, ponte en contacto con soporte técnico para regularizar tu estado de suscripción.</p>
-        </div>
-      </body>
-      </html>
-      `,
-      { status: 403, headers: { "Content-Type": "text/html; charset=utf-8" } }
-    );
-  }
 
   // 6. Access Control: Protect Superadmin routes
   const isSuperadminRoute = pathname.startsWith("/superadmin");
@@ -193,11 +136,18 @@ export async function middleware(request: NextRequest) {
     isAdminRoute = pathname.startsWith(`/${tenantSlug}/admin`);
   }
 
-  if (isAdminRoute && !user) {
-    const slugForLogin = tenantSlug || "admin";
-    const loginUrl = new URL(`/${slugForLogin}/login`, request.url);
-    loginUrl.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(loginUrl);
+  if (isAdminRoute) {
+    if (!user) {
+      const slugForLogin = tenantSlug || "admin";
+      const loginUrl = new URL(`/${slugForLogin}/login`, request.url);
+      loginUrl.searchParams.set("redirectTo", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    
+    // Strict Multi-Tenant validation: check if the user's JWT tenant_id matches the requested tenant
+    if (!isSuperadminUser && tenantId && user.app_metadata?.tenant_id !== tenantId) {
+      return new NextResponse("Acceso no autorizado: El tenant de la sesión no coincide con la ruta solicitada.", { status: 403 });
+    }
   }
 
   // 8. Custom Domain Rewriting

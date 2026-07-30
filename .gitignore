@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch and temporary scripts
+/scratch/
+/*.js
+/*.js.bak
+/test-insert.js
+/supabase/.branches/
+/supabase/.temp/
+

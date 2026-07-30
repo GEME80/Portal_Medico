@@ -41,6 +41,11 @@ export default function TenantRow({ tenant, index }: TenantRowProps) {
       const res = await updateTenantPaymentStatusAction(tenant.id, newValue);
       if (res.success) {
         setEstadoPago(newValue);
+        if (newValue === "suspendido") {
+          setActivo(false);
+        } else if (newValue === "activo") {
+          setActivo(true);
+        }
       } else {
         alert(`Error: ${res.error}`);
       }
@@ -51,92 +56,72 @@ export default function TenantRow({ tenant, index }: TenantRowProps) {
   const targetUrl = tenant.custom_domain ? `http://${tenant.custom_domain}` : `/${tenant.slug}`;
 
   return (
-    <tr style={{
-      borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
-      background: index % 2 === 0 ? "rgba(255, 255, 255, 0.01)" : "none",
-      transition: "background 0.15s"
-    }}>
-      <td style={tdStyle}>
-        <div style={{ fontWeight: 700, color: "#ffffff" }}>{tenant.nombre}</div>
-        <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>ID: {tenant.id}</div>
+    <tr>
+      <td>
+        <div className="vaccine-name-cell">
+          <span className="vaccine-name-main">{tenant.nombre}</span>
+          <span className="vaccine-name-generic">ID: {tenant.id}</span>
+        </div>
       </td>
-      <td style={tdStyle}>
-        <code style={{ background: "rgba(0,0,0,0.2)", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", color: "#e2e8f0" }}>
+      <td>
+        <code className="lot-badge">
           /{tenant.slug}
         </code>
         {tenant.custom_domain && (
-          <div style={{ fontSize: "12px", color: "#00D4AA", marginTop: "4px" }}>
+          <div style={{ fontSize: "11px", color: "var(--teal-600)", marginTop: "4px", fontWeight: 700 }}>
             🌐 {tenant.custom_domain}
           </div>
         )}
       </td>
-      <td style={tdStyle}>
+      <td>
         <span style={planBadgeStyle(tenant.plan)}>
           {tenant.plan.toUpperCase()}
         </span>
       </td>
-      <td style={tdStyle}>
+      <td>
         <select
           value={estadoPago}
           onChange={handlePaymentChange}
           disabled={isPending}
+          className="form-select"
           style={{
-            ...selectStyle,
-            borderColor: estadoPago === "activo" ? "rgba(0, 212, 170, 0.3)" : estadoPago === "mora" ? "rgba(245, 158, 11, 0.3)" : "rgba(239, 68, 68, 0.3)",
-            color: estadoPago === "activo" ? "#00D4AA" : estadoPago === "mora" ? "#f59e0b" : "#f87171"
+            padding: "4px 8px",
+            fontSize: "12px",
+            width: "auto",
+            borderColor: estadoPago === "activo" ? "var(--emerald-300)" : estadoPago === "mora" ? "var(--amber-300)" : "var(--rose-300)",
+            color: estadoPago === "activo" ? "var(--emerald-700)" : estadoPago === "mora" ? "var(--amber-700)" : "var(--rose-700)",
+            background: estadoPago === "activo" ? "var(--emerald-50)" : estadoPago === "mora" ? "var(--amber-50)" : "var(--rose-50)",
           }}
         >
-          <option value="activo" style={{ background: "#0f172a", color: "#00D4AA" }}>🟢 Activo</option>
-          <option value="mora" style={{ background: "#0f172a", color: "#f59e0b" }}>🟡 En Mora (Admin Lock)</option>
-          <option value="suspendido" style={{ background: "#0f172a", color: "#f87171" }}>🔴 Suspendido (Full Lock)</option>
+          <option value="activo">🟢 Activo</option>
+          <option value="mora">🟡 En Mora (Admin Lock)</option>
+          <option value="suspendido">🔴 Suspendido (Full Lock)</option>
         </select>
       </td>
-      <td style={tdStyle}>
+      <td>
         <button
           onClick={handleToggleActive}
           disabled={isPending}
-          style={{
-            ...statusButtonStyle(activo),
-            opacity: isPending ? 0.6 : 1
-          }}
+          className={activo ? "action-btn action-btn-emerald" : "action-btn action-btn-danger"}
+          style={{ opacity: isPending ? 0.6 : 1 }}
         >
           {activo ? "✓ Habilitado" : "✗ Suspendido"}
         </button>
       </td>
-      <td style={tdStyle}>
+      <td style={{ color: "var(--slate-600)", fontSize: "13px" }}>
         {new Date(tenant.created_at).toLocaleDateString("es-ES", {
           day: "2-digit",
           month: "short",
           year: "numeric"
         })}
       </td>
-      <td style={tdStyle}>
+      <td>
         <a
           href={targetUrl}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "8px 12px",
-            background: "rgba(0, 212, 170, 0.1)",
-            border: "1px solid rgba(0, 212, 170, 0.2)",
-            borderRadius: "8px",
-            color: "#00D4AA",
-            textDecoration: "none",
-            fontSize: "12px",
-            fontWeight: 700,
-            transition: "all 0.15s"
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = "rgba(0, 212, 170, 0.18)";
-            e.currentTarget.style.borderColor = "rgba(0, 212, 170, 0.35)";
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = "rgba(0, 212, 170, 0.1)";
-            e.currentTarget.style.borderColor = "rgba(0, 212, 170, 0.2)";
-          }}
+          className="action-btn action-btn-ghost"
+          style={{ color: "var(--teal-600)", borderColor: "var(--teal-200)", background: "var(--teal-50)" }}
         >
           👁️ Supervisar
         </a>
@@ -144,12 +129,6 @@ export default function TenantRow({ tenant, index }: TenantRowProps) {
     </tr>
   );
 }
-
-const tdStyle = {
-  padding: "16px 20px",
-  fontSize: "14px",
-  verticalAlign: "middle"
-};
 
 const planBadgeStyle = (plan: string) => {
   const isEnterprise = plan === "enterprise";
@@ -160,30 +139,8 @@ const planBadgeStyle = (plan: string) => {
     borderRadius: "6px",
     fontSize: "11px",
     fontWeight: 700,
-    background: isEnterprise ? "rgba(168, 85, 247, 0.15)" : isPro ? "rgba(59, 130, 246, 0.15)" : "rgba(107, 114, 128, 0.15)",
-    color: isEnterprise ? "#c084fc" : isPro ? "#60a5fa" : "#9ca3af",
-    border: `1px solid ${isEnterprise ? "rgba(168, 85, 247, 0.3)" : isPro ? "rgba(59, 130, 246, 0.3)" : "rgba(107, 114, 128, 0.3)"}`
+    background: isEnterprise ? "var(--purple-50)" : isPro ? "var(--blue-50)" : "var(--slate-100)",
+    color: isEnterprise ? "var(--purple-700)" : isPro ? "var(--blue-700)" : "var(--slate-600)",
+    border: `1px solid ${isEnterprise ? "var(--purple-200)" : isPro ? "var(--blue-200)" : "var(--slate-200)"}`
   };
 };
-
-const selectStyle = {
-  padding: "6px 12px",
-  background: "rgba(0,0,0,0.2)",
-  border: "1px solid",
-  borderRadius: "8px",
-  fontSize: "13px",
-  fontWeight: 600,
-  outline: "none",
-  cursor: "pointer"
-};
-
-const statusButtonStyle = (active: boolean) => ({
-  padding: "6px 12px",
-  background: active ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
-  border: `1px solid ${active ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}`,
-  borderRadius: "8px",
-  color: active ? "#34d399" : "#f87171",
-  fontSize: "12px",
-  fontWeight: 600,
-  cursor: "pointer",
-});

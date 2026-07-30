@@ -1,4 +1,5 @@
 import ConnectionTester from "./components/ConnectionTester";
+import MaskedKey from "./components/MaskedKey";
 
 export default async function SuperadminConfigPage() {
   // Read env vars securely on server side
@@ -22,14 +23,12 @@ export default async function SuperadminConfigPage() {
   const isSuperadminEmailOk = !!process.env.SUPERADMIN_EMAIL;
 
   return (
-    <div style={{ padding: "40px", fontFamily: "'Outfit', sans-serif" }}>
+    <div>
       {/* ── HEADER ────────────────────────────────────────────────── */}
-      <header style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <header className="section-header">
         <div>
-          <h1 style={{ fontSize: "28px", fontWeight: 800, margin: "0 0 6px 0", letterSpacing: "-0.02em", color: "#ffffff" }}>
-            Configuración de Infraestructura
-          </h1>
-          <p style={{ fontSize: "14px", color: "#9ca3af", margin: 0 }}>
+          <h1 className="section-title">Configuración de Infraestructura</h1>
+          <p style={{ fontSize: "14px", color: "var(--slate-500)", margin: 0 }}>
             Visualiza y verifica el estado de integración de base de datos y hosting de HubMed.
           </p>
         </div>
@@ -37,10 +36,10 @@ export default async function SuperadminConfigPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
         {/* ── CARD: SUPABASE CONFIGURATION ────────────────────────── */}
-        <section style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-            <span style={{ fontSize: "22px" }}>🗄️</span>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0, color: "#ffffff" }}>
+        <section className="kpi-card" style={{ padding: "32px", gridColumn: "1 / -1" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+            <span className="kpi-icon kpi-icon-teal">🗄️</span>
+            <h2 style={{ fontSize: "20px", fontWeight: 800, margin: 0, color: "var(--slate-900)" }}>
               Backend (Supabase)
             </h2>
           </div>
@@ -51,20 +50,17 @@ export default async function SuperadminConfigPage() {
               <code style={codeStyle}>{supabaseUrl}</code>
             </div>
 
-            <div>
-              <span style={labelStyle}>API Key Pública (Anon Key)</span>
-              <code style={codeStyle}>{supabaseAnonKey}</code>
-            </div>
+            <MaskedKey label="API Key Pública (Anon Key)" secretKey={supabaseAnonKey} />
 
             <ConnectionTester serviceKey={supabaseServiceKey} />
           </div>
         </section>
 
         {/* ── CARD: HOSTING & VARIABLES ───────────────────────────── */}
-        <section style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-            <span style={{ fontSize: "22px" }}>☁️</span>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0, color: "#ffffff" }}>
+        <section className="kpi-card" style={{ padding: "32px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+            <span className="kpi-icon kpi-icon-emerald">☁️</span>
+            <h2 style={{ fontSize: "20px", fontWeight: 800, margin: 0, color: "var(--slate-900)" }}>
               Hosting (Vercel) & Entorno
             </h2>
           </div>
@@ -73,7 +69,7 @@ export default async function SuperadminConfigPage() {
             <div>
               <span style={labelStyle}>URL de la Aplicación</span>
               <code style={codeStyle}>
-                <a href={appUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#00D4AA", textDecoration: "none" }}>
+                <a href={appUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal-600)", textDecoration: "none" }}>
                   {appUrl} ↗
                 </a>
               </code>
@@ -82,7 +78,7 @@ export default async function SuperadminConfigPage() {
             <div>
               <span style={labelStyle}>GitHub Repository</span>
               <code style={codeStyle}>
-                <a href="https://github.com/GEME80/Portal_Medico" target="_blank" rel="noopener noreferrer" style={{ color: "#00D4AA", textDecoration: "none" }}>
+                <a href="https://github.com/GEME80/Portal_Medico" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal-600)", textDecoration: "none" }}>
                   GEME80/Portal_Medico ↗
                 </a>
               </code>
@@ -96,15 +92,15 @@ export default async function SuperadminConfigPage() {
         </section>
 
         {/* ── CARD: HEALTH CHECK ──────────────────────────────────── */}
-        <section style={{ ...cardStyle, gridColumn: "1fr / -1" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-            <span style={{ fontSize: "22px" }}>📋</span>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0, color: "#ffffff" }}>
-              Diagnóstico de Variables del Sistema
+        <section className="kpi-card" style={{ padding: "32px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+            <span className="kpi-icon kpi-icon-amber">📋</span>
+            <h2 style={{ fontSize: "20px", fontWeight: 800, margin: 0, color: "var(--slate-900)" }}>
+              Diagnóstico de Variables
             </h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={checkStyle(isSupabaseUrlOk)}>
               <span>NEXT_PUBLIC_SUPABASE_URL</span>
               <strong>{isSupabaseUrlOk ? "Cargada ✅" : "Faltante ❌"}</strong>
@@ -136,19 +132,13 @@ export default async function SuperadminConfigPage() {
               <strong>{isSuperadminEmailOk ? "Cargada ✅" : "Faltante ❌"}</strong>
             </div>
           </div>
+        </section>
 
-          {!isAppUrlOk && (
-            <div style={{ 
-              marginTop: "20px", 
-              padding: "14px 18px", 
-              background: "rgba(255, 193, 7, 0.05)", 
-              border: "1px solid rgba(255, 193, 7, 0.2)", 
-              borderRadius: "12px",
-              fontSize: "13px",
-              lineHeight: "1.5",
-              color: "#e2e8f0"
-            }}>
-              <span style={{ fontWeight: 700, color: "#ffc107", display: "block", marginBottom: "4px" }}>
+        {/* ALERTA DE FALLBACK */}
+        {!isAppUrlOk && (
+          <section className="kpi-card" style={{ gridColumn: "1 / -1", background: "var(--amber-50)", borderColor: "var(--amber-200)" }}>
+            <div style={{ padding: "12px", fontSize: "14px", lineHeight: "1.6", color: "var(--amber-900)" }}>
+              <span style={{ fontWeight: 800, display: "block", marginBottom: "8px" }}>
                 💡 Nota informativa sobre NEXT_PUBLIC_APP_URL:
               </span>
               Esta variable define la URL pública principal de la aplicación (necesaria para generar enlaces de invitación de administradores y redirecciones). 
@@ -158,32 +148,24 @@ export default async function SuperadminConfigPage() {
                 <> No se detectaron fallbacks de entorno de Vercel activos.</>
               )}
               <br />
-              <strong style={{ display: "block", marginTop: "8px", color: "#00D4AA" }}>Para resolver esto y lograr un estado impecable:</strong>
+              <strong style={{ display: "block", marginTop: "12px", color: "var(--teal-700)" }}>Para resolver esto y lograr un estado impecable:</strong>
               1. Ve al panel de control de tu proyecto en <strong>Vercel</strong> &gt; <strong>Settings</strong> &gt; <strong>Environment Variables</strong>.<br />
               2. Agrega una variable con nombre <code>NEXT_PUBLIC_APP_URL</code> y valor <code>https://portal-medico-five.vercel.app</code>.<br />
               3. Marca los entornos correspondientes (Production, Preview, Development) y presiona Save.<br />
               4. Realiza un nuevo despliegue (redeploy) en Vercel para aplicar los cambios.
             </div>
-          )}
-        </section>
+          </section>
+        )}
       </div>
     </div>
   );
 }
 
-const cardStyle = {
-  background: "rgba(15, 23, 42, 0.4)",
-  backdropFilter: "blur(12px)",
-  border: "1px solid rgba(255, 255, 255, 0.05)",
-  borderRadius: "16px",
-  padding: "24px",
-};
-
 const labelStyle = {
   display: "block",
   fontSize: "12px",
-  fontWeight: 600,
-  color: "#9ca3af",
+  fontWeight: 700,
+  color: "var(--slate-500)",
   marginBottom: "6px",
   textTransform: "uppercase" as const,
   letterSpacing: "0.05em",
@@ -192,10 +174,10 @@ const labelStyle = {
 const codeStyle = {
   display: "block",
   padding: "10px 14px",
-  background: "rgba(0, 0, 0, 0.2)",
-  border: "1px solid rgba(255, 255, 255, 0.05)",
+  background: "var(--slate-50)",
+  border: "1px solid var(--slate-200)",
   borderRadius: "10px",
-  color: "#e2e8f0",
+  color: "var(--slate-700)",
   fontFamily: "monospace",
   fontSize: "13px",
   overflowX: "auto" as const,
@@ -204,12 +186,12 @@ const codeStyle = {
 
 const checkStyle = (ok: boolean) => ({
   display: "flex",
-  flexDirection: "column" as const,
-  gap: "4px",
+  alignItems: "center",
+  justifyContent: "space-between",
   padding: "12px 16px",
-  background: ok ? "rgba(0, 212, 170, 0.04)" : "rgba(239, 68, 68, 0.04)",
-  border: `1px solid ${ok ? "rgba(0, 212, 170, 0.15)" : "rgba(239, 68, 68, 0.15)"}`,
+  background: ok ? "var(--emerald-50)" : "var(--rose-50)",
+  border: `1px solid ${ok ? "var(--emerald-200)" : "var(--rose-200)"}`,
   borderRadius: "12px",
-  fontSize: "12px",
-  color: "#e2e8f0",
+  fontSize: "13px",
+  color: ok ? "var(--emerald-900)" : "var(--rose-900)",
 });

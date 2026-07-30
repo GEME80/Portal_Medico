@@ -3,6 +3,7 @@ import { useState, useEffect, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveConfigAction, saveAlertAction } from "./actions";
 import { uploadImageAction } from "../noticias/actions";
+import { getOmsChartCalibrations, saveOmsChartImage } from "@/lib/actions/clinical-actions";
 
 const TABS = [
   { id: "identidad", label: "👨‍⚕️ Identidad y Estilos", desc: "Logo, contacto, redes, estilos" },
@@ -18,6 +19,7 @@ const TABS = [
   },
   { id: "investigacion", label: "🔬 Líneas Invest.", desc: "Gestor de tarjetas y títulos" },
   { id: "trayectoria", label: "🎓 Trayectoria", desc: "Hitos académicos y títulos" },
+  { id: "graficas_oms", label: "📈 Gráficas OMS", desc: "Configurar imágenes de curvas" },
 ];
 
 interface Config {
@@ -164,6 +166,7 @@ export default function PersonalizarPage({ params }: Props) {
   const [activeSubTab, setActiveSubTab] = useState("info");
   const [homeMenuExpanded, setHomeMenuExpanded] = useState(true);
   const [dbKeys, setDbKeys] = useState<string[]>([]);
+  const [omsCalibrations, setOmsCalibrations] = useState<Record<string, any>>({});
   const [config, setConfig] = useState<Config>({
     nombre_doctor: "", titulo_doctor: "", especialidad: "",
     nombre_clinica: "", logo_url: "", bio_corta: "", bio_larga: "",
@@ -215,13 +218,14 @@ export default function PersonalizarPage({ params }: Props) {
       if (!tenant) return;
       setTenantId(tenant.id);
 
-      const [cfgRes, lineasRes, hitosRes, alertRes, mitosRes, inventarioRes] = await Promise.all([
+      const [cfgRes, lineasRes, hitosRes, alertRes, mitosRes, inventarioRes, omsRes] = await Promise.all([
         supabase.from("configuracion_portal").select("*").eq("tenant_id", tenant.id).single(),
         supabase.from("lineas_investigacion").select("*").eq("tenant_id", tenant.id).order("orden"),
         supabase.from("hitos_timeline").select("*").eq("tenant_id", tenant.id).order("orden"),
         supabase.from("alertas_epidemiologicas").select("*").eq("tenant_id", tenant.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("mitos_vacunales").select("*").eq("tenant_id", tenant.id).order("orden"),
-        supabase.from("inventario_medico").select("*").eq("tenant_id", tenant.id).order("nombre")
+        supabase.from("inventario_medico").select("*").eq("tenant_id", tenant.id).order("nombre"),
+        getOmsChartCalibrations()
       ]);
 
       if (cfgRes.data) {
@@ -271,9 +275,10 @@ export default function PersonalizarPage({ params }: Props) {
         setMitos(mitosRes.data as Mito[]);
         setOriginalMitos(mitosRes.data as Mito[]);
       }
-      if (inventarioRes && inventarioRes.data) {
-        setInventoryItems(inventarioRes.data);
-      }
+      if (inventarioRes.data) setInventoryItems(inventarioRes.data);
+      setOmsCalibrations(omsRes);
+
+      setLoading(false);
       
       if (alertRes.data) {
         setAlertId(alertRes.data.id);
@@ -1952,6 +1957,75 @@ export default function PersonalizarPage({ params }: Props) {
                   })}
                 </div>
                 <SaveBar onSave={saveHitosAndConfig} isPending={isPending} label="Guardar trayectoria y títulos" />
+              </div>
+            )}
+            {activeTab === "graficas_oms" && (
+              <div className="card tab-pane">
+                <div className="card-header">
+                  <h2 className="card-title">📈 Gráficas de Crecimiento OMS</h2>
+                  <p className="card-desc">Personaliza las imágenes de fondo de las curvas de crecimiento utilizadas en las historias clínicas. Las imágenes recomendadas son capturas limpias de las cuadrículas oficiales de la OMS.</p>
+                </div>
+                <div className="card-body">
+                  <div className="form-grid">
+                    {[
+                      { id: "peso_talla_ninos_0_2", title: "Peso para la Talla (Niños 0-2 años)" },
+                      { id: "peso_edad_ninos_0_2", title: "Peso para la Edad (Niños 0-2 años)" },
+                      { id: "peso_talla_ninas_0_2", title: "Peso para la Talla (Niñas 0-2 años)" },
+                      { id: "peso_edad_ninas_0_2", title: "Peso para la Edad (Niñas 0-2 años)" },
+                    ].map(chart => {
+                      const currentUrl = omsCalibrations?.[chart.id]?.image_url;
+                      return (
+                        <div key={chart.id} style={{ border: "1px solid var(--slate-200)", padding: "16px", borderRadius: "8px", display: "flex", gap: "16px", alignItems: "flex-start" }}>
+                          <div style={{ flex: 1 }}>
+                            <h3 style={{ fontSize: "14px", fontWeight: "bold", margin: "0 0 8px 0" }}>{chart.title}</h3>
+                            <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "0 0 12px 0" }}>Elige una imagen clara (jpg/png) de la gráfica oficial.</p>
+                            <input 
+                              type="file" 
+                              id={`upload-${chart.id}`}
+                              style={{ display: "none" }}
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                startTransition(async () => {
+                                  try {
+                                    const formData = new FormData();
+                                    formData.append("file", file);
+                                    formData.append("tenantId", tenantId);
+                                    formData.append("folder", "oms_charts");
+                                    const res = await uploadImageAction(formData);
+                                    if (res.success && res.publicUrl) {
+                                      await saveOmsChartImage(chart.id, res.publicUrl);
+                                      setOmsCalibrations(prev => ({
+                                        ...prev,
+                                        [chart.id]: { ...(prev[chart.id] || {}), image_url: res.publicUrl }
+                                      }));
+                                      showToast("Imagen subida y guardada exitosamente");
+                                    } else {
+                                      showToast(res.error || "Error al subir la imagen", "error");
+                                    }
+                                  } catch (error: any) {
+                                    showToast(error.message, "error");
+                                  }
+                                });
+                              }}
+                            />
+                            <label htmlFor={`upload-${chart.id}`} className="btn btn-outline" style={{ display: "inline-block", cursor: "pointer", fontSize: "12px" }}>
+                              {isPending ? "Subiendo..." : "Subir Nueva Imagen"}
+                            </label>
+                          </div>
+                          <div style={{ width: "160px", height: "100px", background: "var(--slate-100)", border: "1px dashed var(--slate-300)", borderRadius: "6px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {currentUrl ? (
+                              <img src={currentUrl} alt={chart.title} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                            ) : (
+                              <span style={{ fontSize: "11px", color: "var(--slate-500)", textAlign: "center", padding: "8px" }}>Usando imagen por defecto</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           </div>

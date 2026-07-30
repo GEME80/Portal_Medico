@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { payInvoiceAction } from "./actions";
 import "../../admin.css";
 
 interface AdminShellProps {
@@ -13,6 +14,8 @@ interface AdminShellProps {
   accentColor: string;
   inventoryName?: string;
   isMora?: boolean;
+  isSuspended?: boolean;
+  daysRemaining?: number;
 }
 
 export default function AdminShell({
@@ -22,15 +25,19 @@ export default function AdminShell({
   primaryColor,
   accentColor,
   inventoryName = "Inventario",
-  isMora = false
+  isMora = false,
+  isSuspended = false,
+  daysRemaining = 5
 }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
 
   const navItems = [
     { href: `/${tenantSlug}/admin`, icon: "🏠", label: "Dashboard", shortLabel: "Inicio", exact: true },
+    { href: `/${tenantSlug}/admin/pacientes`, icon: "🧑‍⚕️", label: "Gestión Pacientes", shortLabel: "Pacientes", exact: false },
     { href: `/${tenantSlug}/admin/inventario`, icon: "📦", label: inventoryName, shortLabel: "Inventario", exact: false },
     { href: `/${tenantSlug}/admin/noticias`, icon: "📰", label: "Publicaciones", shortLabel: "Noticias", exact: false },
     { href: `/${tenantSlug}/admin/personalizar`, icon: "🎨", label: "Personalizar el Portal", shortLabel: "Portal", exact: false },
@@ -54,118 +61,30 @@ export default function AdminShell({
     }
   };
 
+  const handlePaymentSimulation = async () => {
+    setIsPaying(true);
+    try {
+      const res = await payInvoiceAction(tenantSlug);
+      if (res.success) {
+        // Force a hard reload so the layout re-reads tenant state from server
+        window.location.reload();
+      } else {
+        alert(`Error al simular pago: ${res.error}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Ocurrió un error inesperado al procesar el pago.");
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
   const activeItem = navItems.find(item => isActive(item.href, item.exact));
   const activeLabel = activeItem?.label || "Admin";
 
   return (
     <div className="admin-shell" style={{ minHeight: "100vh", position: "relative" }}>
-      {/* ── MORA / PAGO EXPIRADO BLOCKING OVERLAY ───────────────── */}
-      {isMora && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(11, 15, 25, 0.85)",
-          backdropFilter: "blur(16px)",
-          zIndex: 9999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "24px"
-        }}>
-          <div style={{
-            maxWidth: "480px",
-            width: "100%",
-            background: "#0f172a",
-            border: "1px solid rgba(245, 158, 11, 0.3)",
-            borderRadius: "24px",
-            padding: "40px",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(245, 158, 11, 0.1)",
-            textAlign: "center",
-            fontFamily: "'Outfit', sans-serif"
-          }}>
-            <div style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "64px",
-              height: "64px",
-              background: "rgba(245, 158, 11, 0.1)",
-              border: "1px solid rgba(245, 158, 11, 0.3)",
-              borderRadius: "20px",
-              fontSize: "32px",
-              marginBottom: "24px",
-              color: "#f59e0b"
-            }}>
-              ⚠️
-            </div>
-            
-            <h2 style={{
-              fontSize: "24px",
-              fontWeight: 800,
-              color: "#ffffff",
-              margin: "0 0 12px 0",
-              letterSpacing: "-0.02em"
-            }}>
-              Suscripción en Mora
-            </h2>
-            <p style={{
-              fontSize: "15px",
-              color: "rgba(255,255,255,0.6)",
-              lineHeight: 1.6,
-              margin: "0 0 32px 0"
-            }}>
-              Tu suscripción tiene un pago pendiente. Por favor regulariza tu situación para continuar usando el panel de administración.
-            </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-              <button
-                onClick={handleLogout}
-                style={{
-                  flex: 1,
-                  minWidth: "120px",
-                  padding: "14px",
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "12px",
-                  color: "rgba(255,255,255,0.7)",
-                  fontSize: "14px",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s",
-                  fontFamily: "inherit",
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)"}
-                onMouseOut={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)"}
-              >
-                Cerrar Sesión
-              </button>
-              
-              <a
-                href="mailto:soporte@hubmed.app?subject=Reactivacion%20de%20Cuenta"
-                style={{
-                  flex: 1,
-                  minWidth: "120px",
-                  padding: "14px",
-                  background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                  borderRadius: "12px",
-                  color: "#0f172a",
-                  fontSize: "14px",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s",
-                  fontFamily: "inherit",
-                  display: "inline-block"
-                }}
-                onMouseOver={(e) => e.currentTarget.style.opacity = "0.9"}
-                onMouseOut={(e) => e.currentTarget.style.opacity = "1"}
-              >
-                Contactar Soporte
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* ── MOBILE HEADER ─────────────────────────────────────────── */}
       <header className="admin-mobile-header">
@@ -225,20 +144,31 @@ export default function AdminShell({
         <nav className="sidebar-nav" style={{ flex: 1 }} aria-label="Menú móvil">
           <span className="sidebar-section-label">Gestión Operativa</span>
           {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`sidebar-link${isActive(item.href, item.exact) ? " active" : ""}`}
-              aria-current={isActive(item.href, item.exact) ? "page" : undefined}
-              style={isActive(item.href, item.exact) ? {
-                background: "rgba(255, 255, 255, 0.08)",
-                color: "#ffffff",
-                borderLeft: `3px solid ${accentColor}`
-              } : undefined}
-            >
-              <span className="sidebar-link-icon">{item.icon}</span>
-              {item.label}
-            </Link>
+            isSuspended ? (
+              <span
+                key={item.href}
+                className="sidebar-link"
+                style={{ opacity: 0.35, cursor: "not-allowed", pointerEvents: "none", userSelect: "none" }}
+              >
+                <span className="sidebar-link-icon">{item.icon}</span>
+                {item.label}
+              </span>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`sidebar-link${isActive(item.href, item.exact) ? " active" : ""}`}
+                aria-current={isActive(item.href, item.exact) ? "page" : undefined}
+                style={isActive(item.href, item.exact) ? {
+                  background: "rgba(255, 255, 255, 0.08)",
+                  color: "#ffffff",
+                  borderLeft: `3px solid ${accentColor}`
+                } : undefined}
+              >
+                <span className="sidebar-link-icon">{item.icon}</span>
+                {item.label}
+              </Link>
+            )
           ))}
 
           <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.05)", margin: "12px 0" }}></div>
@@ -296,21 +226,33 @@ export default function AdminShell({
         <nav className="sidebar-nav" aria-label="Navegación del panel admin">
           <span className="sidebar-section-label">Gestión Operativa</span>
           {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`sidebar-link${isActive(item.href, item.exact) ? " active" : ""}`}
-              aria-current={isActive(item.href, item.exact) ? "page" : undefined}
-              style={isActive(item.href, item.exact) ? {
-                background: "rgba(255, 255, 255, 0.08)",
-                color: "#ffffff",
-                borderLeft: `3px solid ${accentColor}`
-              } : undefined}
-            >
-              <span className="sidebar-link-icon">{item.icon}</span>
-              {item.label}
-            </Link>
+            isSuspended ? (
+              <span
+                key={item.href}
+                className="sidebar-link"
+                style={{ opacity: 0.35, cursor: "not-allowed", pointerEvents: "none", userSelect: "none" }}
+              >
+                <span className="sidebar-link-icon">{item.icon}</span>
+                {item.label}
+              </span>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`sidebar-link${isActive(item.href, item.exact) ? " active" : ""}`}
+                aria-current={isActive(item.href, item.exact) ? "page" : undefined}
+                style={isActive(item.href, item.exact) ? {
+                  background: "rgba(255, 255, 255, 0.08)",
+                  color: "#ffffff",
+                  borderLeft: `3px solid ${accentColor}`
+                } : undefined}
+              >
+                <span className="sidebar-link-icon">{item.icon}</span>
+                {item.label}
+              </Link>
+            )
           ))}
+
 
           <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.05)", margin: "12px 0" }}></div>
 
@@ -346,7 +288,185 @@ export default function AdminShell({
       </aside>
 
       {/* ── MAIN CONTENT ──────────────────────────────────────────── */}
-      <div className="admin-main">
+      <div className="admin-main" style={{ position: "relative" }}>
+        {/* ── EN MORA: Banner sticky en la parte superior ── */}
+        {isMora && (
+          <div style={{
+            background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+            color: "#1a0a00",
+            padding: "14px 24px",
+            fontSize: "14px",
+            fontWeight: 600,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+            boxShadow: "0 4px 16px rgba(245, 158, 11, 0.35)",
+            position: "sticky",
+            top: 0,
+            zIndex: 99,
+            fontFamily: "'Outfit', sans-serif",
+            flexWrap: "wrap",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
+              <span style={{ fontSize: "22px" }}>⚠️</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: "15px" }}>Suscripción en mora</div>
+                <div style={{ fontWeight: 500, opacity: 0.85, fontSize: "13px" }}>
+                  Tu cuenta vence en <strong>{daysRemaining} {daysRemaining === 1 ? "día" : "días"}</strong>. Realiza el pago para evitar la suspensión del servicio.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handlePaymentSimulation}
+              disabled={isPaying}
+              style={{
+                background: "#1a0a00",
+                color: "#fde68a",
+                border: "2px solid rgba(255,255,255,0.2)",
+                padding: "8px 20px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 800,
+                cursor: isPaying ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap",
+                transition: "all 0.15s",
+                fontFamily: "inherit",
+                letterSpacing: "0.3px",
+                opacity: isPaying ? 0.7 : 1,
+              }}
+            >
+              {isPaying ? "⏳ Procesando..." : "💳 Pagar Ahora"}
+            </button>
+          </div>
+        )}
+
+        {/* ── SUSPENDIDO: Modal bloqueador sobre el contenido ── */}
+        {isSuspended && (
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(15, 23, 42, 0.88)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+          }}>
+            {/* Watermark diagonal */}
+            <div style={{
+              position: "absolute",
+              inset: 0,
+              overflow: "hidden",
+              pointerEvents: "none",
+              opacity: 0.06,
+              display: "flex",
+              flexWrap: "wrap",
+              alignContent: "space-around",
+              justifyContent: "space-around",
+              transform: "rotate(-20deg) scale(1.4)",
+            }}>
+              {Array.from({ length: 20 }).map((_, i) => (
+                <div key={i} style={{
+                  fontSize: "32px",
+                  fontWeight: 900,
+                  color: "#ef4444",
+                  fontFamily: "sans-serif",
+                  margin: "32px",
+                  whiteSpace: "nowrap",
+                  letterSpacing: "4px",
+                }}>
+                  SUSPENDIDO
+                </div>
+              ))}
+            </div>
+
+            {/* Modal card */}
+            <div style={{
+              background: "#0f172a",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "20px",
+              padding: "48px 40px",
+              maxWidth: "480px",
+              width: "90%",
+              textAlign: "center",
+              position: "relative",
+              zIndex: 1,
+              boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(239,68,68,0.1)",
+            }}>
+              <div style={{
+                width: "72px",
+                height: "72px",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #7f1d1d, #ef4444)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "32px",
+                margin: "0 auto 20px",
+                boxShadow: "0 8px 24px rgba(239,68,68,0.4)",
+              }}>🔒</div>
+
+              <h2 style={{
+                color: "#fca5a5",
+                fontSize: "22px",
+                fontWeight: 800,
+                margin: "0 0 12px",
+                fontFamily: "'Outfit', sans-serif",
+              }}>Portal Suspendido</h2>
+
+              <p style={{
+                color: "#94a3b8",
+                fontSize: "14px",
+                lineHeight: 1.6,
+                margin: "0 0 32px",
+                fontFamily: "'Outfit', sans-serif",
+              }}>
+                El acceso a este portal ha sido suspendido por falta de pago. Para reactivar tu cuenta, realiza el pago de tu suscripción.
+              </p>
+
+              <button
+                onClick={handlePaymentSimulation}
+                disabled={isPaying}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                  color: "#fff",
+                  border: "none",
+                  padding: "14px 32px",
+                  borderRadius: "12px",
+                  fontSize: "15px",
+                  fontWeight: 800,
+                  cursor: isPaying ? "not-allowed" : "pointer",
+                  width: "100%",
+                  justifyContent: "center",
+                  fontFamily: "'Outfit', sans-serif",
+                  letterSpacing: "0.3px",
+                  opacity: isPaying ? 0.7 : 1,
+                  boxShadow: "0 4px 16px rgba(239,68,68,0.4)",
+                  transition: "all 0.15s",
+                }}
+              >
+                {isPaying ? "⏳ Procesando pago..." : "💳 Pagar y Reactivar Portal"}
+              </button>
+
+              <p style={{
+                color: "#475569",
+                fontSize: "12px",
+                marginTop: "16px",
+                fontFamily: "'Outfit', sans-serif",
+              }}>
+                ¿Necesitas ayuda? Contacta a soporte en{" "}
+                <a href="mailto:soporte@hubmed.co" style={{ color: "#64748b", textDecoration: "underline" }}>soporte@hubmed.co</a>
+              </p>
+            </div>
+          </div>
+        )}
+
         {children}
       </div>
 
