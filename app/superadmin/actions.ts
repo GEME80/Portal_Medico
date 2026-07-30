@@ -243,3 +243,38 @@ export async function testDbConnectionAction() {
     return { success: false, error: errorMsg };
   }
 }
+
+export async function seedCie10Action() {
+  const supabase = createAdminClient();
+  
+  try {
+    const res = await fetch("https://raw.githubusercontent.com/cayasso/cie10/master/cie10-array.json");
+    if (!res.ok) throw new Error("No se pudo descargar el catálogo CIE-10 desde GitHub.");
+    
+    const cie10Data = await res.json();
+    if (!Array.isArray(cie10Data)) throw new Error("El archivo JSON descargado no es un array válido.");
+
+    const records = cie10Data.map((item: any) => ({
+      codigo: item.c,
+      descripcion: item.d,
+      activo: true
+    }));
+
+    // Limpiar catálogo previo para evitar duplicados
+    await supabase.from("catalogo_cie10").delete().neq("codigo", "PLACEHOLDER_NOT_FOUND");
+
+    // Insertar en lotes de 1000
+    const BATCH_SIZE = 1000;
+    for (let i = 0; i < records.length; i += BATCH_SIZE) {
+      const batch = records.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase.from("catalogo_cie10").insert(batch);
+      if (error) throw new Error(`Error en lote de inserción: ${error.message}`);
+    }
+
+    return { success: true, count: records.length };
+  } catch (err: any) {
+    console.error("CIE-10 seeding action failed:", err);
+    return { success: false, error: err.message };
+  }
+}
+

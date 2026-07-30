@@ -1,5 +1,7 @@
 import ConnectionTester from "./components/ConnectionTester";
 import MaskedKey from "./components/MaskedKey";
+import Cie10Seeder from "./components/Cie10Seeder";
+
 
 export default async function SuperadminConfigPage() {
   // Read env vars securely on server side
@@ -53,6 +55,8 @@ export default async function SuperadminConfigPage() {
             <MaskedKey label="API Key Pública (Anon Key)" secretKey={supabaseAnonKey} />
 
             <ConnectionTester serviceKey={supabaseServiceKey} />
+
+            <Cie10Seeder />
           </div>
         </section>
 
