@@ -1,4 +1,5 @@
 'use server';
+// Trigger redeploy to apply Vercel environment variables change (CLINICAL_ENCRYPTION_KEY)
 
 import { cookies } from 'next/headers';
 import { encryptClinicalData, decryptClinicalData } from '@/lib/crypto';
