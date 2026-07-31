@@ -26,7 +26,7 @@ export default async function SuperadminLayout({ children }: SuperadminLayoutPro
   // Validate session and role
   const { data: { user } } = await supabase.auth.getUser();
 
-  const isSuperadmin = user?.email === process.env.SUPERADMIN_EMAIL || user?.email === "gerkof@gmail.com" || user?.app_metadata?.role === "superadmin";
+  const isSuperadmin = user?.email?.toLowerCase() === process.env.SUPERADMIN_EMAIL?.toLowerCase() || user?.email?.toLowerCase() === "gerkof@gmail.com" || user?.app_metadata?.role === "superadmin";
 
   if (!user || !isSuperadmin) {
     redirect("/superadmin/login");
