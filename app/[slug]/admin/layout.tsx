@@ -40,7 +40,7 @@ export default async function TenantAdminLayout({ children, params }: Props) {
   // Check if current user is superadmin (auth session is not affected by RLS)
   const authSupabase = await createClient();
   const { data: { user } } = await authSupabase.auth.getUser();
-  const isSuperadmin = user?.email === process.env.SUPERADMIN_EMAIL || user?.app_metadata?.role === "superadmin";
+  const isSuperadmin = user?.email === process.env.SUPERADMIN_EMAIL || user?.email === "gerkof@gmail.com" || user?.app_metadata?.role === "superadmin";
   const isMora = tenant.estado_pago === "mora";
   const isSuspended = !tenant.activo || tenant.estado_pago === "suspendido";
 

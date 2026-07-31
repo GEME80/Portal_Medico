@@ -52,7 +52,7 @@ export default async function TenantLayout({ children, params }: TenantLayoutPro
   // Get user session to bypass suspension if superadmin
   const authSupabase = await createClient();
   const { data: { user } } = await authSupabase.auth.getUser();
-  const isSuperadmin = user?.email === process.env.SUPERADMIN_EMAIL || user?.app_metadata?.role === "superadmin";
+  const isSuperadmin = user?.email === process.env.SUPERADMIN_EMAIL || user?.email === "gerkof@gmail.com" || user?.app_metadata?.role === "superadmin";
   const isSuspended = (!tenant.activo || tenant.estado_pago === "suspendido") && !isSuperadmin;
 
   // Load portal config and active alert in parallel

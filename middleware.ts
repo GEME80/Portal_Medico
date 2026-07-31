@@ -107,7 +107,7 @@ export async function middleware(request: NextRequest) {
 
   // 5. Handle Suspension (Except if the user is a superadmin, allowing supervision)
   // Suspended status is handled visually inside layouts for a better UX (modal popup overlay)
-  const isSuperadminUser = user?.email === process.env.SUPERADMIN_EMAIL || user?.app_metadata?.role === "superadmin";
+  const isSuperadminUser = user?.email === process.env.SUPERADMIN_EMAIL || user?.email === "gerkof@gmail.com" || user?.app_metadata?.role === "superadmin";
 
   // 6. Access Control: Protect Superadmin routes
   const isSuperadminRoute = pathname.startsWith("/superadmin");
