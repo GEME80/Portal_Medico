@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { guardarHistoriaClinica, crearPacienteExpress, buscarCIE10, getDiagnosticosMasUsados } from "@/lib/actions/clinical-actions";
+import CustomConfirmModal from "@/components/CustomConfirmModal";
 
 
 export default function PacientesPage({ params }: { params: { slug: string } }) {
@@ -28,6 +29,15 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
   // Selected or New Patient state
   const [selectedPacienteId, setSelectedPacienteId] = useState<string | null>(null);
   const [selectedPacienteData, setSelectedPacienteData] = useState<any>(null);
+  const [showConfirmCerrar, setShowConfirmCerrar] = useState(false);
+
+  const handleConfirmCerrar = () => {
+    setShowConfirmCerrar(false);
+    const form = document.getElementById('clinical-form') as HTMLFormElement;
+    if (form) {
+      handleSubmit(form, "cerrado");
+    }
+  };
   
   // Vitals State
   const [peso, setPeso] = useState<string>("");
@@ -769,9 +779,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                         onClick={(e) => {
                           const form = document.getElementById('clinical-form') as HTMLFormElement;
                           if (form.checkValidity()) {
-                            if (window.confirm("¿Estás seguro de FIRMAR y CERRAR esta historia? No podrá ser modificada posteriormente.")) {
-                              handleSubmit(form, "cerrado");
-                            }
+                            setShowConfirmCerrar(true);
                           } else {
                             const invalidElement = form.querySelector(':invalid');
                             if (invalidElement) {
@@ -813,6 +821,16 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
           </div>
         </div>
       )}
+
+      <CustomConfirmModal
+        isOpen={showConfirmCerrar}
+        title="Firmar y Cerrar Historia"
+        message="¿Estás seguro de FIRMAR y CERRAR esta historia clínica? Una vez firmada, no podrá ser modificada posteriormente."
+        confirmText="Firmar y Cerrar 🔒"
+        cancelText="Cancelar"
+        onConfirm={handleConfirmCerrar}
+        onCancel={() => setShowConfirmCerrar(false)}
+      />
     </div>
   );
 }

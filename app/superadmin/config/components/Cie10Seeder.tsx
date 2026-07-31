@@ -2,16 +2,20 @@
 
 import { useState } from "react";
 import { seedCie10Action } from "../../actions";
+import CustomConfirmModal from "@/components/CustomConfirmModal";
 
 export default function Cie10Seeder({ initialCount = 0 }: { initialCount?: number }) {
   const [seeding, setSeeding] = useState(false);
   const [currentCount, setCurrentCount] = useState(initialCount);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleSeed = async () => {
-    if (!confirm("¿Estás seguro de que deseas descargar e importar el catálogo CIE-10 completo en esta base de datos? Esto eliminará registros previos para evitar duplicados.")) {
-      return;
-    }
+  const handleSeed = () => {
+    setShowConfirm(true);
+  };
+
+  const executeSeed = async () => {
+    setShowConfirm(false);
     setSeeding(true);
     setResult(null);
     try {
@@ -77,6 +81,16 @@ export default function Cie10Seeder({ initialCount = 0 }: { initialCount?: numbe
           {result.message}
         </div>
       )}
+
+      <CustomConfirmModal
+        isOpen={showConfirm}
+        title="Confirmar Semillado"
+        message="¿Estás seguro de que deseas descargar e importar el catálogo CIE-10 completo en esta base de datos? Esto eliminará registros previos para evitar duplicados."
+        confirmText="⚡ Semillar"
+        cancelText="Cancelar"
+        onConfirm={executeSeed}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }

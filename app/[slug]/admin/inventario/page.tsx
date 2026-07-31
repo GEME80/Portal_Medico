@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import CustomConfirmModal from "@/components/CustomConfirmModal";
 
 type EstadoStock = "ok" | "low" | "critical";
 type TipoMovimiento = "ENTRADA" | "SALIDA";
@@ -125,6 +126,14 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"catalogo" | "categorias">("catalogo");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("all");
+
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
 
   const supabase = createClient();
 
@@ -554,14 +563,24 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   };
 
   const handleGenerarPruebas = async () => {
-    if (!confirm("¿Generar datos de prueba para los últimos 6 meses?")) return;
-    
     const items = vacunas;
     if (items.length === 0) {
-      alert("Debes crear al menos un ítem primero.");
+      addToast("Debes crear al menos un ítem primero.", "error");
       return;
     }
 
+    setConfirmConfig({
+      isOpen: true,
+      title: "Generar Datos de Prueba",
+      message: "¿Está seguro de que desea generar datos de prueba de inventario para los últimos 6 meses? Esto agregará movimientos simulados automáticamente.",
+      onConfirm: () => {
+        setConfirmConfig(null);
+        startGenerarPruebas(items);
+      }
+    });
+  };
+
+  const startGenerarPruebas = async (items: any[]) => {
     try {
       const newMovements = [];
       const newLotes = [];
@@ -569,51 +588,53 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       
       // Generar 30 salidas aleatorias
       for (let i = 0; i < 30; i++) {
-        const randomItem = items[Math.floor(Math.random() * items.length)];
-        const randomMonthOffset = Math.floor(Math.random() * 6); // 0 a 5 meses atras
-        const testDate = new Date();
-        testDate.setMonth(todayDate.getMonth() - randomMonthOffset);
-        testDate.setDate(Math.floor(Math.random() * 28) + 1);
-        
+        const item = items[Math.floor(Math.random() * items.length)];
+        const daysAgo = Math.floor(Math.random() * 180);
+        const date = new Date(todayDate);
+        date.setDate(date.getDate() - daysAgo);
+
         newMovements.push({
           tenant_id: tenantId,
-          item_id: randomItem.id,
+          item_id: item.id,
           tipo_movimiento: "SALIDA",
-          cantidad: 1,
-          notas: "Prueba generada",
-          fecha: testDate.toISOString().split("T")[0],
-          valor_unitario_cobrado: Math.random() > 0.5 ? randomItem.valorMayorista : randomItem.precioVenta
+          cantidad: Math.floor(Math.random() * 5) + 1,
+          motivo: "Consumo simulación",
+          notas: "Simulación de consumo de consulta",
+          fecha: date.toISOString().split("T")[0],
+          valor_unitario_cobrado: item.precio_venta || 0
         });
       }
 
-      // Generar 2 lotes para algunos ítems para probar inflación
-      for (let i = 0; i < Math.min(3, items.length); i++) {
-        const item = items[i];
-        const basePrice = Number(item.valorMayorista) || 10000;
-        
-        // Lote antiguo (hace 2 meses)
-        const dateAntiguo = new Date();
-        dateAntiguo.setMonth(todayDate.getMonth() - 2);
+      // Generar 15 entradas aleatorias de lotes
+      for (let i = 0; i < 15; i++) {
+        const item = items[Math.floor(Math.random() * items.length)];
+        const daysAgo = Math.floor(Math.random() * 180);
+        const date = new Date(todayDate);
+        date.setDate(date.getDate() - daysAgo);
+        const basePrice = item.valor_mayorista || 10000;
+        const inflacion = 1 + (Math.random() * 0.08); // Simular inflación ligera
+
+        const loteNum = `LT-${Math.floor(100000 + Math.random() * 900000)}`;
+        const expDate = new Date(date);
+        expDate.setMonth(expDate.getMonth() + 18); // Vence en 18 meses
+
         newLotes.push({
           tenant_id: tenantId,
           item_id: item.id,
-          lote: `TEST-A-${i}`,
-          cantidad_inicial: 10,
-          fecha_vencimiento: new Date(todayDate.getFullYear() + 1, 0, 1).toISOString(),
-          precio_compra: basePrice,
-          fecha_registro: dateAntiguo.toISOString()
+          numero_lote: loteNum,
+          cantidad: Math.floor(Math.random() * 50) + 10,
+          fecha_fabricacion: date.toISOString().split("T")[0],
+          fecha_vencimiento: expDate.toISOString().split("T")[0]
         });
 
-        // Lote nuevo (este mes) con 15-30% de inflación
-        const inflacion = 1 + (Math.floor(Math.random() * 15) + 15) / 100;
-        newLotes.push({
+        newMovements.push({
           tenant_id: tenantId,
           item_id: item.id,
-          lote: `TEST-N-${i}`,
-          cantidad_inicial: 10,
-          fecha_vencimiento: new Date(todayDate.getFullYear() + 2, 0, 1).toISOString(),
-          precio_compra: Math.floor(basePrice * inflacion),
-          fecha_registro: todayDate.toISOString()
+          tipo_movimiento: "ENTRADA",
+          cantidad: Math.floor(Math.random() * 50) + 10,
+          motivo: "Compra simulación",
+          notas: `Compra simulación lote ${loteNum}`,
+          fecha: date.toISOString().split("T")[0]
         });
       }
       
@@ -630,16 +651,24 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   };
 
   const handleResetearPruebas = async () => {
-    if (!confirm("⚠️ PELIGRO: Esto borrará TODOS los movimientos y dejará el stock en 0. ¿Estás seguro?")) return;
-    try {
-      await supabase.from("movimientos_inventario").delete().eq("tenant_id", tenantId);
-      await supabase.from("inventario_medico").update({ stock_actual: 0 }).eq("tenant_id", tenantId);
-      alert("Sistema reseteado a 0.");
-      await loadData(tenantId);
-    } catch (err) {
-      console.error(err);
-      alert("Error al resetear el sistema.");
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: "Reiniciar Inventario",
+      message: "⚠️ PELIGRO: Esto borrará TODOS los movimientos de inventario y dejará el stock en 0. ¿Estás absolutamente seguro de que deseas continuar?",
+      isDanger: true,
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        try {
+          await supabase.from("movimientos_inventario").delete().eq("tenant_id", tenantId);
+          await supabase.from("inventario_medico").update({ stock_actual: 0 }).eq("tenant_id", tenantId);
+          addToast("✅ Sistema reseteado a 0.");
+          await loadData(tenantId);
+        } catch (err) {
+          console.error(err);
+          addToast("Error al resetear el sistema.", "error");
+        }
+      }
+    });
   };
 
   // ── FILTERED ──────────────────────────────────────────────────────
@@ -1644,6 +1673,16 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       </dialog>
 
       {/* TOASTS */}
+      {confirmConfig && (
+        <CustomConfirmModal
+          isOpen={confirmConfig.isOpen}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          isDanger={confirmConfig.isDanger}
+          onConfirm={confirmConfig.onConfirm}
+          onCancel={() => setConfirmConfig(null)}
+        />
+      )}
       <ToastContainer toasts={toasts} />
     </>
   );

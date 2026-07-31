@@ -11,6 +11,7 @@ import {
 } from "./actions";
 import EmojiPicker from 'emoji-picker-react';
 import dynamic from 'next/dynamic';
+import CustomConfirmModal from "@/components/CustomConfirmModal";
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ssr: false });
 
@@ -67,6 +68,14 @@ export default function AdminNoticiasPage({ params }: Props) {
   const [editingCat, setEditingCat]         = useState<Partial<Categoria> | null>(null);
   const [showEmojiPickerCat, setShowEmojiPickerCat] = useState(false);
 
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
+
   const supabase = createClient();
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
@@ -118,14 +127,22 @@ export default function AdminNoticiasPage({ params }: Props) {
   };
 
   const handleDeletePost = async (postId: string) => {
-    if (!confirm("¿Está seguro de que desea eliminar esta publicación?")) return;
-    startTransition(async () => {
-      const { error } = await supabase.from("noticias_posts").delete().eq("id", postId);
-      if (error) showToast("Error al eliminar: " + error.message, "error");
-      else {
-        showToast("✅ Publicación eliminada");
-        await revalidateTenantPagesAction(tenantSlug);
-        loadPosts(tenantId);
+    setConfirmConfig({
+      isOpen: true,
+      title: "Eliminar Publicación",
+      message: "¿Está seguro de que desea eliminar esta publicación? Esta acción no se puede deshacer.",
+      isDanger: true,
+      onConfirm: () => {
+        setConfirmConfig(null);
+        startTransition(async () => {
+          const { error } = await supabase.from("noticias_posts").delete().eq("id", postId);
+          if (error) showToast("Error al eliminar: " + error.message, "error");
+          else {
+            showToast("✅ Publicación eliminada");
+            await revalidateTenantPagesAction(tenantSlug);
+            loadPosts(tenantId);
+          }
+        });
       }
     });
   };
@@ -199,13 +216,21 @@ export default function AdminNoticiasPage({ params }: Props) {
 
   const handleDeleteCat = async (cat: Categoria) => {
     if (!cat.id) return;
-    if (!confirm(`¿Eliminar la categoría "${cat.nombre}"?`)) return;
-    startTransition(async () => {
-      const res = await deleteCategoriaAction(cat.id!, tenantId, cat.nombre);
-      if (!res.success) showToast(res.error || "Error al eliminar", "error");
-      else {
-        showToast("✅ Categoría eliminada");
-        loadCategorias(tenantId);
+    setConfirmConfig({
+      isOpen: true,
+      title: "Eliminar Categoría",
+      message: `¿Está seguro de que desea eliminar la categoría "${cat.nombre}"? Esta acción no se puede deshacer.`,
+      isDanger: true,
+      onConfirm: () => {
+        setConfirmConfig(null);
+        startTransition(async () => {
+          const res = await deleteCategoriaAction(cat.id!, tenantId, cat.nombre);
+          if (!res.success) showToast(res.error || "Error al eliminar", "error");
+          else {
+            showToast("✅ Categoría eliminada");
+            loadCategorias(tenantId);
+          }
+        });
       }
     });
   };
@@ -695,6 +720,17 @@ export default function AdminNoticiasPage({ params }: Props) {
             {toast.msg}
           </div>
         </div>
+      )}
+
+      {confirmConfig && (
+        <CustomConfirmModal
+          isOpen={confirmConfig.isOpen}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          isDanger={confirmConfig.isDanger}
+          onConfirm={confirmConfig.onConfirm}
+          onCancel={() => setConfirmConfig(null)}
+        />
       )}
     </>
   );
