@@ -6,144 +6,154 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 
 export async function guardarHistoriaClinica(data: any, slug: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error('No autorizado');
-  }
+    if (!user) {
+      return { success: false, error: 'No autorizado: Sesión inválida' };
+    }
 
-  let tenantId = user.app_metadata?.tenant_id;
-  if (!tenantId) {
-    const slug_to_use = user.app_metadata?.tenant_slug || slug;
-    const { data: t } = await supabase.from('tenants').select('id').eq('slug', slug_to_use).single();
-    if (t) tenantId = t.id;
-  }
-  if (!tenantId) {
-    throw new Error('No autorizado: Sin tenant_id');
-  }
+    let tenantId = user.app_metadata?.tenant_id;
+    if (!tenantId) {
+      const slug_to_use = user.app_metadata?.tenant_slug || slug;
+      const { data: t } = await supabase.from('tenants').select('id').eq('slug', slug_to_use).single();
+      if (t) tenantId = t.id;
+    }
+    if (!tenantId) {
+      return { success: false, error: 'No autorizado: Sin tenant_id asignado' };
+    }
 
-  let snapshotDemografico = null;
-  const isCierre = data.estado === 'cerrado';
+    let snapshotDemografico = null;
+    const isCierre = data.estado === 'cerrado';
 
-  if (isCierre) {
-    // Tomar snapshot del paciente
-    const { data: paciente } = await supabase
-      .from('pacientes')
-      .select('*')
-      .eq('id', data.paciente_id)
-      .eq('tenant_id', tenantId)
+    if (isCierre) {
+      // Tomar snapshot del paciente
+      const { data: paciente } = await supabase
+        .from('pacientes')
+        .select('*')
+        .eq('id', data.paciente_id)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (paciente) {
+        snapshotDemografico = paciente;
+      }
+    }
+
+    // Encriptar solo campos de evolución médica, dejando el resto en texto plano/JSONB
+    const historiaData = {
+      tenant_id: tenantId,
+      paciente_id: data.paciente_id,
+      medico_id: user.id,
+      estado: data.estado,
+      enfermedad_actual: encryptClinicalData(data.enfermedad_actual),
+      motivo_consulta: encryptClinicalData(data.motivo_consulta),
+      anamnesis: encryptClinicalData(data.anamnesis),
+      plan_manejo: encryptClinicalData(data.plan_manejo),
+      impresion_diagnostica: data.impresion_diagnostica || [],
+      procedimientos: data.procedimientos || [],
+      facturacion: data.facturacion || {},
+      metadatos_atencion: data.metadatos_atencion || {},
+      signos_vitales: data.signos_vitales || {},
+      snapshot_demografico: snapshotDemografico,
+      parent_id: data.parent_id || null,
+      closed_at: isCierre ? new Date().toISOString() : null,
+    };
+
+    const { data: nuevaHistoria, error } = await supabase
+      .from('historias_clinicas')
+      .insert([historiaData])
+      .select()
       .single();
 
-    if (paciente) {
-      snapshotDemografico = paciente;
+    if (error) {
+      console.error("Error al guardar historia:", error);
+      return { success: false, error: 'Error al guardar la historia clínica: ' + error.message };
     }
+
+    // Log de auditoría
+    await supabase.from('logs_auditoria').insert([{
+      tenant_id: tenantId,
+      usuario_id: user.id,
+      accion: isCierre ? 'CIERRE_HISTORIA' : 'GUARDAR_BORRADOR',
+      entidad: 'historias_clinicas',
+      entidad_id: nuevaHistoria.id,
+      detalles: 'Historia guardada correctamente',
+      ip_address: '127.0.0.1'
+    }]);
+
+    revalidatePath(`/${slug}/admin/pacientes`);
+    return { success: true, data: nuevaHistoria };
+  } catch (err: any) {
+    console.error("Crash al guardar historia clinica:", err);
+    return { success: false, error: err.message || 'Error inesperado al guardar la historia clínica.' };
   }
-
-  // Encriptar solo campos de evolución médica, dejando el resto en texto plano/JSONB
-  const historiaData = {
-    tenant_id: tenantId,
-    paciente_id: data.paciente_id,
-    medico_id: user.id,
-    estado: data.estado,
-    enfermedad_actual: encryptClinicalData(data.enfermedad_actual),
-    motivo_consulta: encryptClinicalData(data.motivo_consulta),
-    anamnesis: encryptClinicalData(data.anamnesis),
-    plan_manejo: encryptClinicalData(data.plan_manejo),
-    impresion_diagnostica: data.impresion_diagnostica || [],
-    procedimientos: data.procedimientos || [],
-    facturacion: data.facturacion || {},
-    metadatos_atencion: data.metadatos_atencion || {},
-    signos_vitales: data.signos_vitales || {},
-    snapshot_demografico: snapshotDemografico,
-    parent_id: data.parent_id || null,
-    closed_at: isCierre ? new Date().toISOString() : null,
-  };
-
-  const { data: nuevaHistoria, error } = await supabase
-    .from('historias_clinicas')
-    .insert([historiaData])
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error al guardar historia:", error);
-    throw new Error('Error al guardar la historia clínica.');
-  }
-
-  // Log de auditoría
-  await supabase.from('logs_auditoria').insert([{
-    tenant_id: tenantId,
-    usuario_id: user.id,
-    accion: isCierre ? 'CIERRE_HISTORIA' : 'GUARDAR_BORRADOR',
-    entidad: 'historias_clinicas',
-    entidad_id: nuevaHistoria.id,
-    detalles: 'Historia guardada correctamente',
-    ip_address: '127.0.0.1' // In a real setup, get from request headers
-  }]);
-
-  revalidatePath(`/${slug}/admin/pacientes`);
-  return { success: true, data: nuevaHistoria };
 }
 
 export async function crearPacienteExpress(data: any, slug: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error('No autorizado');
-  }
+    if (!user) {
+      return { success: false, error: 'No autorizado' };
+    }
 
-  let tenantId = user.app_metadata?.tenant_id;
-  if (!tenantId) {
-    const slug_to_use = user.app_metadata?.tenant_slug || slug;
-    const { data: t } = await supabase.from('tenants').select('id').eq('slug', slug_to_use).single();
-    if (t) tenantId = t.id;
-  }
-  if (!tenantId) {
-    throw new Error('No autorizado: Sin tenant_id');
-  }
+    let tenantId = user.app_metadata?.tenant_id;
+    if (!tenantId) {
+      const slug_to_use = user.app_metadata?.tenant_slug || slug;
+      const { data: t } = await supabase.from('tenants').select('id').eq('slug', slug_to_use).single();
+      if (t) tenantId = t.id;
+    }
+    if (!tenantId) {
+      return { success: false, error: 'No autorizado: Sin tenant_id' };
+    }
 
-  const { data: nuevoPaciente, error } = await supabase
-    .from('pacientes')
-    .insert([{
+    const { data: nuevoPaciente, error } = await supabase
+      .from('pacientes')
+      .insert([{
+        tenant_id: tenantId,
+        documento: data.documento,
+        tipo_documento: data.tipo_documento || 'CC',
+        nombres: data.nombres,
+        apellidos: data.apellidos,
+        fecha_nacimiento: data.fecha_nacimiento,
+        genero: data.genero,
+        eps: data.eps,
+        prepagada: data.prepagada,
+        tipo_sangre: data.tipo_sangre,
+        telefono: data.telefono,
+        padre: data.padre,
+        telefono_padre: data.telefono_padre,
+        madre: data.madre,
+        telefono_madre: data.telefono_madre,
+        acompanante: data.acompanante,
+        telefono_acompanante: data.telefono_acompanante
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error al crear paciente:", error);
+      return { success: false, error: 'Error al crear el paciente. Verifique que el documento no exista: ' + error.message };
+    }
+
+    // Log auditoria
+    await supabase.from('logs_auditoria').insert([{
       tenant_id: tenantId,
-      documento: data.documento,
-      tipo_documento: data.tipo_documento || 'CC',
-      nombres: data.nombres,
-      apellidos: data.apellidos,
-      fecha_nacimiento: data.fecha_nacimiento,
-      genero: data.genero,
-      eps: data.eps,
-      prepagada: data.prepagada,
-      tipo_sangre: data.tipo_sangre,
-      telefono: data.telefono,
-      padre: data.padre,
-      telefono_padre: data.telefono_padre,
-      madre: data.madre,
-      telefono_madre: data.telefono_madre,
-      acompanante: data.acompanante,
-      telefono_acompanante: data.telefono_acompanante
-    }])
-    .select()
-    .single();
+      usuario_id: user.id,
+      accion: 'CREAR_PACIENTE_EXPRESS',
+      entidad: 'pacientes',
+      entidad_id: nuevoPaciente.id,
+      detalles: 'Paciente creado desde formulario de consulta'
+    }]);
 
-  if (error) {
-    console.error("Error al crear paciente:", error);
-    throw new Error('Error al crear el paciente. Verifique que el documento no exista.');
+    return { success: true, data: nuevoPaciente };
+  } catch (err: any) {
+    console.error("Crash al crear paciente:", err);
+    return { success: false, error: err.message || 'Error inesperado al crear el paciente.' };
   }
-
-  // Log auditoria
-  await supabase.from('logs_auditoria').insert([{
-    tenant_id: tenantId,
-    usuario_id: user.id,
-    accion: 'CREAR_PACIENTE_EXPRESS',
-    entidad: 'pacientes',
-    entidad_id: nuevoPaciente.id,
-    detalles: 'Paciente creado desde formulario de consulta'
-  }]);
-
-  return { success: true, data: nuevoPaciente };
 }
 
 export async function getHistoriaClinicaDetalle(historiaId: string) {

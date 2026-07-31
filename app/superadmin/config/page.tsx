@@ -36,6 +36,7 @@ export default async function SuperadminConfigPage() {
   const isAppUrlOk = !!process.env.NEXT_PUBLIC_APP_URL;
   const isFallbackActive = !process.env.NEXT_PUBLIC_APP_URL && !!vercelUrl;
   const isSuperadminEmailOk = !!process.env.SUPERADMIN_EMAIL;
+  const isEncryptionKeyOk = !!process.env.CLINICAL_ENCRYPTION_KEY;
 
   return (
     <div>
@@ -147,6 +148,11 @@ export default async function SuperadminConfigPage() {
             <div style={checkStyle(isSuperadminEmailOk)}>
               <span>SUPERADMIN_EMAIL</span>
               <strong>{isSuperadminEmailOk ? "Cargada ✅" : "Faltante ❌"}</strong>
+            </div>
+
+            <div style={checkStyle(isEncryptionKeyOk)}>
+              <span>CLINICAL_ENCRYPTION_KEY</span>
+              <strong>{isEncryptionKeyOk ? "Cargada ✅" : "Faltante ❌"}</strong>
             </div>
           </div>
         </section>

@@ -167,6 +167,9 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
   const handleCreatePaciente = async (formData: FormData): Promise<string> => {
     const data = Object.fromEntries(formData.entries());
     const res = await crearPacienteExpress(data, tenantSlug);
+    if (!res.success) {
+      throw new Error(res.error || 'Error al registrar el paciente.');
+    }
     return res.data.id;
   };
 
@@ -219,7 +222,12 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
         facturacion: {}
       };
 
-      await guardarHistoriaClinica(data, tenantSlug);
+      const saveRes = await guardarHistoriaClinica(data, tenantSlug);
+      if (!saveRes.success) {
+        setErrorMsg(saveRes.error || "Ocurrió un error al guardar la historia clínica.");
+        setSavingForm(false);
+        return;
+      }
       closeSlideOver();
       fetchPacientes();
       loadCieFrecuentes();
