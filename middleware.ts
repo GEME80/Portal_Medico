@@ -121,8 +121,9 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!isSuperadminUser) {
-      // Return 403 Forbidden if logged-in user is not superadmin
-      return new NextResponse("Acceso no autorizado", { status: 403 });
+      const loginUrl = new URL("/superadmin/login", request.url);
+      loginUrl.searchParams.set("error", "no_autorizado");
+      return NextResponse.redirect(loginUrl);
     }
   }
 
