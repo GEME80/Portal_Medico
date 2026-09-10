@@ -28,7 +28,7 @@ export default async function TenantAdminLayout({ children, params }: Props) {
   // Load configuration for branding (use admin client — tenant may be inactive)
   const { data: config } = await adminSupabase
     .from("configuracion_portal")
-    .select("nombre_doctor, color_primario, color_acento, nombre_menu_vacunas")
+    .select("nombre_doctor, color_primario, color_acento, nombre_menu_vacunas, habilitar_menu_vacunas")
     .eq("tenant_id", tenant.id)
     .single();
 
@@ -41,6 +41,9 @@ export default async function TenantAdminLayout({ children, params }: Props) {
   const authSupabase = await createClient();
   const { data: { user } } = await authSupabase.auth.getUser();
   const isSuperadmin = user?.email?.toLowerCase() === process.env.SUPERADMIN_EMAIL?.toLowerCase() || user?.email?.toLowerCase() === "gerkof@gmail.com" || user?.app_metadata?.role === "superadmin";
+  const userMetadataPerm = user?.user_metadata?.inventario_enabled;
+  const inventarioHabilitado = isSuperadmin || (userMetadataPerm !== undefined ? Boolean(userMetadataPerm) : (config?.habilitar_menu_vacunas !== false));
+
   const isMora = tenant.estado_pago === "mora";
   const isSuspended = !tenant.activo || tenant.estado_pago === "suspendido";
 
@@ -59,6 +62,8 @@ export default async function TenantAdminLayout({ children, params }: Props) {
       isMora={isMora && !isSuperadmin}
       isSuspended={isSuspended && !isSuperadmin}
       daysRemaining={daysRemaining}
+      isSuperadmin={isSuperadmin}
+      inventarioHabilitado={inventarioHabilitado}
     >
       {children}
     </AdminShell>

@@ -16,6 +16,8 @@ interface AdminShellProps {
   isMora?: boolean;
   isSuspended?: boolean;
   daysRemaining?: number;
+  isSuperadmin?: boolean;
+  inventarioHabilitado?: boolean;
 }
 
 export default function AdminShell({
@@ -27,7 +29,9 @@ export default function AdminShell({
   inventoryName = "Inventario",
   isMora = false,
   isSuspended = false,
-  daysRemaining = 5
+  daysRemaining = 5,
+  isSuperadmin = false,
+  inventarioHabilitado = true
 }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -35,13 +39,20 @@ export default function AdminShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
 
-  const navItems = [
-    { href: `/${tenantSlug}/admin`, icon: "🏠", label: "Dashboard", shortLabel: "Inicio", exact: true },
-    { href: `/${tenantSlug}/admin/pacientes`, icon: "🧑‍⚕️", label: "Gestión Pacientes", shortLabel: "Pacientes", exact: false },
-    { href: `/${tenantSlug}/admin/inventario`, icon: "📦", label: inventoryName, shortLabel: "Inventario", exact: false },
-    { href: `/${tenantSlug}/admin/noticias`, icon: "📰", label: "Publicaciones", shortLabel: "Noticias", exact: false },
-    { href: `/${tenantSlug}/admin/personalizar`, icon: "🎨", label: "Personalizar el Portal", shortLabel: "Portal", exact: false },
+  const rawNavItems = [
+    { href: `/${tenantSlug}/admin`, icon: "🏠", label: "Dashboard", shortLabel: "Inicio", exact: true, key: "dashboard" },
+    { href: `/${tenantSlug}/admin/pacientes`, icon: "🧑‍⚕️", label: "Gestión Pacientes", shortLabel: "Pacientes", exact: false, key: "pacientes" },
+    { href: `/${tenantSlug}/admin/inventario`, icon: "📦", label: inventoryName, shortLabel: "Inventario", exact: false, key: "inventario" },
+    { href: `/${tenantSlug}/admin/noticias`, icon: "📰", label: "Publicaciones", shortLabel: "Noticias", exact: false, key: "noticias" },
+    { href: `/${tenantSlug}/admin/personalizar`, icon: "🎨", label: "Personalizar el Portal", shortLabel: "Portal", exact: false, key: "personalizar" },
   ];
+
+  const navItems = rawNavItems.filter(item => {
+    if (item.key === "inventario" && !inventarioHabilitado && !isSuperadmin) {
+      return false;
+    }
+    return true;
+  });
 
   const isActive = (href: string, exact: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);

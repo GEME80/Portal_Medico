@@ -6,6 +6,7 @@ import CustomConfirmModal from "@/components/CustomConfirmModal";
 
 type EstadoStock = "ok" | "low" | "critical";
 type TipoMovimiento = "ENTRADA" | "SALIDA";
+type QuickFilterType = "all" | "critical" | "expiring" | "refrigerated";
 
 interface Categoria {
   id: string;
@@ -32,6 +33,7 @@ interface Movimiento {
   motivo: string;
   fecha: string;
   notas?: string;
+  valorUnitarioCobrado?: number;
 }
 
 interface InventarioItem {
@@ -46,6 +48,9 @@ interface InventarioItem {
   stockActual: number;
   precioVenta: string;
   temperatura: string;
+  esRefrigerado: boolean;
+  ubicacion: string;
+  unidadMedida: string;
   descripcion: string;
   loteActivo: string;
   movimientos: Movimiento[];
@@ -82,7 +87,7 @@ const parseCategory = (c: Categoria): ParsedCategoria => {
       };
     }
   } catch (e) {
-    // Ignore
+    // Ignore parse error fallback
   }
   return {
     id: c.id,
@@ -96,8 +101,8 @@ const parseCategory = (c: Categoria): ParsedCategoria => {
 
 const stockChipLabel: Record<EstadoStock, string> = {
   ok: "✓ OK",
-  low: "⚠ Stock Bajo",
-  critical: "● Agotado",
+  low: "⚠️ Stock Bajo",
+  critical: "🔴 Agotado",
 };
 
 const stockChipClass: Record<EstadoStock, string> = {
@@ -107,6 +112,13 @@ const stockChipClass: Record<EstadoStock, string> = {
 };
 
 const today = () => new Date().toISOString().split("T")[0];
+
+const getDaysUntilExpiration = (dateStr: string): number => {
+  if (!dateStr) return 999;
+  const target = new Date(dateStr).getTime();
+  const now = new Date(today()).getTime();
+  return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+};
 
 interface Toast { id: string; msg: string; type: "success" | "error" | "info"; }
 
@@ -122,10 +134,13 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const [vacunas, setVacunas] = useState<InventarioItem[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(true);
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<"catalogo" | "categorias">("catalogo");
+  const [activeTab, setActiveTab] = useState<"catalogo" | "categorias" | "movimientos">("catalogo");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("all");
+  const [quickFilter, setQuickFilter] = useState<QuickFilterType>("all");
 
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
@@ -143,11 +158,12 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const usarRef      = useRef<HTMLDialogElement>(null);
   const mermaRef     = useRef<HTMLDialogElement>(null);
   const comprasHistoricasRef = useRef<HTMLDialogElement>(null);
-  const [mermaCantidad, setMermaCantidad] = useState(1);
-  const [mermaMotivo, setMermaMotivo] = useState("MERMA - Vencimiento");
   const catRef       = useRef<HTMLDialogElement>(null);
 
-  // Selected vaccine for actions
+  const [mermaCantidad, setMermaCantidad] = useState(1);
+  const [mermaMotivo, setMermaMotivo] = useState("MERMA - Vencimiento de lote");
+
+  // Selected item for actions
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dosisNotas, setDosisNotas] = useState("");
   const [pacienteNombre, setPacienteNombre] = useState("");
@@ -189,6 +205,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           supabase.from("movimientos_inventario").select("*").eq("item_id", v.id).order("fecha", { ascending: false })
         ]);
 
+        const tempStr = v.temperatura || "2-8°C";
+        const isRefrig = Boolean(v.es_refrigerado) || tempStr.includes("2-8") || tempStr.includes("Refrigeración") || tempStr.includes("Congelación");
+
         return {
           id: v.id,
           categoria_id: v.categoria_id,
@@ -200,7 +219,10 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           stockMinimo: v.stock_minimo || 5,
           stockActual: v.stock_actual || 0,
           precioVenta: v.precio_venta ? String(v.precio_venta) : "0",
-          temperatura: v.temperatura || "2-8°C",
+          temperatura: tempStr,
+          esRefrigerado: isRefrig,
+          ubicacion: v.ubicacion || (isRefrig ? "Nevera #1" : "Estante Principal"),
+          unidadMedida: v.unidad_medida || "Dosis",
           descripcion: v.descripcion || "",
           loteActivo: v.lote_activo || "—",
           lotes: (lotsRes.data || []).map(l => ({
@@ -220,15 +242,16 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             cantidad: m.cantidad,
             motivo: m.motivo || "",
             fecha: m.fecha || "",
-            notas: m.notas || ""
+            notas: m.notas || "",
+            valorUnitarioCobrado: m.valor_unitario_cobrado
           }))
         };
       }));
 
       setVacunas(enrichedVacs);
     } catch (err: any) {
-      console.error("Error loading vaccines:", err);
-      addToast("Error al cargar vacunas: " + err.message, "error");
+      console.error("Error loading inventory:", err);
+      addToast("Error al cargar inventario: " + err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -237,19 +260,27 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   useEffect(() => {
     params.then(async (p) => {
       setSlug(p.slug);
+      const { data: { user } } = await supabase.auth.getUser();
+      const superadminCheck = user?.email?.toLowerCase() === "gerkof@gmail.com" || user?.app_metadata?.role === "superadmin";
+      setIsSuperadmin(superadminCheck);
+
       const { data: tenant } = await supabase.from("tenants").select("id").eq("slug", p.slug).single();
       if (!tenant) return;
       setTenantId(tenant.id);
 
       const { data: config } = await supabase
         .from("configuracion_portal")
-        .select("color_primario, color_acento")
+        .select("color_primario, color_acento, habilitar_menu_vacunas")
         .eq("tenant_id", tenant.id)
         .single();
 
       if (config) {
         if (config.color_primario) setPrimaryColor(config.color_primario);
         if (config.color_acento) setAccentColor(config.color_acento);
+        
+        const userMetadataPerm = user?.user_metadata?.inventario_enabled;
+        const permGranted = superadminCheck || (userMetadataPerm !== undefined ? Boolean(userMetadataPerm) : (config.habilitar_menu_vacunas !== false));
+        setHasAccess(permGranted);
       }
 
       await loadData(tenant.id);
@@ -294,14 +325,12 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     
     try {
       if (catForm.id) {
-        // Edit
         const { error } = await supabase.from("categorias_inventario")
           .update({ nombre: serializedName, color: catForm.color })
           .eq("id", catForm.id);
         if (error) throw error;
         addToast(`Categoría "${catForm.nombre}" actualizada.`);
       } else {
-        // Insert
         const { error } = await supabase.from("categorias_inventario")
           .insert({ tenant_id: tenantId, nombre: serializedName, color: catForm.color, activo: true });
         if (error) throw error;
@@ -315,24 +344,27 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     }
   };
 
-  // ── NUEVA VACUNA FORM ──────────────────────────────────────────────
+  // ── NUEVO ITEM FORM ───────────────────────────────────────────────
   const [newForm, setNewForm] = useState({
     categoria_id: "", nombre: "", enfermedad: "", viaAdmin: "",
     esquemaDosis: "", stockMinimo: "5", valorMayorista: "",
-    precioVenta: "", temperatura: "2-8°C"
+    precioVenta: "", temperatura: "2-8°C", esRefrigerado: true,
+    ubicacion: "Nevera #1", unidadMedida: "Dosis"
   });
 
   const openNewItemForCategory = (categoryId: string) => {
     setNewForm(prev => ({ ...prev, categoria_id: categoryId }));
     setActiveTab("catalogo");
-    // small delay to let tab switch render the button
     setTimeout(() => {
       newVacunaRef.current?.showModal();
     }, 100);
   };
 
-  const handleNewFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setNewForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleNewFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const target = e.target;
+    const value = target.type === "checkbox" ? (target as HTMLInputElement).checked : target.value;
+    setNewForm(prev => ({ ...prev, [target.name]: value }));
+  };
 
   const handleNuevaVacuna = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -355,19 +387,26 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           stock_actual: 0,
           valor_mayorista: parseFloat(newForm.valorMayorista) || 0,
           precio_venta: isUF ? (parseFloat(newForm.precioVenta) || 0) : 0,
-          temperatura: isVacuna ? newForm.temperatura : "Temperatura ambiente",
+          temperatura: newForm.esRefrigerado ? newForm.temperatura : "Temperatura ambiente",
+          es_refrigerado: newForm.esRefrigerado,
+          ubicacion: newForm.ubicacion,
+          unidad_medida: newForm.unidadMedida,
           lote_activo: "—"
         });
 
       if (error) throw error;
 
       newVacunaRef.current?.close();
-      setNewForm({ categoria_id: "", nombre: "", enfermedad: "", viaAdmin: "", esquemaDosis: "", stockMinimo: "5", valorMayorista: "", precioVenta: "", temperatura: "2-8°C" });
-      addToast(`Vacuna "${newForm.nombre}" registrada correctamente.`);
+      setNewForm({
+        categoria_id: "", nombre: "", enfermedad: "", viaAdmin: "", esquemaDosis: "",
+        stockMinimo: "5", valorMayorista: "", precioVenta: "", temperatura: "2-8°C",
+        esRefrigerado: true, ubicacion: "Nevera #1", unidadMedida: "Dosis"
+      });
+      addToast(`Ítem "${newForm.nombre}" registrado correctamente.`);
       await loadData(tenantId);
     } catch (err: any) {
       console.error(err);
-      addToast("Error al guardar vacuna: " + err.message, "error");
+      addToast("Error al guardar ítem: " + err.message, "error");
     }
   };
 
@@ -394,7 +433,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     try {
       const selectedVacCat = selectedVacuna ? categorias.find(c => c.id === selectedVacuna.categoria_id) : null;
       const isP = selectedVacCat ? parseCategory(selectedVacCat).p : true;
-      // 1. Insert lot
+
       const { error: lotErr } = await supabase
         .from("lotes_inventario")
         .insert({
@@ -411,7 +450,6 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
       if (lotErr) throw lotErr;
 
-      // 2. Insert movement
       const { error: movErr } = await supabase
         .from("movimientos_inventario")
         .insert({
@@ -425,7 +463,6 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
       if (movErr) throw movErr;
 
-      // 3. Update stock and active lot in inventario_medico
       const currentStock = selectedVacuna?.stockActual || 0;
       const { error: updErr } = await supabase
         .from("inventario_medico")
@@ -439,7 +476,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
       loteRef.current?.close();
       setLoteForm({ numero: "", cantidad: "", fechaFabricacion: "", fechaVencimiento: "", proveedor: "", precioCompra: "", factura: "" });
-      addToast(`Lote agregado. Stock actualizado.`);
+      addToast(`Lote registrado. Stock actualizado.`);
       await loadData(tenantId);
     } catch (err: any) {
       console.error(err);
@@ -447,7 +484,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     }
   };
 
-  // ── USAR DOSIS ────────────────────────────────────────────────────
+  // ── ACTIONS ───────────────────────────────────────────────────────
   const openUsarModal = (id: string) => {
     setSelectedId(id);
     setDosisNotas("");
@@ -461,7 +498,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const openMermaModal = (id: string) => {
     setSelectedId(id);
     setMermaCantidad(1);
-    setMermaMotivo("MERMA - Vencimiento");
+    setMermaMotivo("MERMA - Vencimiento de lote");
     mermaRef.current?.showModal();
   };
 
@@ -493,7 +530,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
         item_id: selectedId,
         tipo_movimiento: "SALIDA",
         cantidad: 1,
-        motivo: "Aplicación de dosis",
+        motivo: "Aplicación / Consumo paciente",
         notas: notasFinales || null,
         fecha: today(),
         valor_unitario_cobrado: valorUnitario
@@ -501,28 +538,25 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
       if (movErr) throw movErr;
 
-      // 2. Update stock in inventario_medico
       const currentStock = selectedVacuna?.stockActual || 0;
       const newStock = Math.max(0, currentStock - 1);
       const { error: updErr } = await supabase
         .from("inventario_medico")
-        .update({
-          stock_actual: newStock
-        })
+        .update({ stock_actual: newStock })
         .eq("id", selectedId);
 
       if (updErr) throw updErr;
 
       usarRef.current?.close();
       if (newStock === 0) {
-        addToast(`⚠️ ${selectedVacuna?.nombre} agotada. Solicitar lote.`, "error");
+        addToast(`⚠️ ${selectedVacuna?.nombre} agotado. Solicitar reabastecimiento.`, "error");
       } else {
-        addToast(`Dosis de "${selectedVacuna?.nombre}" descontada correctamente.`);
+        addToast(`Salida de "${selectedVacuna?.nombre}" registrada correctamente.`);
       }
       await loadData(tenantId);
     } catch (err: any) {
       console.error(err);
-      addToast("Error al aplicar dosis: " + err.message, "error");
+      addToast("Error al aplicar consumo: " + err.message, "error");
     }
   };
 
@@ -536,9 +570,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
         tipo_movimiento: "SALIDA",
         cantidad: mermaCantidad,
         motivo: mermaMotivo,
-        notas: `Registro de merma/desperdicio. Stock afectado: ${mermaCantidad}`,
+        notas: `Descarte de inventario por merma. Cantidad: ${mermaCantidad}`,
         fecha: today(),
-        valor_unitario_cobrado: 0 // La merma no genera ingreso
+        valor_unitario_cobrado: 0
       });
 
       if (movErr) throw movErr;
@@ -562,125 +596,30 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     }
   };
 
-  const handleGenerarPruebas = async () => {
-    const items = vacunas;
-    if (items.length === 0) {
-      addToast("Debes crear al menos un ítem primero.", "error");
-      return;
+  // ── FILTERED ITEMS ────────────────────────────────────────────────
+  const filtered = vacunas.filter(v => {
+    const matchesSearch = v.nombre.toLowerCase().includes(search.toLowerCase()) ||
+                          v.loteActivo.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = selectedCategoryFilter === "all" || v.categoria_id === selectedCategoryFilter;
+    
+    let matchesQuickFilter = true;
+    if (quickFilter === "critical") {
+      matchesQuickFilter = getStockStatus(v) !== "ok";
+    } else if (quickFilter === "expiring") {
+      const activeLot = v.lotes?.find(l => l.numero === v.loteActivo || l.cantidad > 0);
+      const days = activeLot?.fechaVencimiento ? getDaysUntilExpiration(activeLot.fechaVencimiento) : 999;
+      matchesQuickFilter = days <= 30;
+    } else if (quickFilter === "refrigerated") {
+      matchesQuickFilter = v.esRefrigerado;
     }
 
-    setConfirmConfig({
-      isOpen: true,
-      title: "Generar Datos de Prueba",
-      message: "¿Está seguro de que desea generar datos de prueba de inventario para los últimos 6 meses? Esto agregará movimientos simulados automáticamente.",
-      onConfirm: () => {
-        setConfirmConfig(null);
-        startGenerarPruebas(items);
-      }
-    });
-  };
-
-  const startGenerarPruebas = async (items: any[]) => {
-    try {
-      const newMovements = [];
-      const newLotes = [];
-      const todayDate = new Date();
-      
-      // Generar 30 salidas aleatorias
-      for (let i = 0; i < 30; i++) {
-        const item = items[Math.floor(Math.random() * items.length)];
-        const daysAgo = Math.floor(Math.random() * 180);
-        const date = new Date(todayDate);
-        date.setDate(date.getDate() - daysAgo);
-
-        newMovements.push({
-          tenant_id: tenantId,
-          item_id: item.id,
-          tipo_movimiento: "SALIDA",
-          cantidad: Math.floor(Math.random() * 5) + 1,
-          motivo: "Consumo simulación",
-          notas: "Simulación de consumo de consulta",
-          fecha: date.toISOString().split("T")[0],
-          valor_unitario_cobrado: item.precio_venta || 0
-        });
-      }
-
-      // Generar 15 entradas aleatorias de lotes
-      for (let i = 0; i < 15; i++) {
-        const item = items[Math.floor(Math.random() * items.length)];
-        const daysAgo = Math.floor(Math.random() * 180);
-        const date = new Date(todayDate);
-        date.setDate(date.getDate() - daysAgo);
-        const basePrice = item.valor_mayorista || 10000;
-        const inflacion = 1 + (Math.random() * 0.08); // Simular inflación ligera
-
-        const loteNum = `LT-${Math.floor(100000 + Math.random() * 900000)}`;
-        const expDate = new Date(date);
-        expDate.setMonth(expDate.getMonth() + 18); // Vence en 18 meses
-
-        newLotes.push({
-          tenant_id: tenantId,
-          item_id: item.id,
-          numero_lote: loteNum,
-          cantidad: Math.floor(Math.random() * 50) + 10,
-          fecha_fabricacion: date.toISOString().split("T")[0],
-          fecha_vencimiento: expDate.toISOString().split("T")[0]
-        });
-
-        newMovements.push({
-          tenant_id: tenantId,
-          item_id: item.id,
-          tipo_movimiento: "ENTRADA",
-          cantidad: Math.floor(Math.random() * 50) + 10,
-          motivo: "Compra simulación",
-          notas: `Compra simulación lote ${loteNum}`,
-          fecha: date.toISOString().split("T")[0]
-        });
-      }
-      
-      await supabase.from("movimientos_inventario").insert(newMovements);
-      if (newLotes.length > 0) {
-        await supabase.from("lotes_inventario").insert(newLotes);
-      }
-      alert("Datos generados. Ve al Dashboard para ver las gráficas de inflación.");
-      await loadData(tenantId);
-    } catch (err) {
-      console.error(err);
-      alert("Error al generar pruebas.");
-    }
-  };
-
-  const handleResetearPruebas = async () => {
-    setConfirmConfig({
-      isOpen: true,
-      title: "Reiniciar Inventario",
-      message: "⚠️ PELIGRO: Esto borrará TODOS los movimientos de inventario y dejará el stock en 0. ¿Estás absolutamente seguro de que deseas continuar?",
-      isDanger: true,
-      onConfirm: async () => {
-        setConfirmConfig(null);
-        try {
-          await supabase.from("movimientos_inventario").delete().eq("tenant_id", tenantId);
-          await supabase.from("inventario_medico").update({ stock_actual: 0 }).eq("tenant_id", tenantId);
-          addToast("✅ Sistema reseteado a 0.");
-          await loadData(tenantId);
-        } catch (err) {
-          console.error(err);
-          addToast("Error al resetear el sistema.", "error");
-        }
-      }
-    });
-  };
-
-  // ── FILTERED ──────────────────────────────────────────────────────
-  const filtered = vacunas.filter(v =>
-    (selectedCategoryFilter === "all" || v.categoria_id === selectedCategoryFilter) &&
-    (v.nombre.toLowerCase().includes(search.toLowerCase()))
-  ).sort((a, b) => {
+    return matchesSearch && matchesCategory && matchesQuickFilter;
+  }).sort((a, b) => {
     const getStatusWeight = (v: any) => {
       const status = getStockStatus(v);
       if (status === "critical") return 0;
       if (status === "low") return 1;
-      return 2; // ok
+      return 2;
     };
     const weightA = getStatusWeight(a);
     const weightB = getStatusWeight(b);
@@ -688,183 +627,295 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     return a.nombre.localeCompare(b.nombre);
   });
 
+  // ── ALL MOVEMENTS FOR HISTORY TAB ─────────────────────────────────
+  const allMovements = vacunas.flatMap(v => 
+    v.movimientos.map(m => ({
+      ...m,
+      itemNombre: v.nombre,
+      categoriaId: v.categoria_id
+    }))
+  ).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
   // ── DERIVED KPIs ──────────────────────────────────────────────────
-  const totalVacunas       = filtered.length;
-  const totalDosis         = filtered.reduce((s, v) => s + v.stockActual, 0);
-  const criticas           = filtered.filter(v => getStockStatus(v) !== "ok").length;
-  const dosisHoy           = filtered.flatMap(v => v.movimientos)
-    .filter(m => m.tipo === "SALIDA" && m.fecha === today()).reduce((s, m) => s + m.cantidad, 0);
+  const totalItemsCount = vacunas.length;
+  const totalValuation  = vacunas.reduce((sum, v) => sum + (v.stockActual * (parseFloat(v.valorMayorista || "0") || 0)), 0);
+  const criticasCount   = vacunas.filter(v => getStockStatus(v) !== "ok").length;
+  
+  const expiringCount = vacunas.filter(v => {
+    const lot = v.lotes?.find(l => l.numero === v.loteActivo || l.cantidad > 0);
+    if (!lot || !lot.fechaVencimiento) return false;
+    const days = getDaysUntilExpiration(lot.fechaVencimiento);
+    return days <= 30;
+  }).length;
+
+  const coldChainCount  = vacunas.filter(v => v.esRefrigerado).length;
+  
+  const currentMonthStr = today().substring(0, 7);
+  const monthMovements  = allMovements.filter(m => m.fecha.startsWith(currentMonthStr)).length;
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "50vh", color: "var(--slate-400)" }}>
-        Cargando inventario de vacunas...
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "50vh", color: "var(--slate-500)", gap: "12px" }}>
+        <div style={{ fontSize: "28px" }}>⏳</div>
+        <div style={{ fontWeight: 600 }}>Cargando módulo de inventario clínico...</div>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div style={{ padding: "40px 20px", maxWidth: "800px", margin: "40px auto", textAlign: "center" }}>
+        <div className="card" style={{ padding: "40px 30px", borderTop: `4px solid #ef4444`, background: "white", borderRadius: "16px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)" }}>
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔒</div>
+          <h2 style={{ fontSize: "22px", fontWeight: 800, color: "var(--slate-900)", marginBottom: "8px" }}>Acceso Restringido al Inventario</h2>
+          <p style={{ color: "var(--slate-600)", fontSize: "14px", lineHeight: "1.6", maxWidth: "540px", margin: "0 auto 24px" }}>
+            El módulo de inventario clínico no está habilitado para tu cuenta de usuario. Contacta al <strong>Superadministrador</strong> de la clínica para activar los permisos de gestión de inventario en tu perfil.
+          </p>
+          <Link href={`/${slug}/admin`} className="btn btn-primary" style={{ background: primaryColor, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            ← Volver al Dashboard
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      {/* TOP BAR */}
+      {/* ── TOP BAR ───────────────────────────────────────────────── */}
       <div className="admin-topbar">
-        <h1 className="admin-topbar-title">📦 Control de Inventario</h1>
-        <div className="admin-topbar-right" style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div>
+          <h1 className="admin-topbar-title">📦 Inventario Médico y Farmacia</h1>
+          <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "2px" }}>
+            Gestión de stock, lotes, insumos refrigerados y trazabilidad de vencimientos
+          </p>
+        </div>
+        <div className="admin-topbar-right" style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
           {activeTab === "catalogo" && (
-            <>
-              <button className="btn btn-outline" style={{ borderColor: "#f59e0b", color: "#d97706", padding: "10px 20px", fontSize: "13px", fontWeight: 700 }} onClick={handleGenerarPruebas}>
-                🧪 Generar Pruebas
-              </button>
-              <button className="btn btn-outline" style={{ borderColor: "#ef4444", color: "#dc2626", padding: "10px 20px", fontSize: "13px", fontWeight: 700 }} onClick={handleResetearPruebas}>
-                🗑 Resetear Todo
-              </button>
-              <button
-                id="btn-nueva-vacuna"
-                className="btn btn-primary"
-                style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
-                onClick={() => newVacunaRef.current?.showModal()}
-              >
-                ＋ Nuevo Ítem
-              </button>
-            </>
+            <button
+              id="btn-nueva-vacuna"
+              className="btn btn-primary"
+              style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
+              onClick={() => newVacunaRef.current?.showModal()}
+            >
+              ＋ Registrar Nuevo Ítem
+            </button>
+          )}
+          {activeTab === "categorias" && (
+            <button
+              className="btn btn-primary"
+              style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
+              onClick={openNewCategoria}
+            >
+              ＋ Nueva Categoría
+            </button>
           )}
         </div>
       </div>
 
-      <div className="admin-tabs">
+      {/* ── HIGH IMPACT KPI CARDS HEADER ──────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px", marginBottom: "24px" }}>
+        
+        <div 
+          onClick={() => { setQuickFilter("all"); setActiveTab("catalogo"); }}
+          className="kpi-card" 
+          style={{ cursor: "pointer", borderLeft: `4px solid ${primaryColor}`, transition: "transform 0.15s ease" }}
+        >
+          <div className="kpi-card-header">
+            <div className="kpi-icon kpi-icon-teal">💊</div>
+            <span className="kpi-trend kpi-trend-neu">Catálogo</span>
+          </div>
+          <div className="kpi-number">{totalItemsCount}</div>
+          <div className="kpi-label">Ítems Registrados</div>
+          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600 }}>
+            Valor: ${totalValuation.toLocaleString("es-CO")}
+          </div>
+        </div>
+
+        <div 
+          onClick={() => { setQuickFilter("critical"); setActiveTab("catalogo"); }}
+          className="kpi-card" 
+          style={{ cursor: "pointer", borderLeft: `4px solid ${criticasCount > 0 ? "#ef4444" : "#10b981"}`, transition: "transform 0.15s ease" }}
+        >
+          <div className="kpi-card-header">
+            <div className="kpi-icon kpi-icon-rose">⚠️</div>
+            <span className={`kpi-trend ${criticasCount > 0 ? "kpi-trend-warn" : "kpi-trend-up"}`}>
+              {criticasCount > 0 ? "Reabastecer" : "Stock OK"}
+            </span>
+          </div>
+          <div className="kpi-number" style={{ color: criticasCount > 0 ? "#ef4444" : "inherit" }}>{criticasCount}</div>
+          <div className="kpi-label">Stock Crítico / Agotado</div>
+          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px" }}>
+            Ítems en umbral bajo
+          </div>
+        </div>
+
+        <div 
+          onClick={() => { setQuickFilter("expiring"); setActiveTab("catalogo"); }}
+          className="kpi-card" 
+          style={{ cursor: "pointer", borderLeft: `4px solid ${expiringCount > 0 ? "#f59e0b" : "#3b82f6"}`, transition: "transform 0.15s ease" }}
+        >
+          <div className="kpi-card-header">
+            <div className="kpi-icon kpi-icon-amber">⏰</div>
+            <span className={`kpi-trend ${expiringCount > 0 ? "kpi-trend-warn" : "kpi-trend-neu"}`}>
+              {expiringCount > 0 ? "Atención" : "Al día"}
+            </span>
+          </div>
+          <div className="kpi-number" style={{ color: expiringCount > 0 ? "#d97706" : "inherit" }}>{expiringCount}</div>
+          <div className="kpi-label">Vencimientos (≤ 30 días)</div>
+          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px" }}>
+            Lotes próximos a vencer
+          </div>
+        </div>
+
+        <div 
+          onClick={() => { setQuickFilter("refrigerated"); setActiveTab("catalogo"); }}
+          className="kpi-card" 
+          style={{ cursor: "pointer", borderLeft: `4px solid #06b6d4`, transition: "transform 0.15s ease" }}
+        >
+          <div className="kpi-card-header">
+            <div className="kpi-icon" style={{ background: "rgba(6, 182, 212, 0.1)", color: "#0891b2" }}>❄️</div>
+            <span className="kpi-trend kpi-trend-neu">Frío 2-8°C</span>
+          </div>
+          <div className="kpi-number" style={{ color: "#0891b2" }}>{coldChainCount}</div>
+          <div className="kpi-label">Cadena de Frío</div>
+          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px" }}>
+            Biológicos y Vacunas
+          </div>
+        </div>
+
+        <div 
+          onClick={() => setActiveTab("movimientos")}
+          className="kpi-card" 
+          style={{ cursor: "pointer", borderLeft: `4px solid ${accentColor}`, transition: "transform 0.15s ease" }}
+        >
+          <div className="kpi-card-header">
+            <div className="kpi-icon kpi-icon-emerald">📜</div>
+            <span className="kpi-trend kpi-trend-neu">Este Mes</span>
+          </div>
+          <div className="kpi-number">{monthMovements}</div>
+          <div className="kpi-label">Movimientos Registrados</div>
+          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px" }}>
+            Entradas, salidas y mermas
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── MAIN TABS NAV ─────────────────────────────────────────── */}
+      <div className="admin-tabs" style={{ marginBottom: "20px" }}>
         <button 
           className={`tab-btn ${activeTab === "catalogo" ? "active" : ""}`} 
           onClick={() => setActiveTab("catalogo")}
-          style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "catalogo" ? `2px solid ${primaryColor}` : "2px solid transparent", color: activeTab === "catalogo" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "catalogo" ? 700 : 500, cursor: "pointer" }}
+          style={{ padding: "12px 18px", background: "none", border: "none", borderBottom: activeTab === "catalogo" ? `3px solid ${primaryColor}` : "3px solid transparent", color: activeTab === "catalogo" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "catalogo" ? 700 : 500, cursor: "pointer" }}
         >
-          📦 Catálogo de Ítems
+          📦 Catálogo de Ítems ({filtered.length})
         </button>
         <button 
           className={`tab-btn ${activeTab === "categorias" ? "active" : ""}`} 
           onClick={() => setActiveTab("categorias")}
-          style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "categorias" ? `2px solid ${primaryColor}` : "2px solid transparent", color: activeTab === "categorias" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "categorias" ? 700 : 500, cursor: "pointer" }}
+          style={{ padding: "12px 18px", background: "none", border: "none", borderBottom: activeTab === "categorias" ? `3px solid ${primaryColor}` : "3px solid transparent", color: activeTab === "categorias" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "categorias" ? 700 : 500, cursor: "pointer" }}
         >
-          🏷️ Categorías
+          🏷️ Categorías ({categorias.length})
         </button>
-              </div>
+        <button 
+          className={`tab-btn ${activeTab === "movimientos" ? "active" : ""}`} 
+          onClick={() => setActiveTab("movimientos")}
+          style={{ padding: "12px 18px", background: "none", border: "none", borderBottom: activeTab === "movimientos" ? `3px solid ${primaryColor}` : "3px solid transparent", color: activeTab === "movimientos" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "movimientos" ? 700 : 500, cursor: "pointer" }}
+        >
+          📜 Historial de Movimientos ({allMovements.length})
+        </button>
+      </div>
 
       <div className="admin-content">
         {activeTab === "catalogo" && (
           <>
-            {/* ── FILTROS SUPERIORES ────────────────────────────────── */}
-            <div style={{ display: "flex", gap: "16px", marginBottom: "24px", alignItems: "center", flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: "260px" }}>
-                <label className="form-label" htmlFor="search-vacunas-top" style={{ marginBottom: "6px", display: "block" }}>Buscar Ítem</label>
-                <input
-                  type="search"
-                  id="search-vacunas-top"
-                  placeholder="Buscar por nombre o laboratorio..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="form-input"
-                  style={{ width: "100%" }}
-                  aria-label="Buscar ítems"
-                />
+            {/* ── FILTER BAR & QUICK PILLS ─────────────────────────── */}
+            <div className="card" style={{ padding: "16px 20px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+                <div style={{ flex: 1, minWidth: "260px" }}>
+                  <input
+                    type="search"
+                    placeholder="🔍 Buscar por nombre de ítem o número de lote..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="form-input"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+                  <select
+                    className="form-select"
+                    value={selectedCategoryFilter}
+                    onChange={e => setSelectedCategoryFilter(e.target.value)}
+                    style={{ padding: "8px 12px", fontSize: "13px" }}
+                  >
+                    <option value="all">Todas las Categorías</option>
+                    {categorias.map(c => {
+                      const pc = parseCategory(c);
+                      return <option key={pc.id} value={pc.id}>{pc.nombre}</option>;
+                    })}
+                  </select>
+                </div>
               </div>
-              <div style={{ width: "220px" }}>
-                <label className="form-label" htmlFor="filter-categoria-top" style={{ marginBottom: "6px", display: "block" }}>Categoría</label>
-                <select
-                  id="filter-categoria-top"
-                  className="form-select"
-                  value={selectedCategoryFilter}
-                  onChange={e => setSelectedCategoryFilter(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px" }}
+
+              {/* QUICK PILLS */}
+              <div style={{ display: "flex", gap: "8px", marginTop: "14px", flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={() => setQuickFilter("all")}
+                  style={{
+                    padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700, cursor: "pointer", border: "1px solid",
+                    background: quickFilter === "all" ? primaryColor : "white",
+                    color: quickFilter === "all" ? "white" : "var(--slate-600)",
+                    borderColor: quickFilter === "all" ? primaryColor : "var(--slate-200)"
+                  }}
                 >
-                  <option value="all">Todas las Categorías</option>
-                  {categorias.map(c => {
-                    const pc = parseCategory(c);
-                    return <option key={pc.id} value={pc.id}>{pc.nombre}</option>;
-                  })}
-                </select>
+                  Todos ({vacunas.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickFilter("critical")}
+                  style={{
+                    padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700, cursor: "pointer", border: "1px solid",
+                    background: quickFilter === "critical" ? "#ef4444" : "white",
+                    color: quickFilter === "critical" ? "white" : "#dc2626",
+                    borderColor: quickFilter === "critical" ? "#ef4444" : "#fca5a5"
+                  }}
+                >
+                  🔴 Críticos / Agotados ({criticasCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickFilter("expiring")}
+                  style={{
+                    padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700, cursor: "pointer", border: "1px solid",
+                    background: quickFilter === "expiring" ? "#f59e0b" : "white",
+                    color: quickFilter === "expiring" ? "white" : "#d97706",
+                    borderColor: quickFilter === "expiring" ? "#f59e0b" : "#fcd34d"
+                  }}
+                >
+                  ⏰ Próximos a Vencer ({expiringCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickFilter("refrigerated")}
+                  style={{
+                    padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700, cursor: "pointer", border: "1px solid",
+                    background: quickFilter === "refrigerated" ? "#0891b2" : "white",
+                    color: quickFilter === "refrigerated" ? "white" : "#0891b2",
+                    borderColor: quickFilter === "refrigerated" ? "#0891b2" : "#a5f3fc"
+                  }}
+                >
+                  ❄️ Cadena de Frío ({coldChainCount})
+                </button>
               </div>
             </div>
 
-            {/* ── KPI CARDS ─────────────────────────────────────────── */}
-            <div className="kpi-grid">
-              <KPICard icon="💊" iconClass="kpi-icon-teal"    number={totalVacunas} label="Ítems registrados"     trend="Total" trendClass="kpi-trend-neu" />
-              <KPICard icon="📦" iconClass="kpi-icon-emerald" number={totalDosis}   label="Unidades disponibles"    trend={totalDosis > 20 ? "Buen stock" : "Stock bajo"} trendClass={totalDosis > 20 ? "kpi-trend-up" : "kpi-trend-warn"} />
-              <KPICard icon="⚠️" iconClass="kpi-icon-rose"    number={criticas}     label="Ítems sin stock OK"    trend={criticas > 0 ? "Requiere atención" : "Todo OK"} trendClass={criticas > 0 ? "kpi-trend-warn" : "kpi-trend-up"} />
-              <KPICard icon="💉" iconClass="kpi-icon-amber"   number={dosisHoy}     label="Salidas hoy"             trend="Hoy" trendClass="kpi-trend-neu" />
-            </div>
-
-            {/* ── ALERTAS DE INVENTARIO ─────────────────────────────── */}
-            {criticas > 0 && (
-              <div style={{ marginTop: "24px", marginBottom: "32px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                <h3 style={{ fontFamily: "Outfit, sans-serif", fontSize: "15px", fontWeight: 800, color: "var(--slate-700)" }}>
-                  🔔 Alertas de Inventario
-                </h3>
-                {filtered.filter(v => getStockStatus(v) !== "ok").map(v => {
-                  const status = getStockStatus(v);
-                  const isCritical = status === "critical";
-                  return (
-                    <div key={v.id} className="inventory-alert-card" style={{
-                        background: isCritical 
-                          ? "linear-gradient(90deg, rgba(244,63,94,0.07) 0%, rgba(244,63,94,0.01) 100%)" 
-                          : "linear-gradient(90deg, rgba(245,158,11,0.07) 0%, rgba(245,158,11,0.01) 100%)",
-                        border: `1px solid ${isCritical ? "rgba(244,63,94,0.2)" : "rgba(245,158,11,0.2)"}`,
-                        borderLeft: `4px solid ${isCritical ? "#f43f5e" : "#f59e0b"}`
-                      }}>
-                      <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", flex: 1 }}>
-                        <span style={{ fontSize: "20px", lineHeight: "1.2" }}>{status === "critical" ? "🔴" : "🟠"}</span>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                            <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--slate-800)" }}>
-                              {status === "critical"
-                                ? `AGOTADO: ${v.nombre}`
-                                : `Stock bajo: ${v.nombre}`}
-                            </span>
-                            {(() => {
-                              const cat = categorias.find(c => c.id === v.categoria_id);
-                              const parsedCat = cat ? parseCategory(cat) : null;
-                              return parsedCat ? (
-                                <span style={{
-                                  padding: "2px 8px",
-                                  fontSize: "11px",
-                                  borderRadius: "12px",
-                                  background: `${parsedCat.color || primaryColor}22`,
-                                  color: parsedCat.color || primaryColor,
-                                  fontWeight: 700
-                                }}>
-                                  {parsedCat.nombre}
-                                </span>
-                              ) : null;
-                            })()}
-                          </div>
-                          <div style={{ fontSize: "12px", color: "var(--slate-500)" }}>
-                            {v.stockActual} unidades restantes <span style={{ opacity: 0.7 }}>(mín. {v.stockMinimo})</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        className="action-btn action-btn-ghost inventory-alert-btn"
-                        type="button"
-                        style={{ color: primaryColor }}
-                        onClick={() => openLoteModal(v.id)}
-                      >
-                        ＋ Agregar lote
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* ── INVENTORY TABLE ───────────────────────────────────── */}
-            <div className="section-header" style={{ marginBottom: "12px" }}>
-              <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Catálogo de Ítems</h2>
-            </div>
-
-
-
-            {/* Bulk Actions Panel */}
+            {/* BULK ACTIONS BANNER */}
             {selectedIds.length > 0 && (
               <div style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "12px 24px", background: "rgba(10, 77, 92, 0.05)",
+                padding: "12px 20px", background: "rgba(10, 77, 92, 0.05)",
                 border: `1px dashed ${primaryColor}`, borderRadius: "12px", marginBottom: "16px",
                 gap: "16px", flexWrap: "wrap"
               }}>
@@ -878,22 +929,22 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                     onClick={() => {
                       const selectedItems = vacunas.filter(v => selectedIds.includes(v.id));
                       const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-                        + ["Item,Categoria,Stock,StockMinimo,PrecioVenta"].join(",") + "\n"
+                        + ["Item,Categoria,Refrigerado,Stock,StockMinimo,PrecioVenta"].join(",") + "\n"
                         + selectedItems.map(v => {
                           const cat = categorias.find(c => c.id === v.categoria_id);
                           const catName = cat ? parseCategory(cat).nombre : "Sin Categoría";
-                          return `"${v.nombre}","${catName}",${v.stockActual},${v.stockMinimo},${v.precioVenta}`;
+                          return `"${v.nombre}","${catName}",${v.esRefrigerado ? "Si" : "No"},${v.stockActual},${v.stockMinimo},${v.precioVenta}`;
                         }).join("\n");
                       const encodedUri = encodeURI(csvContent);
                       const link = document.createElement("a");
                       link.setAttribute("href", encodedUri);
-                      link.setAttribute("download", `reporte_seleccion_inventario_${today()}.csv`);
+                      link.setAttribute("download", `reporte_inventario_${today()}.csv`);
                       document.body.appendChild(link);
                       link.click();
                       document.body.removeChild(link);
                     }}
                   >
-                    📥 Exportar Selección
+                    📥 Exportar Selección (CSV)
                   </button>
                   <button
                     className="btn btn-outline"
@@ -906,241 +957,230 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               </div>
             )}
 
-        <div className="inv-table-wrap">
-          {filtered.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">💉</div>
-              <div className="empty-state-title">
-                {search ? "No se encontraron vacunas" : "No hay vacunas registradas"}
-              </div>
-              <div className="empty-state-sub">
-                {search ? "Intenta con otro término de búsqueda" : "Haz clic en \"Nueva Vacuna\" para comenzar"}
-              </div>
-            </div>
-          ) : (
-            <table className="inv-table">
-              <caption>Inventario de vacunas — {filtered.length} registros</caption>
-              <thead>
-                <tr>
-                  <th scope="col" style={{ width: "40px" }}>
-                    <input
-                      type="checkbox"
-                      checked={filtered.length > 0 && selectedIds.length === filtered.length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedIds(filtered.map(v => v.id));
-                        } else {
-                          setSelectedIds([]);
-                        }
-                      }}
-                      style={{ width: "16px", height: "16px", cursor: "pointer" }}
-                    />
-                  </th>
-                  <th scope="col">Vacuna</th>
-                  <th scope="col">Lote Activo</th>
-                  <th scope="col">Stock</th>
-                  <th scope="col">Mín.</th>
-                  <th scope="col">Estado</th>
-                  <th scope="col">P. Unitario Compra</th>
-                  <th scope="col">P. Unitario Venta</th>
-                  <th scope="col">P. Total Compra</th>
-                  <th scope="col" style={{ textAlign: "right" }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(v => {
-                  const status = getStockStatus(v);
-                  // Calculate P. Total Compra summing all active lotes (cantidad * precio_compra).
-                  let pTotalCompra = 0;
-                  let pUnitarioCompra = parseInt(v.valorMayorista || "0");
-                  
-                  if (v.lotes && v.lotes.length > 0) {
-                     // Find active lotes (cantidad > 0)
-                     const lotesActivos = v.lotes.filter(l => l.cantidad > 0);
-                     if (lotesActivos.length > 0) {
-                        pTotalCompra = lotesActivos.reduce((acc, l) => acc + (l.cantidad * parseInt(l.precioCompra || "0")), 0);
-                        // The reference unitario compra could be the last added lote price
-                        pUnitarioCompra = parseInt(lotesActivos[0].precioCompra || "0");
-                     } else {
-                        // If no lotes explicitly active but stock is > 0 (data inconsistency fallback)
-                        pTotalCompra = v.stockActual * pUnitarioCompra;
-                        pUnitarioCompra = parseInt(v.lotes[0].precioCompra || "0");
-                     }
-                  } else {
-                     pTotalCompra = v.stockActual * pUnitarioCompra;
-                  }
-
-                  return (
-                    <tr key={v.id} style={v.stockActual === 0 ? { backgroundColor: "rgba(244, 63, 94, 0.03)" } : undefined}>
-                      <td style={{ width: "40px" }}>
+            {/* INVENTORY TABLE */}
+            <div className="inv-table-wrap">
+              {filtered.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">💊</div>
+                  <div className="empty-state-title">No se encontraron ítems</div>
+                  <div className="empty-state-sub">
+                    Intenta ajustar los términos de búsqueda o cambiar el filtro rápido.
+                  </div>
+                </div>
+              ) : (
+                <table className="inv-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: "40px" }}>
                         <input
                           type="checkbox"
-                          checked={selectedIds.includes(v.id)}
+                          checked={filtered.length > 0 && selectedIds.length === filtered.length}
                           onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedIds(prev => [...prev, v.id]);
-                            } else {
-                              setSelectedIds(prev => prev.filter(id => id !== v.id));
-                            }
+                            if (e.target.checked) setSelectedIds(filtered.map(v => v.id));
+                            else setSelectedIds([]);
                           }}
                           style={{ width: "16px", height: "16px", cursor: "pointer" }}
                         />
-                      </td>
-                      <td>
-                        <div className="vaccine-name-cell">
-                          <span className="vaccine-name-main">{v.nombre}</span>
-                          <span className="vaccine-name-generic">
-                            {(() => {
-                              const cat = categorias.find(c => c.id === v.categoria_id);
-                              return cat ? parseCategory(cat).nombre : "Sin Categoría";
-                            })()}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        {v.loteActivo === "—"
-                          ? <span style={{ color: "var(--slate-400)", fontSize: "12px" }}>Sin lote</span>
-                          : <span className="lot-badge" style={{ background: `${accentColor}22`, color: primaryColor, cursor: "pointer" }} onClick={() => openLoteModal(v.id)} title="Ver detalles y lotes">{v.loteActivo}</span>
-                        }
-                      </td>
-                      <td>
-                        <div className="stock-cell">
-                          <span className="stock-number" style={{
-                            color: status === "critical" ? "var(--rose-500)" : status === "low" ? "#b45309" : primaryColor
-                          }}>{v.stockActual}</span>
-                          <span className="stock-min">dosis</span>
-                        </div>
-                      </td>
-                      <td style={{ color: "var(--slate-500)", fontSize: "13px" }}>{v.stockMinimo}</td>
-                      <td>
-                        <span className={`stock-chip ${stockChipClass[status]}`}>
-                          {stockChipLabel[status]}
-                        </span>
-                      </td>
-                      <td style={{ color: "var(--slate-500)" }}>
-                        {pUnitarioCompra > 0 ? `$${pUnitarioCompra.toLocaleString("es-CO")}` : "—"}
-                      </td>
-                      <td style={{ fontWeight: 700, color: primaryColor }}>
-                        {(() => {
-                          const cat = categorias.find(c => c.id === v.categoria_id);
-                          const isUF = cat ? parseCategory(cat).uf : true;
-                          return isUF ? `$${parseInt(v.precioVenta || "0").toLocaleString("es-CO")}` : "Uso Interno";
-                        })()}
-                      </td>
-                      <td style={{ fontWeight: 700, color: "var(--slate-700)" }}>
-                        ${pTotalCompra.toLocaleString("es-CO")}
-                      </td>
-                      <td style={{ textAlign: "right" }}>
-                        <div style={{ position: "relative", display: "inline-block", textAlign: "left" }}>
-                          <button
-                            className="action-btn"
-                            style={{ background: "var(--slate-100)", color: "var(--slate-700)", border: "1px solid var(--slate-200)", padding: "6px 12px", borderRadius: "8px", fontWeight: 600 }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveDropdownId(activeDropdownId === v.id ? null : v.id);
-                            }}
-                            type="button"
-                          >
-                            Acciones ▾
-                          </button>
-                          {activeDropdownId === v.id && (
-                            <>
-                              <div 
-                                style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 40 }}
-                                onClick={() => setActiveDropdownId(null)}
-                              />
-                              <div className="card" style={{ 
-                                position: "absolute", right: 0, marginTop: "4px", width: "160px", 
-                                background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)",
-                                boxShadow: "var(--shadow-lg)", zIndex: 50, padding: "4px 0",
-                                display: "flex", flexDirection: "column", gap: "2px"
-                              }}>
-                                <button
-                                  className="dropdown-item"
-                                  style={{ padding: "8px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: "var(--slate-700)", display: "flex", alignItems: "center", gap: "8px" }}
-                                  onClick={() => {
-                                    setActiveDropdownId(null);
-                                    openComprasHistoricasModal(v.id);
-                                  }}
-                                >
-                                  📋 Compras
-                                </button>
-                                <button
-                                  className="dropdown-item"
-                                  style={{ padding: "8px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: "var(--slate-700)", display: "flex", alignItems: "center", gap: "8px" }}
-                                  onClick={() => {
-                                    setActiveDropdownId(null);
-                                    openLoteModal(v.id);
-                                  }}
-                                >
-                                  ＋ Lote
-                                </button>
-                                <button
-                                  className="dropdown-item"
-                                  style={{ padding: "8px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: v.stockActual === 0 ? "var(--slate-400)" : "var(--slate-700)", display: "flex", alignItems: "center", gap: "8px" }}
-                                  disabled={v.stockActual === 0}
-                                  onClick={() => {
-                                    setActiveDropdownId(null);
-                                    openUsarModal(v.id);
-                                  }}
-                                >
-                                  💉 Usar
-                                </button>
-                                <button
-                                  className="dropdown-item"
-                                  style={{ padding: "8px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "13px", color: v.stockActual === 0 ? "var(--slate-400)" : "#ef4444", display: "flex", alignItems: "center", gap: "8px" }}
-                                  disabled={v.stockActual === 0}
-                                  onClick={() => {
-                                    setActiveDropdownId(null);
-                                    openMermaModal(v.id);
-                                  }}
-                                >
-                                  🗑️ Merma
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </td>
+                      </th>
+                      <th>Ítem / Insumo</th>
+                      <th>Almacenamiento</th>
+                      <th>Lote & Vencimiento</th>
+                      <th>Stock Actual</th>
+                      <th>Estado</th>
+                      <th>Costo Unit.</th>
+                      <th>Precio Venta</th>
+                      <th style={{ textAlign: "right" }}>Acciones</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+                  </thead>
+                  <tbody>
+                    {filtered.map(v => {
+                      const status = getStockStatus(v);
+                      const activeLot = v.lotes?.find(l => l.numero === v.loteActivo || l.cantidad > 0);
+                      const daysToExp = activeLot?.fechaVencimiento ? getDaysUntilExpiration(activeLot.fechaVencimiento) : 999;
+                      const isExpired = daysToExp <= 0;
+                      const isExpiringSoon = daysToExp > 0 && daysToExp <= 30;
 
-
-      </>
+                      return (
+                        <tr key={v.id} style={v.stockActual === 0 ? { backgroundColor: "rgba(244, 63, 94, 0.03)" } : undefined}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(v.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedIds(prev => [...prev, v.id]);
+                                else setSelectedIds(prev => prev.filter(id => id !== v.id));
+                              }}
+                              style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                            />
+                          </td>
+                          <td>
+                            <div className="vaccine-name-cell">
+                              <span className="vaccine-name-main" style={{ fontWeight: 700 }}>{v.nombre}</span>
+                              <span className="vaccine-name-generic">
+                                {(() => {
+                                  const cat = categorias.find(c => c.id === v.categoria_id);
+                                  return cat ? parseCategory(cat).nombre : "Sin Categoría";
+                                })()}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            {v.esRefrigerado ? (
+                              <div style={{ display: "inline-flex", flexDirection: "column", gap: "2px" }}>
+                                <span style={{ padding: "3px 8px", borderRadius: "12px", background: "rgba(6, 182, 212, 0.12)", color: "#0891b2", fontWeight: 700, fontSize: "11px" }}>
+                                  ❄️ {v.temperatura}
+                                </span>
+                                <span style={{ fontSize: "11px", color: "var(--slate-500)" }}>📍 {v.ubicacion}</span>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: "12px", color: "var(--slate-500)" }}>
+                                🌡️ Amb. (📍 {v.ubicacion})
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                              {v.loteActivo === "—" ? (
+                                <span style={{ color: "var(--slate-400)", fontSize: "12px" }}>Sin lote registrado</span>
+                              ) : (
+                                <span 
+                                  className="lot-badge" 
+                                  style={{ background: `${accentColor}22`, color: primaryColor, cursor: "pointer", width: "fit-content" }}
+                                  onClick={() => openLoteModal(v.id)}
+                                >
+                                  🏷️ {v.loteActivo}
+                                </span>
+                              )}
+                              {activeLot?.fechaVencimiento && (
+                                <span style={{
+                                  fontSize: "11px", fontWeight: 700,
+                                  color: isExpired ? "#ef4444" : isExpiringSoon ? "#d97706" : "var(--slate-500)"
+                                }}>
+                                  {isExpired ? "🔴 Vencido" : isExpiringSoon ? `⏰ Vence en ${daysToExp}d` : `📅 Vence: ${activeLot.fechaVencimiento}`}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="stock-cell">
+                              <span className="stock-number" style={{
+                                color: status === "critical" ? "#ef4444" : status === "low" ? "#b45309" : primaryColor
+                              }}>
+                                {v.stockActual}
+                              </span>
+                              <span className="stock-min" style={{ fontSize: "11px" }}>{v.unidadMedida}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`stock-chip ${stockChipClass[status]}`}>
+                              {stockChipLabel[status]}
+                            </span>
+                          </td>
+                          <td style={{ color: "var(--slate-600)", fontSize: "13px" }}>
+                            ${parseFloat(v.valorMayorista || "0").toLocaleString("es-CO")}
+                          </td>
+                          <td style={{ fontWeight: 700, color: primaryColor, fontSize: "13px" }}>
+                            {parseFloat(v.precioVenta || "0") > 0 ? `$${parseFloat(v.precioVenta || "0").toLocaleString("es-CO")}` : "Uso Interno"}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            <div style={{ position: "relative", display: "inline-block" }}>
+                              <button
+                                className="action-btn"
+                                style={{ background: "var(--slate-100)", color: "var(--slate-800)", border: "1px solid var(--slate-200)", padding: "6px 12px", borderRadius: "8px", fontWeight: 600, fontSize: "12px" }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveDropdownId(activeDropdownId === v.id ? null : v.id);
+                                }}
+                                type="button"
+                              >
+                                Acciones ▾
+                              </button>
+                              {activeDropdownId === v.id && (
+                                <>
+                                  <div 
+                                    style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 40 }}
+                                    onClick={() => setActiveDropdownId(null)}
+                                  />
+                                  <div className="card" style={{ 
+                                    position: "absolute", right: 0, marginTop: "4px", width: "170px", 
+                                    background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)",
+                                    boxShadow: "var(--shadow-lg)", zIndex: 50, padding: "4px 0",
+                                    display: "flex", flexDirection: "column", gap: "2px"
+                                  }}>
+                                    <button
+                                      className="dropdown-item"
+                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "var(--slate-700)" }}
+                                      onClick={() => { setActiveDropdownId(null); openLoteModal(v.id); }}
+                                    >
+                                      📦 Ingresar Lote
+                                    </button>
+                                    <button
+                                      className="dropdown-item"
+                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: v.stockActual === 0 ? "var(--slate-400)" : primaryColor }}
+                                      disabled={v.stockActual === 0}
+                                      onClick={() => { setActiveDropdownId(null); openUsarModal(v.id); }}
+                                    >
+                                      💉 Usar / Consumir
+                                    </button>
+                                    <button
+                                      className="dropdown-item"
+                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: v.stockActual === 0 ? "var(--slate-400)" : "#ef4444" }}
+                                      disabled={v.stockActual === 0}
+                                      onClick={() => { setActiveDropdownId(null); openMermaModal(v.id); }}
+                                    >
+                                      🗑️ Registrar Merma
+                                    </button>
+                                    <button
+                                      className="dropdown-item"
+                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "var(--slate-700)" }}
+                                      onClick={() => { setActiveDropdownId(null); openComprasHistoricasModal(v.id); }}
+                                    >
+                                      📋 Historial Lotes
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </>
         )}
 
-        {/* ── CATEGORÍAS ─────────────────────────────────────────── */}
+        {/* ── CATEGORÍAS TAB ──────────────────────────────────────── */}
         {activeTab === "categorias" && (
           <div className="categorias-section">
-            <div className="section-header">
-              <h2 className="section-title" style={{ color: "var(--slate-900)" }}>Categorías de Inventario</h2>
-              <button className="btn btn-primary" onClick={openNewCategoria}>＋ Nueva Categoría</button>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
               {categorias.length === 0 ? (
-                <div style={{ gridColumn: "1/-1", padding: "40px", textAlign: "center", color: "var(--slate-500)", background: "var(--slate-50)", borderRadius: "var(--radius-lg)" }}>
-                  No hay categorías registradas. Se usarán ítems sin clasificar.
+                <div style={{ gridColumn: "1/-1", padding: "40px", textAlign: "center", color: "var(--slate-500)", background: "white", borderRadius: "12px" }}>
+                  No hay categorías registradas. Presiona "Nueva Categoría" para crear la primera.
                 </div>
               ) : categorias.map(c => {
                 const pc = parseCategory(c);
+                const count = vacunas.filter(v => v.categoria_id === c.id).length;
                 return (
                   <div key={c.id} className="card" style={{ padding: "20px", borderLeft: `4px solid ${c.color || primaryColor}`, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--slate-900)" }}>{pc.nombre}</h3>
+                        <div>
+                          <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--slate-900)" }}>{pc.nombre}</h3>
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: pc.tipo === "v" ? primaryColor : "#64748b", background: "var(--slate-100)", padding: "2px 6px", borderRadius: "4px" }}>
+                            {pc.tipo === "v" ? "💉 Biológico / Vacuna" : "📦 Insumo General"}
+                          </span>
+                        </div>
                         <button type="button" onClick={() => openEditCategoria(c)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px" }} title="Editar categoría">✏️</button>
                       </div>
-                      <div style={{ marginTop: "12px", fontSize: "13px", color: "var(--slate-500)", marginBottom: "20px" }}>
-                        {vacunas.filter(v => v.categoria_id === c.id).length} ítems en esta categoría
+                      <div style={{ marginTop: "16px", fontSize: "13px", color: "var(--slate-500)", marginBottom: "16px" }}>
+                        <strong>{count}</strong> {count === 1 ? "ítem registrado" : "ítems registrados"}
                       </div>
                     </div>
-                    <button className="btn btn-outline" style={{ width: "100%", justifyContent: "center", fontSize: "13px" }} onClick={() => openNewItemForCategory(c.id)}>
-                      ➕ Añadir Ítem
+                    <button className="btn btn-outline" style={{ width: "100%", justifyContent: "center", fontSize: "12px" }} onClick={() => openNewItemForCategory(c.id)}>
+                      ➕ Añadir Ítem a esta categoría
                     </button>
                   </div>
                 );
@@ -1148,28 +1188,76 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             </div>
           </div>
         )}
+
+        {/* ── HISTORIAL MOVIMIENTOS TAB ────────────────────────────── */}
+        {activeTab === "movimientos" && (
+          <div className="card" style={{ padding: "20px" }}>
+            <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--slate-900)", marginBottom: "16px" }}>📜 Kardex de Movimientos de Inventario</h2>
+            {allMovements.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px", color: "var(--slate-500)" }}>
+                No hay movimientos registrados en el sistema.
+              </div>
+            ) : (
+              <div className="inv-table-wrap">
+                <table className="inv-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Tipo</th>
+                      <th>Ítem / Insumo</th>
+                      <th>Cantidad</th>
+                      <th>Motivo</th>
+                      <th>Notas / Paciente</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allMovements.map(m => (
+                      <tr key={m.id}>
+                        <td style={{ fontSize: "12px", color: "var(--slate-600)" }}>{m.fecha}</td>
+                        <td>
+                          <span style={{
+                            padding: "3px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 700,
+                            background: m.tipo === "ENTRADA" ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                            color: m.tipo === "ENTRADA" ? "#10b981" : "#ef4444"
+                          }}>
+                            {m.tipo === "ENTRADA" ? "📥 ENTRADA" : "📤 SALIDA"}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 700 }}>{m.itemNombre}</td>
+                        <td style={{ fontWeight: 700, color: m.tipo === "ENTRADA" ? "#10b981" : "#ef4444" }}>
+                          {m.tipo === "ENTRADA" ? `+${m.cantidad}` : `-${m.cantidad}`}
+                        </td>
+                        <td style={{ fontSize: "13px" }}>{m.motivo}</td>
+                        <td style={{ fontSize: "12px", color: "var(--slate-600)" }}>{m.notas || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════
-          MODAL: NUEVA VACUNA
+          MODAL: NUEVO ITEM / INSUMO
       ═══════════════════════════════════════════════════════════ */}
-      <dialog ref={newVacunaRef} id="modal-nueva-vacuna" aria-labelledby="dialog-nueva-title">
+      <dialog ref={newVacunaRef} id="modal-nueva-vacuna">
         <div className="modal-header">
           <div>
-            <div className="modal-title" id="dialog-nueva-title">➕ Registrar Nuevo Ítem</div>
-            <div className="modal-subtitle">Complete todos los campos obligatorios marcados con *</div>
+            <div className="modal-title">➕ Registrar Nuevo Ítem / Insumo</div>
+            <div className="modal-subtitle">Ingrese las características principales del producto</div>
           </div>
-          <button className="modal-close" onClick={() => newVacunaRef.current?.close()} type="button" aria-label="Cerrar">✕</button>
+          <button className="modal-close" onClick={() => newVacunaRef.current?.close()} type="button">✕</button>
         </div>
 
-        <form onSubmit={handleNuevaVacuna} noValidate>
+        <form onSubmit={handleNuevaVacuna}>
           <div className="modal-body">
             <div className="form-grid">
-
               <div className="form-group full-width">
-                <label className="form-label" htmlFor="categoria_id">Categoría <span className="required-mark">*</span></label>
-                <select id="categoria_id" name="categoria_id" className="form-select" value={newForm.categoria_id} onChange={handleNewFormChange} required>
-                  <option value="" disabled>Seleccione una categoría...</option>
+                <label className="form-label">Categoría <span className="required-mark">*</span></label>
+                <select name="categoria_id" className="form-select" value={newForm.categoria_id} onChange={handleNewFormChange} required>
+                  <option value="" disabled>Seleccione categoría...</option>
                   {categorias.map(c => {
                     const pc = parseCategory(c);
                     return <option key={pc.id} value={pc.id}>{pc.nombre}</option>;
@@ -1178,90 +1266,65 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="nombre">Nombre comercial <span className="required-mark">*</span></label>
-                <input id="nombre" name="nombre" type="text" className="form-input"
-                  value={newForm.nombre} onChange={handleNewFormChange}
-                  required minLength={2} placeholder="ej: Hepatitis B" autoComplete="off" />
-              </div>
-
-              {(() => {
-                const selectedNewCat = categorias.find(c => c.id === newForm.categoria_id);
-                const isVacuna = selectedNewCat ? parseCategory(selectedNewCat).tipo === "v" : true;
-                return isVacuna ? (
-                  <>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="enfermedad">Enfermedad que previene</label>
-                      <input id="enfermedad" name="enfermedad" type="text" className="form-input"
-                        value={newForm.enfermedad} onChange={handleNewFormChange}
-                        placeholder="ej: Hepatitis B crónica" autoComplete="off" />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="viaAdmin">Vía de administración</label>
-                      <select id="viaAdmin" name="viaAdmin" className="form-select" value={newForm.viaAdmin} onChange={handleNewFormChange}>
-                        <option value="">No aplica</option>
-                        <option value="Intramuscular">Intramuscular</option>
-                        <option value="Subcutánea">Subcutánea</option>
-                        <option value="Oral">Oral</option>
-                        <option value="Intradérmica">Intradérmica</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="temperatura">Temperatura de almacenamiento</label>
-                      <select id="temperatura" name="temperatura" className="form-select" value={newForm.temperatura} onChange={handleNewFormChange} required>
-                        <option value="2-8°C">2-8°C (Refrigeración)</option>
-                        <option value="-15 a -25°C">-15 a -25°C (Congelación)</option>
-                        <option value="Temperatura ambiente">Temperatura ambiente</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="esquemaDosis">Esquema de dosis</label>
-                      <input id="esquemaDosis" name="esquemaDosis" type="text" className="form-input"
-                        value={newForm.esquemaDosis} onChange={handleNewFormChange}
-                        placeholder="ej: 3 dosis: 2, 4, 6 meses" autoComplete="off" />
-                    </div>
-                  </>
-                ) : null;
-              })()}
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="stockMinimo">Stock mínimo de alerta <span className="required-mark">*</span></label>
-                <input id="stockMinimo" name="stockMinimo" type="text" inputMode="numeric" pattern="[0-9]*" className="form-input"
-                  value={newForm.stockMinimo} onChange={handleNewFormChange}
-                  required placeholder="ej: 10" autoComplete="off" />
+                <label className="form-label">Nombre del Producto / Insumo <span className="required-mark">*</span></label>
+                <input name="nombre" type="text" className="form-input" value={newForm.nombre} onChange={handleNewFormChange} required placeholder="ej: Vacuna Influenza, Amoxicilina 500mg..." />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="valorMayorista">Valor mayorista (Costo) <span className="required-mark">*</span></label>
-                <input id="valorMayorista" name="valorMayorista" type="text" inputMode="decimal" className="form-input"
-                  value={newForm.valorMayorista} onChange={handleNewFormChange}
-                  required placeholder="ej: 30000" autoComplete="off" />
+                <label className="form-label">Unidad de Medida</label>
+                <select name="unidadMedida" className="form-select" value={newForm.unidadMedida} onChange={handleNewFormChange}>
+                  <option value="Dosis">Dosis</option>
+                  <option value="Frasco">Frasco</option>
+                  <option value="Ampolla">Ampolla</option>
+                  <option value="Caja">Caja</option>
+                  <option value="Unidad">Unidad</option>
+                  <option value="Jeringa">Jeringa</option>
+                </select>
               </div>
 
-              {(() => {
-                const selectedNewCat = categorias.find(c => c.id === newForm.categoria_id);
-                const isUF = selectedNewCat ? parseCategory(selectedNewCat).uf : true;
-                return isUF ? (
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="precioVenta">Valor precio de venta <span className="required-mark">*</span></label>
-                    <input id="precioVenta" name="precioVenta" type="text" inputMode="decimal" className="form-input"
-                      value={newForm.precioVenta} onChange={handleNewFormChange}
-                      required placeholder="ej: 45000" autoComplete="off" />
+              {/* REFRIGERACIÓN TOGGLE */}
+              <div className="form-group full-width" style={{ padding: "12px", background: "rgba(6, 182, 212, 0.06)", borderRadius: "8px", border: "1px solid rgba(6, 182, 212, 0.2)" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: 700, color: "#0891b2" }}>
+                  <input type="checkbox" name="esRefrigerado" checked={newForm.esRefrigerado} onChange={handleNewFormChange} style={{ width: "18px", height: "18px", accentColor: "#0891b2" }} />
+                  ❄️ Requiere Cadena de Frío (Refrigeración)
+                </label>
+                {newForm.esRefrigerado && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "10px" }}>
+                    <div>
+                      <label className="form-label" style={{ fontSize: "11px" }}>Rango de Temperatura</label>
+                      <select name="temperatura" className="form-select" value={newForm.temperatura} onChange={handleNewFormChange}>
+                        <option value="2-8°C">2°C a 8°C (Refrigeración estándar)</option>
+                        <option value="-15 a -25°C">-15°C a -25°C (Congelación)</option>
+                        <option value="-70°C">-70°C (Ultra-congelación)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="form-label" style={{ fontSize: "11px" }}>Ubicación Física</label>
+                      <input name="ubicacion" type="text" className="form-input" value={newForm.ubicacion} onChange={handleNewFormChange} placeholder="ej: Nevera #1 - Estante B" />
+                    </div>
                   </div>
-                ) : null;
-              })()}
+                )}
+              </div>
 
+              <div className="form-group">
+                <label className="form-label">Stock Mínimo de Alerta <span className="required-mark">*</span></label>
+                <input name="stockMinimo" type="number" className="form-input" value={newForm.stockMinimo} onChange={handleNewFormChange} required min="1" />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Valor Mayorista / Costo <span className="required-mark">*</span></label>
+                <input name="valorMayorista" type="number" className="form-input" value={newForm.valorMayorista} onChange={handleNewFormChange} required placeholder="ej: 35000" />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Precio Venta al Público</label>
+                <input name="precioVenta" type="number" className="form-input" value={newForm.precioVenta} onChange={handleNewFormChange} placeholder="ej: 55000" />
+              </div>
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={() => newVacunaRef.current?.close()}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>
-              ✓ Registrar
-            </button>
+            <button type="button" className="btn btn-outline" onClick={() => newVacunaRef.current?.close()}>Cancelar</button>
+            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>✓ Guardar Ítem</button>
           </div>
         </form>
       </dialog>
@@ -1269,410 +1332,203 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       {/* ═══════════════════════════════════════════════════════════
           MODAL: AGREGAR LOTE
       ═══════════════════════════════════════════════════════════ */}
-      <dialog ref={loteRef} id="modal-agregar-lote" aria-labelledby="dialog-lote-title">
+      <dialog ref={loteRef} id="modal-agregar-lote">
         <div className="modal-header">
           <div>
-            <div className="modal-title" id="dialog-lote-title">📦 Agregar Lote de Dosis</div>
-            <div className="modal-subtitle">
-              {selectedVacuna ? `Vacuna: ${selectedVacuna.nombre}` : ""}
-            </div>
+            <div className="modal-title">📦 Registrar Nuevo Lote</div>
+            <div className="modal-subtitle">{selectedVacuna ? `Ítem: ${selectedVacuna.nombre}` : ""}</div>
           </div>
-          <button className="modal-close" onClick={() => loteRef.current?.close()} type="button" aria-label="Cerrar">✕</button>
+          <button className="modal-close" onClick={() => loteRef.current?.close()} type="button">✕</button>
         </div>
 
-        <form onSubmit={handleAgregarLote} noValidate>
+        <form onSubmit={handleAgregarLote}>
           <div className="modal-body">
             <div className="form-grid">
-
               <div className="form-group">
-                <label className="form-label" htmlFor="lote-numero">Número de lote <span className="required-mark">*</span></label>
-                <input id="lote-numero" name="numero" type="text" className="form-input"
-                  value={loteForm.numero} onChange={handleLoteChange}
-                  required placeholder="ej: LOT-2026-HB02"
-                  autoComplete="off" />
+                <label className="form-label">Número de Lote <span className="required-mark">*</span></label>
+                <input name="numero" type="text" className="form-input" value={loteForm.numero} onChange={handleLoteChange} required placeholder="ej: LT-2026-09A" />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="lote-cantidad">Cantidad de dosis <span className="required-mark">*</span></label>
-                <input id="lote-cantidad" name="cantidad" type="text" inputMode="numeric"
-                  pattern="[0-9]*" className="form-input"
-                  value={loteForm.cantidad} onChange={handleLoteChange}
-                  required placeholder="ej: 25"
-                  autoComplete="off" />
+                <label className="form-label">Cantidad a Ingresar <span className="required-mark">*</span></label>
+                <input name="cantidad" type="number" className="form-input" value={loteForm.cantidad} onChange={handleLoteChange} required min="1" placeholder="ej: 50" />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="lote-fabricacion">Fecha de fabricación <span className="required-mark">*</span></label>
-                <input id="lote-fabricacion" name="fechaFabricacion" type="date" className="form-input"
-                  value={loteForm.fechaFabricacion} onChange={handleLoteChange}
-                  required max={today()} />
+                <label className="form-label">Fecha de Fabricación</label>
+                <input name="fechaFabricacion" type="date" className="form-input" value={loteForm.fechaFabricacion} onChange={handleLoteChange} max={today()} />
               </div>
 
-              {(() => {
-                const selectedVacCat = selectedVacuna ? categorias.find(c => c.id === selectedVacuna.categoria_id) : null;
-                const isP = selectedVacCat ? parseCategory(selectedVacCat).p : true;
-                return isP ? (
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="lote-vencimiento">Fecha de vencimiento <span className="required-mark">*</span></label>
-                    <input id="lote-vencimiento" name="fechaVencimiento" type="date" className="form-input"
-                      value={loteForm.fechaVencimiento} onChange={handleLoteChange}
-                      required min={today()} />
-                    <span className="form-hint">Debe ser una fecha futura</span>
-                  </div>
-                ) : null;
-              })()}
+              <div className="form-group">
+                <label className="form-label">Fecha de Vencimiento <span className="required-mark">*</span></label>
+                <input name="fechaVencimiento" type="date" className="form-input" value={loteForm.fechaVencimiento} onChange={handleLoteChange} required min={today()} />
+              </div>
 
               <div className="form-group full-width">
-                <label className="form-label" htmlFor="lote-proveedor">Proveedor / Distribuidor <span className="required-mark">*</span></label>
-                <input id="lote-proveedor" name="proveedor" type="text" className="form-input"
-                  value={loteForm.proveedor} onChange={handleLoteChange}
-                  required placeholder="ej: Tecnoquímicas S.A."
-                  autoComplete="organization" />
+                <label className="form-label">Proveedor / Laboratorio <span className="required-mark">*</span></label>
+                <input name="proveedor" type="text" className="form-input" value={loteForm.proveedor} onChange={handleLoteChange} required placeholder="ej: Sanofi Pasteur / Tecnoquímicas" />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="lote-precio">Precio de compra (COP)</label>
-                <input id="lote-precio" name="precioCompra" type="text" inputMode="decimal"
-                  className="form-input"
-                  value={loteForm.precioCompra} onChange={handleLoteChange}
-                  placeholder="ej: 38000" autoComplete="off" />
+                <label className="form-label">Precio Compra Unitario (COP)</label>
+                <input name="precioCompra" type="number" className="form-input" value={loteForm.precioCompra} onChange={handleLoteChange} placeholder="ej: 35000" />
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="lote-factura">Número de factura</label>
-                <input id="lote-factura" name="factura" type="text" className="form-input"
-                  value={loteForm.factura} onChange={handleLoteChange}
-                  placeholder="ej: FAC-2026-0452" autoComplete="off" />
+                <label className="form-label">Número Factura / Remisión</label>
+                <input name="factura" type="text" className="form-input" value={loteForm.factura} onChange={handleLoteChange} placeholder="ej: FAC-8841" />
               </div>
             </div>
           </div>
-
           <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={() => loteRef.current?.close()}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn-emerald">
-              ✓ Registrar Lote
-            </button>
+            <button type="button" className="btn btn-outline" onClick={() => loteRef.current?.close()}>Cancelar</button>
+            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>✓ Registrar Lote</button>
           </div>
         </form>
       </dialog>
 
-      {/* ═══════════════════════════════════════════════════════════
-          DIALOG: CONFIRMAR USO DE DOSIS
-      ═══════════════════════════════════════════════════════════ */}
-      <dialog ref={usarRef} id="dialog-usar-dosis" className="confirm-dialog" aria-labelledby="dialog-usar-title" style={{ margin: "auto" }}>
-        <div className="modal-body" style={{ padding: "32px 28px" }}>
-          <div className="confirm-icon" style={{ background: "rgba(10,77,92,.10)", color: primaryColor }}>💉</div>
-
-          <h2 className="confirm-title" id="dialog-usar-title" style={{ color: "var(--slate-900)" }}>Confirmar Uso de Dosis</h2>
-          <p className="confirm-msg" style={{ color: "var(--slate-600)" }}>
-            Vas a registrar una dosis aplicada de{" "}
-            <strong>{selectedVacuna?.nombre}</strong>.
-            Esta acción descontará 1 unidad del inventario.
+      {/* MODAL: USAR DOSIS */}
+      <dialog ref={usarRef} id="dialog-usar-dosis" style={{ margin: "auto", maxWidth: "450px" }}>
+        <div className="modal-body" style={{ padding: "28px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 800, color: "var(--slate-900)", marginBottom: "6px" }}>💉 Registrar Aplicación / Consumo</h2>
+          <p style={{ fontSize: "13px", color: "var(--slate-600)", marginBottom: "16px" }}>
+            Ítem: <strong>{selectedVacuna?.nombre}</strong> (Stock actual: {selectedVacuna?.stockActual})
           </p>
 
-          {selectedVacuna && (
-            <div className="stock-preview">
-              <div className="stock-before">
-                <div className="stock-before-num" style={{ color: primaryColor }}>{selectedVacuna.stockActual}</div>
-                <div className="stock-before-label">Stock actual</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left" }}>
+            <div>
+              <label className="form-label">Nombre del Paciente <span className="required-mark">*</span></label>
+              <input type="text" className="form-input" value={pacienteNombre} onChange={e => setPacienteNombre(e.target.value)} required placeholder="ej: María López" />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div>
+                <label className="form-label">Edad <span className="required-mark">*</span></label>
+                <input type="number" className="form-input" value={pacienteEdad} onChange={e => setPacienteEdad(e.target.value)} required placeholder="ej: 28" />
               </div>
-              <div className="stock-arrow" style={{ color: primaryColor }}>→</div>
-              <div className="stock-before">
-                <div className="stock-after-num" style={{ color: accentColor }}>{Math.max(0, selectedVacuna.stockActual - 1)}</div>
-                <div className="stock-before-label">Después de aplicar</div>
+              <div>
+                <label className="form-label">Unidad</label>
+                <select className="form-select" value={pacienteEdadUnidad} onChange={e => setPacienteEdadUnidad(e.target.value)}>
+                  <option value="Años">Años</option>
+                  <option value="Meses">Meses</option>
+                </select>
               </div>
             </div>
-          )}
 
-          <div className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", textAlign: "left", marginTop: "16px" }}>
-            <div className="form-group" style={{ gridColumn: "span 2" }}>
-              <label className="form-label" htmlFor="paciente-nombre">Nombre del Paciente <span className="required-mark">*</span></label>
-              <input
-                id="paciente-nombre"
-                type="text"
-                className="form-input"
-                value={pacienteNombre}
-                onChange={e => setPacienteNombre(e.target.value)}
-                placeholder="ej: Juan Pérez"
-                autoComplete="off"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="paciente-edad">Edad <span className="required-mark">*</span></label>
-              <input
-                id="paciente-edad"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                className="form-input"
-                value={pacienteEdad}
-                onChange={e => setPacienteEdad(e.target.value)}
-                placeholder="ej: 6"
-                autoComplete="off"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="paciente-edad-unidad">Unidad</label>
-              <select
-                id="paciente-edad-unidad"
-                className="form-select"
-                value={pacienteEdadUnidad}
-                onChange={e => setPacienteEdadUnidad(e.target.value)}
-              >
-                <option value="Años">Años</option>
-                <option value="Meses">Meses</option>
-              </select>
+            <div>
+              <label className="form-label">Notas Adicionales</label>
+              <input type="text" className="form-input" value={dosisNotas} onChange={e => setDosisNotas(e.target.value)} placeholder="ej: Sin reacciones inmediatas" />
             </div>
           </div>
 
-          <div className="form-group" style={{ textAlign: "left", marginTop: "16px" }}>
-            <label className="form-label" htmlFor="dosis-notes">Notas adicionales (opcional)</label>
-            <input
-              id="dosis-notes"
-              type="text"
-              className="form-input"
-              value={dosisNotas}
-              onChange={e => setDosisNotas(e.target.value)}
-              placeholder="ej: Ninguna observación"
-              autoComplete="off"
-            />
+          <div className="modal-footer" style={{ marginTop: "24px", padding: 0 }}>
+            <button type="button" className="btn btn-outline" onClick={() => usarRef.current?.close()}>Cancelar</button>
+            <button type="button" className="btn btn-primary" style={{ background: primaryColor }} onClick={handleUsarDosis}>✓ Registrar</button>
           </div>
-
-          <div className="form-group" style={{ marginTop: "16px", padding: "12px", background: "var(--slate-50)", borderRadius: "8px", border: "1px solid var(--slate-200)", textAlign: "left" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", fontWeight: 600, color: "var(--slate-700)" }}>
-              <input type="checkbox" checked={cobrarMayorista} onChange={(e) => setCobrarMayorista(e.target.checked)} style={{ width: "18px", height: "18px", accentColor: primaryColor }} />
-              Cobrar precio mayorista (Costo)
-            </label>
-            <div style={{ fontSize: "12px", color: "var(--slate-500)", marginLeft: "28px", marginTop: "4px" }}>
-              Al marcar esta opción, el ingreso registrado será el valor mayorista base (${parseInt(selectedVacuna?.valorMayorista || "0").toLocaleString("es-CO")}) en lugar del precio de venta final (${parseInt(selectedVacuna?.precioVenta || "0").toLocaleString("es-CO")}).
-            </div>
-          </div>
-        </div>
-
-        <div className="modal-footer">
-          <button type="button" className="btn btn-outline" onClick={() => usarRef.current?.close()}>
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            style={{ background: primaryColor }}
-            onClick={handleUsarDosis}
-          >
-            💉 Registrar Aplicación
-          </button>
         </div>
       </dialog>
 
-      {/* ═══════════════════════════════════════════════════════════
-          MODAL: COMPRAS HISTÓRICAS (LOTES)
-      ═══════════════════════════════════════════════════════════ */}
-      <dialog ref={comprasHistoricasRef} id="modal-compras-historicas" aria-labelledby="dialog-compras-title" style={{ maxWidth: "800px", width: "90%", margin: "auto" }}>
-        <div className="modal-header">
-          <div>
-            <div className="modal-title" id="dialog-compras-title">📋 Historial de Compras de Lotes</div>
-            <div className="modal-subtitle">
-              {selectedVacuna ? `Item: ${selectedVacuna.nombre}` : ""}
-            </div>
-          </div>
-          <button className="modal-close" onClick={() => comprasHistoricasRef.current?.close()} type="button" aria-label="Cerrar">✕</button>
-        </div>
-        <div className="modal-body" style={{ maxHeight: "60vh", overflowY: "auto" }}>
-          {selectedVacuna && selectedVacuna.lotes && selectedVacuna.lotes.length > 0 ? (
-            <div className="inv-table-wrap" style={{ margin: 0 }}>
-              <table className="inv-table" style={{ width: "100%" }}>
-                <thead>
-                  <tr>
-                    <th>Fecha Registro</th>
-                    <th>Nro Lote</th>
-                    <th>Proveedor</th>
-                    <th>Cantidad</th>
-                    <th>Costo Unitario</th>
-                    <th>Total Pagado</th>
-                    <th>Factura</th>
-                    <th>Vencimiento</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedVacuna.lotes.map(l => {
-                    const cant = l.cantidad || 0;
-                    const precio = parseInt(l.precioCompra || "0");
-                    const total = cant * precio;
-                    return (
-                      <tr key={l.id}>
-                        <td style={{ fontSize: "13px" }}>{l.fechaRegistro ? l.fechaRegistro.split("T")[0] : "—"}</td>
-                        <td>
-                          <span className="lot-badge" style={{ background: `${accentColor}22`, color: primaryColor }}>
-                            {l.numero}
-                          </span>
-                        </td>
-                        <td style={{ fontSize: "13px" }}>{l.proveedor || "—"}</td>
-                        <td>{cant}</td>
-                        <td style={{ fontSize: "13px" }}>${precio.toLocaleString("es-CO")}</td>
-                        <td style={{ fontSize: "13px", fontWeight: 700 }}>${total.toLocaleString("es-CO")}</td>
-                        <td style={{ fontSize: "13px" }}>{l.factura || "—"}</td>
-                        <td style={{ fontSize: "13px" }}>
-                          {l.fechaVencimiento ? (
-                            <span style={{ color: new Date(l.fechaVencimiento) < new Date() ? "var(--rose-500)" : "inherit" }}>
-                              {l.fechaVencimiento}
-                            </span>
-                          ) : (
-                            <span style={{ color: "var(--slate-400)" }}>No perecedero</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div style={{ textAlign: "center", padding: "40px", color: "var(--slate-500)" }}>
-              No se han registrado compras/lotes para este ítem.
-            </div>
-          )}
-        </div>
-        <div className="modal-footer">
-          <button type="button" className="btn btn-primary" style={{ background: primaryColor }} onClick={() => comprasHistoricasRef.current?.close()}>
-            Cerrar
-          </button>
-        </div>
-      </dialog>
-
-      {/* ═══════════════════════════════════════════════════════════
-          DIALOG: REGISTRAR MERMA
-      ═══════════════════════════════════════════════════════════ */}
-      <dialog ref={mermaRef} id="dialog-registrar-merma" className="confirm-dialog" aria-labelledby="dialog-merma-title" style={{ margin: "auto", maxWidth: "450px", width: "90%" }}>
-        <div className="modal-body" style={{ padding: "32px 28px" }}>
-          <div className="confirm-icon" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444" }}>🗑️</div>
-
-          <h2 className="confirm-title" id="dialog-merma-title" style={{ color: "var(--slate-900)" }}>Registrar Merma</h2>
-          <p className="confirm-msg" style={{ color: "var(--slate-600)" }}>
-            Vas a registrar una pérdida o descarte de{" "}
-            <strong>{selectedVacuna?.nombre}</strong>.
+      {/* MODAL: MERMA */}
+      <dialog ref={mermaRef} id="dialog-registrar-merma" style={{ margin: "auto", maxWidth: "450px" }}>
+        <div className="modal-body" style={{ padding: "28px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#ef4444", marginBottom: "6px" }}>🗑️ Registrar Merma / Pérdida</h2>
+          <p style={{ fontSize: "13px", color: "var(--slate-600)", marginBottom: "16px" }}>
+            Ítem: <strong>{selectedVacuna?.nombre}</strong>
           </p>
 
-          <form onSubmit={handleRegistrarMerma} noValidate style={{ textAlign: "left", marginTop: "16px" }}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="merma-cantidad">Cantidad a descartar <span className="required-mark">*</span></label>
-              <input
-                id="merma-cantidad"
-                type="number"
-                min="1"
-                max={selectedVacuna?.stockActual || 1}
-                className="form-input"
-                value={mermaCantidad}
-                onChange={e => setMermaCantidad(Math.max(1, parseInt(e.target.value) || 1))}
-                required
-              />
+          <form onSubmit={handleRegistrarMerma} style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left" }}>
+            <div>
+              <label className="form-label">Cantidad a Descartar <span className="required-mark">*</span></label>
+              <input type="number" className="form-input" min="1" max={selectedVacuna?.stockActual || 1} value={mermaCantidad} onChange={e => setMermaCantidad(parseInt(e.target.value) || 1)} required />
             </div>
 
-            <div className="form-group" style={{ marginTop: "12px" }}>
-              <label className="form-label" htmlFor="merma-motivo">Motivo de la merma <span className="required-mark">*</span></label>
-              <select
-                id="merma-motivo"
-                className="form-select"
-                value={mermaMotivo}
-                onChange={e => setMermaMotivo(e.target.value)}
-                required
-              >
-                <option value="MERMA - Vencimiento">Vencimiento de lote</option>
-                <option value="MERMA - Rotura de frío">Rotura de cadena de frío</option>
-                <option value="MERMA - Accidente / Rotura">Accidente / Rotura física</option>
-                <option value="MERMA - Otro">Otro / Descarte técnico</option>
+            <div>
+              <label className="form-label">Motivo de Merma <span className="required-mark">*</span></label>
+              <select className="form-select" value={mermaMotivo} onChange={e => setMermaMotivo(e.target.value)} required>
+                <option value="MERMA - Vencimiento de lote">Vencimiento de Lote</option>
+                <option value="MERMA - Rotura de frío">Rotura de Cadena de Frío</option>
+                <option value="MERMA - Accidente / Rotura">Accidente / Rotura Física</option>
+                <option value="MERMA - Empaque dañado">Empaque Dañado</option>
+                <option value="MERMA - Descarte técnico">Descarte Técnico / Muestra</option>
               </select>
             </div>
 
-            <div className="modal-footer" style={{ marginTop: "24px", padding: 0 }}>
-              <button type="button" className="btn btn-outline" onClick={() => mermaRef.current?.close()}>
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ background: "#ef4444" }}
-              >
-                Registrar Pérdida
-              </button>
+            <div className="modal-footer" style={{ marginTop: "20px", padding: 0 }}>
+              <button type="button" className="btn btn-outline" onClick={() => mermaRef.current?.close()}>Cancelar</button>
+              <button type="submit" className="btn btn-primary" style={{ background: "#ef4444" }}>Confirmar Merma</button>
             </div>
           </form>
         </div>
       </dialog>
 
-      {/* ═══════════════════════════════════════════════════════════
-          MODAL: CATEGORÍA
-      ═══════════════════════════════════════════════════════════ */}
-      <dialog ref={catRef} id="modal-categoria" aria-labelledby="dialog-cat-title">
+      {/* MODAL: HISTORIAL LOTES */}
+      <dialog ref={comprasHistoricasRef} style={{ maxWidth: "700px", width: "90%", margin: "auto" }}>
         <div className="modal-header">
-          <div>
-            <div className="modal-title" id="dialog-cat-title">{catForm.id ? "✏️ Editar Categoría" : "➕ Nueva Categoría"}</div>
-            <div className="modal-subtitle">Organiza tu inventario en secciones lógicas</div>
-          </div>
-          <button className="modal-close" onClick={() => catRef.current?.close()} type="button" aria-label="Cerrar">✕</button>
+          <div className="modal-title">📋 Lotes Registrados</div>
+          <button className="modal-close" onClick={() => comprasHistoricasRef.current?.close()} type="button">✕</button>
+        </div>
+        <div className="modal-body">
+          {selectedVacuna?.lotes && selectedVacuna.lotes.length > 0 ? (
+            <table className="inv-table">
+              <thead>
+                <tr>
+                  <th>Lote</th>
+                  <th>Cantidad</th>
+                  <th>Vencimiento</th>
+                  <th>Proveedor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedVacuna.lotes.map(l => (
+                  <tr key={l.id}>
+                    <td style={{ fontWeight: 700 }}>{l.numero}</td>
+                    <td>{l.cantidad}</td>
+                    <td>{l.fechaVencimiento || "—"}</td>
+                    <td>{l.proveedor || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div style={{ textAlign: "center", padding: "20px", color: "var(--slate-500)" }}>Sin lotes activos</div>
+          )}
+        </div>
+      </dialog>
+
+      {/* MODAL: CATEGORÍA */}
+      <dialog ref={catRef} id="modal-categoria">
+        <div className="modal-header">
+          <div className="modal-title">{catForm.id ? "✏️ Editar Categoría" : "➕ Nueva Categoría"}</div>
+          <button className="modal-close" onClick={() => catRef.current?.close()} type="button">✕</button>
         </div>
 
-        <form onSubmit={handleSaveCategoria} noValidate>
+        <form onSubmit={handleSaveCategoria}>
           <div className="modal-body">
             <div className="form-grid">
               <div className="form-group full-width">
-                <label className="form-label" htmlFor="cat-nombre">Nombre de la Categoría <span className="required-mark">*</span></label>
-                <input id="cat-nombre" name="nombre" type="text" className="form-input"
-                  value={catForm.nombre} onChange={handleCatChange}
-                  required placeholder="ej: Sueros, Insumos Odontológicos..."
-                  autoComplete="off" />
+                <label className="form-label">Nombre de Categoría <span className="required-mark">*</span></label>
+                <input name="nombre" type="text" className="form-input" value={catForm.nombre} onChange={handleCatChange} required placeholder="ej: Vacunas, Medicamentos..." />
               </div>
               <div className="form-group full-width">
-                <label className="form-label" htmlFor="cat-color">Color representativo</label>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  <input id="cat-color" name="color" type="color" 
-                    value={catForm.color} onChange={handleCatChange}
-                    style={{ width: "40px", height: "40px", padding: "0", border: "none", cursor: "pointer", borderRadius: "8px" }} />
-                  <span style={{ fontSize: "13px", color: "var(--slate-500)" }}>Elige un color para identificar esta categoría.</span>
-                </div>
+                <label className="form-label">Color Identificador</label>
+                <input name="color" type="color" value={catForm.color} onChange={handleCatChange} style={{ width: "50px", height: "40px", border: "none", cursor: "pointer" }} />
               </div>
-
-              <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                  <input type="checkbox" checked={catIsUF} onChange={e => setCatIsUF(e.target.checked)} style={{ width: "18px", height: "18px", accentColor: primaryColor }} />
-                  ¿Es para Usuario Final?
-                </label>
-                <span style={{ fontSize: "12px", color: "var(--slate-500)" }}>Requiere precio de venta al público y genera ingresos.</span>
-              </div>
-
-              <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                  <input type="checkbox" checked={catIsP} onChange={e => setCatIsP(e.target.checked)} style={{ width: "18px", height: "18px", accentColor: primaryColor }} />
-                  ¿Es Perecedero?
-                </label>
-                <span style={{ fontSize: "12px", color: "var(--slate-500)" }}>Requiere fecha de vencimiento obligatoria al registrar lotes.</span>
-              </div>
-
               <div className="form-group full-width">
-                <label className="form-label" htmlFor="cat-tipo">Tipo de Categoría</label>
-                <select id="cat-tipo" className="form-select" value={catTipo} onChange={e => setCatTipo(e.target.value as "v" | "i")}>
+                <label className="form-label">Tipo de Categoría</label>
+                <select className="form-select" value={catTipo} onChange={e => setCatTipo(e.target.value as "v" | "i")}>
                   <option value="v">💉 Biológico / Vacuna / Medicamento</option>
-                  <option value="i">📦 Insumo Médico / Dispositivo / Otros</option>
+                  <option value="i">📦 Insumo Médico General</option>
                 </select>
-                <span style={{ fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", display: "block" }}>
-                  Las categorías de insumos ocultan campos específicos de vacunas en el formulario de registro.
-                </span>
               </div>
             </div>
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={() => catRef.current?.close()}>Cancelar</button>
-            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>
-              ✓ Guardar Categoría
-            </button>
+            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>Guardar Categoría</button>
           </div>
         </form>
       </dialog>
 
-      {/* TOASTS */}
       {confirmConfig && (
         <CustomConfirmModal
           isOpen={confirmConfig.isOpen}
@@ -1685,23 +1541,6 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       )}
       <ToastContainer toasts={toasts} />
     </>
-  );
-}
-
-// Helper components
-function KPICard({ icon, iconClass, number, label, trend, trendClass }: {
-  icon: string; iconClass: string; number: number | string;
-  label: string; trend?: string; trendClass?: string;
-}) {
-  return (
-    <div className="kpi-card">
-      <div className="kpi-card-header">
-        <div className={`kpi-icon ${iconClass}`}>{icon}</div>
-        {trend && <span className={`kpi-trend ${trendClass}`}>{trend}</span>}
-      </div>
-      <div className="kpi-number">{number}</div>
-      <div className="kpi-label">{label}</div>
-    </div>
   );
 }
 

@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏥 HubMed Platform (`Portal_Medico`)
+### Plataforma SaaS Multi-Tenant de Gestión Médica, Vacunación e Historias Clínicas Electrónicas (HCE)
 
-## Getting Started
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.9-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2.4-blue?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%2015-emerald?logo=supabase)](https://supabase.com/)
+[![License](https://img.shields.io/badge/License-Proprietary-red)]()
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🌟 Visión del Proyecto
+
+**Portal_Medico** (nombre comercial **HubMed Platform**) es una solución SaaS elástica y de grado médico diseñada para consultorios individuales, clínicas de especialistas y centros de salud. Provee a cada profesional de la salud un portal independiente con su propia identidad de marca, dominio o subdominio (`*.hubmed.app`), gestión de citas, inventario POS de biológicos y un expediente médico electrónico (EMR) blindado conforme a la legislación del **Ministerio de Salud y Protección Social de Colombia**.
+
+* **🌐 URL de Producción:** [`https://portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app)
+* **🗄️ Base de Datos:** [Supabase](https://supabase.com/) — `nstlomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` (Auth + RLS + PgBouncer)
+* **☁️ Hosting:** [Vercel](https://vercel.com/) — Edge Network Global (Next.js 16)
+* **Primer Cliente Activo (Tenant Piloto #1):** 👨‍⚕️ **Dr. Carlos Torres** (`/dr-carlos-torres`), pediatra y especialista en vacunación basada en evidencia.
+
+---
+
+## 🏛️ Arquitectura de la Plataforma
+
+```
+                                     [ PACIENTES / PÚBLICO ]
+                                                │
+                          ┌─────────────────────┴─────────────────────┐
+                          ▼                                           ▼
+               [ Dominio Personalizado ]                   [ Subdominio *.hubmed.app ]
+               (ej: drtorres.com)                          (ej: drcarlos.hubmed.app)
+                          │                                           │
+                          └─────────────────────┬─────────────────────┘
+                                                │
+                                                ▼
+                     ┌─────────────────────────────────────────────────────┐
+                     │          GLOBAL EDGE & CDN NETWORK (VERCEL)         │
+                     │  - Enrutamiento dinámico Multi-Tenant por hostname │
+                     │  - Terminación TLS 1.3 con certificados wildcard    │
+                     │  - Middleware de resolución de slug de clínica/médico│
+                     └──────────────────────────┬──────────────────────────┘
+                                                │
+                                                ▼
+                     ┌─────────────────────────────────────────────────────┐
+                     │       COMPUTE LAYER: NEXT.JS 16 (APP ROUTER)        │
+                     │  - [slug]/(public)   : Portales públicos de médicos │
+                     │  - [slug]/admin      : Consola clínica / inventario │
+                     │  - /superadmin       : Gestión global de tenants    │
+                     │  - React 19.2 + Recharts 3.9 + TipTap Editor        │
+                     │  - Node.js 20.x Serverless Runtimes                 │
+                     └──────────────────────────┬──────────────────────────┘
+                                                │
+                            ┌───────────────────┴───────────────────┐
+                            │ (Supabase SSR / Service Role)         │ (AES-256-GCM Engine)
+                            ▼                                       ▼
+         ┌─────────────────────────────────────────────────────────────────────────┐
+         │              DATABASE & STORAGE CLOUD LAYER (SUPABASE)                  │
+         │  - Managed PostgreSQL 15 Engine con particionado lógico por tenant_id    │
+         │  - Row Level Security (RLS) Estricto: get_tenant_id() & is_superadmin() │
+         │  - PgBouncer Transaction Pooler (Puerto 6543)                           │
+         │  - Trigger check_inalterabilidad() para folios clínicos cerrados        │
+         │  - Módulo Criptográfico lib/crypto.ts (CLINICAL_ENCRYPTION_KEY)         │
+         │  - S3-Compatible Encrypted Object Storage (Logos, Documentos, Fotos)    │
+         └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔒 Pilares de Ciberseguridad y Cumplimiento Normativo (MinSalud Colombia)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Aislamiento Multi-Tenant Deny-by-Default:** Cada consulta está segregada mediante `tenant_id = get_tenant_id()` y reforzada con políticas de PostgreSQL Row Level Security (RLS).
+2. **Inalterabilidad Jurídica (Resolución 1995/1999 y Res. 000948/2026):** Los folios clínicos en estado `'cerrado'` no pueden ser modificados ni eliminados. El trigger de base de datos `check_inalterabilidad()` aborta cualquier intento.
+3. **Notas Aclaratorias Append-Only:** Las enmiendas médicas se registran como folios subordinados vinculados por `parent_id` con timestamp y autoría verificada.
+4. **Criptografía AES-256-GCM:** Los campos clínicos confidenciales (`enfermedad_actual`, `anamnesis`, `motivo_consulta`, `plan_manejo`) se encriptan a nivel de columna con el módulo `lib/crypto.ts` validando la etiqueta de autenticación (`authTag`).
+5. **Snapshot Demográfico:** Se congelan los datos demográficos y de aseguramiento del paciente al instante del cierre (`snapshot_demografico` JSONB).
+6. **Retención Legal a 15-20 Años (Resolución 839/2017):** Estrategia de archivo de gestión (5 años) y archivo central/frío (10 a 15 años más), con custodia extendida hasta los 33 años para pacientes pediátricos.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Stack Tecnológico
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+* **Framework:** Next.js 16.2.9 (App Router)
+* **Frontend:** React 19.2.4, Tailwind CSS v4, Motion, Lucide React
+* **Editor Clínico:** TipTap (`@tiptap/react`) con sanitización XSS
+* **Antropometría & Somatometría:** Recharts 3.9 (Curvas de crecimiento OMS y percentiles z-scores)
+* **Base de Datos & Auth:** Supabase (PostgreSQL 15 administrado) con PgBouncer
+* **Criptografía:** `crypto` nativo de Node.js (AES-256-GCM) y Supabase Vault
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🚀 Inicio Rápido en Desarrollo Local
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 1. Clonar el Repositorio
+```bash
+git clone https://github.com/GEME80/Portal_Medico.git
+cd Portal_Medico
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 2. Instalar Dependencias
+```bash
+npm install
+```
+
+### 3. Configurar Variables de Entorno
+
+#### Desarrollo Local (`.env.local`)
+```env
+# Supabase (Instancia local via supabase start)
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key_local
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key_local
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# SuperAdmin y Criptografía
+SUPERADMIN_EMAIL=gerkof@gmail.com
+CLINICAL_ENCRYPTION_KEY=tu_clave_hex_de_64_caracteres_aes256
+```
+
+#### Producción (Variables en Vercel Dashboard)
+```env
+# Supabase Cloud (Producción — configurar en vercel.com/dashboard)
+NEXT_PUBLIC_SUPABASE_URL=https://nstlomejmhmcasxqxnbf.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key_produccion>
+SUPABASE_SERVICE_ROLE_KEY=<service_role_key_produccion>
+
+# App (URL de Producción Vercel)
+NEXT_PUBLIC_APP_URL=https://portal-medico-five.vercel.app
+
+# SuperAdmin y Criptografía
+SUPERADMIN_EMAIL=gerkof@gmail.com
+CLINICAL_ENCRYPTION_KEY=<clave_hex_64_chars_aes256_produccion>
+```
+
+> **⚠️ IMPORTANTE:** La URL de Supabase en producción se configura directamente en el **Vercel Dashboard** → Settings → Environment Variables. Nunca subir claves de producción al repositorio.
+
+### 4. Ejecutar Servidor de Desarrollo
+```bash
+npm run dev
+```
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+
+### 5. Chequeo de Tipado Estricto (QA)
+```bash
+npx tsc --noEmit
+```
+*Debe retornar 0 errores de compilación de forma obligatoria.*
+
+---
+
+## 📑 Documentación Canónica Oficial
+
+* 📘 **[BITACORA_MAESTRA.md](BITACORA_MAESTRA.md):** Arquitectura completa, esquemas relacionales, estado del arte y roadmap.
+* 🛡️ **[RULES_AND_SECURITY.md](RULES_AND_SECURITY.md):** Código rector de reglas de ingeniería, matriz de ciberseguridad y QA.
+* 🤖 **[SPECIALIZED_AGENTS.md](SPECIALIZED_AGENTS.md):** Organigrama de agentes especializados, jerarquía y matriz de 7 Skills.
+* ⚕️ **[PROTOCOLO_MINSALUD_HISTORIAS_MEDICAS.md](PROTOCOLO_MINSALUD_HISTORIAS_MEDICAS.md):** Protocolo normativo y técnico para custodia, inalterabilidad y retención de HCE.
+* 📄 **[PROJECT_BITACORA.md](PROJECT_BITACORA.md):** Resumen ejecutivo y bitácora de ingeniería.
