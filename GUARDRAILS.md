@@ -1,9 +1,22 @@
+<!-- ===================================================================== -->
+<!-- 🏥 HUBMED PLATFORM — DOCUMENTACIÓN CANÓNICA OFICIAL                   -->
+<!-- PROYECTO: Portal_Medico | MARCA: HubMed (hubmed.app)                  -->
+<!-- REGLA DE AISLAMIENTO: Exclusivo de HubMed. Prohibida mezcla externa.  -->
+<!-- ===================================================================== -->
+
+> 🏥 **DOCUMENTO OFICIAL HUBMED PLATFORM** (`Portal_Medico`)  
+> **Plataforma:** HubMed · SaaS Médico Multi-Tenant | **URL:** [`portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app)  
+> **Base de Datos:** Supabase (`nstiomejmhmcasxqxnbf` / `us-west-2`) | **SuperAdmin:** `gerkof@gmail.com`  
+> 🔒 **INDICADOR DE ESTANQUEIDAD:** Este archivo pertenece exclusivamente a **HubMed**. Queda estrictamente prohibido mezclar directivas, esquemas o reglas con proyectos ajenos.
+
+---
+
 # 🛡️ GUARDRAILES DE SEGURIDAD Y CUMPLIMIENTO LEGAL
 ## PROYECTO: PORTAL_MEDICO | MARCA COMERCIAL: HUBMED | CLIENTE PILOTO: DR. CARLOS TORRES
 
 > **Proyecto Técnico:** `Portal_Medico` (GitHub: [GEME80/Portal_Medico](https://github.com/GEME80/Portal_Medico.git))  
 > **URL de Producción:** 🌐 [`https://portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app)  
-> **Base de Datos:** 🗄️ `Supabase` (`nstlomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` — PgBouncer 6543)  
+> **Base de Datos:** 🗄️ `Supabase` (`nstiomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` — PgBouncer 6543)  
 > **Nivel de Severidad:** CRÍTICO / TOLERANCIA CERO  
 > **Ámbito:** Todo cambio de código, migración SQL, endpoint API o componente de interfaz.
 

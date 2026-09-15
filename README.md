@@ -1,3 +1,16 @@
+<!-- ===================================================================== -->
+<!-- 🏥 HUBMED PLATFORM — DOCUMENTACIÓN CANÓNICA OFICIAL                   -->
+<!-- PROYECTO: Portal_Medico | MARCA: HubMed (hubmed.app)                  -->
+<!-- REGLA DE AISLAMIENTO: Exclusivo de HubMed. Prohibida mezcla externa.  -->
+<!-- ===================================================================== -->
+
+> 🏥 **DOCUMENTO OFICIAL HUBMED PLATFORM** (`Portal_Medico`)  
+> **Plataforma:** HubMed · SaaS Médico Multi-Tenant | **URL:** [`portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app)  
+> **Base de Datos:** Supabase (`nstiomejmhmcasxqxnbf` / `us-west-2`) | **SuperAdmin:** `gerkof@gmail.com`  
+> 🔒 **INDICADOR DE ESTANQUEIDAD:** Este archivo pertenece exclusivamente a **HubMed**. Queda estrictamente prohibido mezclar directivas, esquemas o reglas con proyectos ajenos.
+
+---
+
 # 🏥 HubMed Platform (`Portal_Medico`)
 ### Plataforma SaaS Multi-Tenant de Gestión Médica, Vacunación e Historias Clínicas Electrónicas (HCE)
 
@@ -14,7 +27,7 @@
 **Portal_Medico** (nombre comercial **HubMed Platform**) es una solución SaaS elástica y de grado médico diseñada para consultorios individuales, clínicas de especialistas y centros de salud. Provee a cada profesional de la salud un portal independiente con su propia identidad de marca, dominio o subdominio (`*.hubmed.app`), gestión de citas, inventario POS de biológicos y un expediente médico electrónico (EMR) blindado conforme a la legislación del **Ministerio de Salud y Protección Social de Colombia**.
 
 * **🌐 URL de Producción:** [`https://portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app)
-* **🗄️ Base de Datos:** [Supabase](https://supabase.com/) — `nstlomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` (Auth + RLS + PgBouncer)
+* **🗄️ Base de Datos:** [Supabase](https://supabase.com/) — `nstiomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` (Auth + RLS + PgBouncer)
 * **☁️ Hosting:** [Vercel](https://vercel.com/) — Edge Network Global (Next.js 16)
 * **Primer Cliente Activo (Tenant Piloto #1):** 👨‍⚕️ **Dr. Carlos Torres** (`/dr-carlos-torres`), pediatra y especialista en vacunación basada en evidencia.
 
@@ -85,6 +98,18 @@
 * **Antropometría & Somatometría:** Recharts 3.9 (Curvas de crecimiento OMS y percentiles z-scores)
 * **Base de Datos & Auth:** Supabase (PostgreSQL 15 administrado) con PgBouncer
 * **Criptografía:** `crypto` nativo de Node.js (AES-256-GCM) y Supabase Vault
+* **Validación de Datos:** Zod v4 (`lib/validations/clinical.ts`) con tipado estricto
+
+---
+
+## 📦 Módulos Funcionales Implementados
+
+* 📅 **Agenda de Citas (`/[slug]/admin/citas`):** Programación y control de estados (`programada`, `confirmada`, `cancelada`, `completada`) con persistencia multi-tenant y revalidación de caché.
+* 🪪 **Carné Vacunal Digital (`/[slug]/carne/[token]`):** Portal público interactivo accesible mediante Magic Token criptográfico (sin coste de usuarios MAU en Supabase Auth) con exportación nativa a PDF.
+* 📊 **Panel de Reportes RIPS (`/[slug]/admin/reportes`):** Exportación masiva en JSON estructurado conforme a la Resolución 000948/2026 de MinSalud (CIE-10, CUPS y snapshot demográfico).
+* 👥 **Gestión de Equipo y Roles (`/[slug]/admin/equipo`):** Aprovisionamiento y asignación de roles (`admin`, `medico`, `recepcion`) protegiendo el acceso a historias clínicas confidenciales.
+* 💳 **Facturación y Finanzas SuperAdmin (`/superadmin/facturacion`):** Consola ejecutiva global con control de ingresos recurrentes (MRR), suspensiones y activaciones de consultorios.
+* 📈 **Somatometría & Curvas OMS (`/[slug]/admin/pacientes/[id]`):** Gráficos calibrados interactivos con percentiles y z-scores oficiales de la OMS.
 
 ---
 
@@ -121,7 +146,7 @@ CLINICAL_ENCRYPTION_KEY=tu_clave_hex_de_64_caracteres_aes256
 #### Producción (Variables en Vercel Dashboard)
 ```env
 # Supabase Cloud (Producción — configurar en vercel.com/dashboard)
-NEXT_PUBLIC_SUPABASE_URL=https://nstlomejmhmcasxqxnbf.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://nstiomejmhmcasxqxnbf.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon_key_produccion>
 SUPABASE_SERVICE_ROLE_KEY=<service_role_key_produccion>
 
@@ -155,4 +180,7 @@ npx tsc --noEmit
 * 🛡️ **[RULES_AND_SECURITY.md](RULES_AND_SECURITY.md):** Código rector de reglas de ingeniería, matriz de ciberseguridad y QA.
 * 🤖 **[SPECIALIZED_AGENTS.md](SPECIALIZED_AGENTS.md):** Organigrama de agentes especializados, jerarquía y matriz de 7 Skills.
 * ⚕️ **[PROTOCOLO_MINSALUD_HISTORIAS_MEDICAS.md](PROTOCOLO_MINSALUD_HISTORIAS_MEDICAS.md):** Protocolo normativo y técnico para custodia, inalterabilidad y retención de HCE.
-* 📄 **[PROJECT_BITACORA.md](PROJECT_BITACORA.md):** Resumen ejecutivo y bitácora de ingeniería.
+* 🛡️ **[SECURITY.md](SECURITY.md):** Política oficial de seguridad y reporte de vulnerabilidades.
+* 📋 **[CHANGELOG.md](CHANGELOG.md):** Registro histórico y formal de versiones (Keep a Changelog / SemVer).
+* 🔍 **[AUDITORIA_PLATAFORMA.md](AUDITORIA_PLATAFORMA.md):** Inventario técnico integral y scorecard de madurez de seguridad.
+* 🏛️ **[ADR/](ADR/):** Registros de Decisiones de Arquitectura (Supabase, AES-256-GCM, Routing, App Router).

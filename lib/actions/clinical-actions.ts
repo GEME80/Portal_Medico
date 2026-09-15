@@ -5,14 +5,32 @@ import { cookies } from 'next/headers';
 import { encryptClinicalData, decryptClinicalData } from '@/lib/crypto';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { HistoriaClinicaSchema, PacienteSchema } from '@/lib/validations/clinical';
 
-export async function guardarHistoriaClinica(data: any, slug: string) {
+export interface ActionResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  code?: 'UNAUTHORIZED' | 'TENANT_NOT_FOUND' | 'VALIDATION_FAILED' | 'DATABASE_ERROR' | 'INTERNAL_ERROR' | string;
+}
+
+export async function guardarHistoriaClinica(data: any, slug: string): Promise<ActionResponse> {
   try {
+    const validatedData = HistoriaClinicaSchema.safeParse(data);
+    if (!validatedData.success) {
+      return {
+        success: false,
+        error: 'Error de validación: ' + validatedData.error.issues.map((e: any) => e.message).join(', '),
+        code: 'VALIDATION_FAILED'
+      };
+    }
+    data = validatedData.data;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return { success: false, error: 'No autorizado: Sesión inválida' };
+      return { success: false, error: 'No autorizado: Sesión inválida', code: 'UNAUTHORIZED' };
     }
 
     let tenantId = user.app_metadata?.tenant_id;
@@ -22,7 +40,7 @@ export async function guardarHistoriaClinica(data: any, slug: string) {
       if (t) tenantId = t.id;
     }
     if (!tenantId) {
-      return { success: false, error: 'No autorizado: Sin tenant_id asignado' };
+      return { success: false, error: 'No autorizado: Sin tenant_id asignado', code: 'TENANT_NOT_FOUND' };
     }
 
     let snapshotDemografico = null;
@@ -70,7 +88,7 @@ export async function guardarHistoriaClinica(data: any, slug: string) {
 
     if (error) {
       console.error("Error al guardar historia:", error);
-      return { success: false, error: 'Error al guardar la historia clínica: ' + error.message };
+      return { success: false, error: 'Error al guardar la historia clínica: ' + error.message, code: 'DATABASE_ERROR' };
     }
 
     // Log de auditoría
@@ -88,17 +106,27 @@ export async function guardarHistoriaClinica(data: any, slug: string) {
     return { success: true, data: nuevaHistoria };
   } catch (err: any) {
     console.error("Crash al guardar historia clinica:", err);
-    return { success: false, error: err.message || 'Error inesperado al guardar la historia clínica.' };
+    return { success: false, error: err.message || 'Error inesperado al guardar la historia clínica.', code: 'INTERNAL_ERROR' };
   }
 }
 
-export async function crearPacienteExpress(data: any, slug: string) {
+export async function crearPacienteExpress(data: any, slug: string): Promise<ActionResponse> {
   try {
+    const validatedData = PacienteSchema.safeParse(data);
+    if (!validatedData.success) {
+      return {
+        success: false,
+        error: 'Error de validación: ' + validatedData.error.issues.map((e: any) => e.message).join(', '),
+        code: 'VALIDATION_FAILED'
+      };
+    }
+    data = validatedData.data;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return { success: false, error: 'No autorizado' };
+      return { success: false, error: 'No autorizado', code: 'UNAUTHORIZED' };
     }
 
     let tenantId = user.app_metadata?.tenant_id;
@@ -108,7 +136,7 @@ export async function crearPacienteExpress(data: any, slug: string) {
       if (t) tenantId = t.id;
     }
     if (!tenantId) {
-      return { success: false, error: 'No autorizado: Sin tenant_id' };
+      return { success: false, error: 'No autorizado: Sin tenant_id', code: 'TENANT_NOT_FOUND' };
     }
 
     const { data: nuevoPaciente, error } = await supabase
@@ -137,7 +165,7 @@ export async function crearPacienteExpress(data: any, slug: string) {
 
     if (error) {
       console.error("Error al crear paciente:", error);
-      return { success: false, error: 'Error al crear el paciente. Verifique que el documento no exista: ' + error.message };
+      return { success: false, error: 'Error al crear el paciente. Verifique que el documento no exista: ' + error.message, code: 'DATABASE_ERROR' };
     }
 
     // Log auditoria
@@ -153,7 +181,7 @@ export async function crearPacienteExpress(data: any, slug: string) {
     return { success: true, data: nuevoPaciente };
   } catch (err: any) {
     console.error("Crash al crear paciente:", err);
-    return { success: false, error: err.message || 'Error inesperado al crear el paciente.' };
+    return { success: false, error: err.message || 'Error inesperado al crear el paciente.', code: 'INTERNAL_ERROR' };
   }
 }
 

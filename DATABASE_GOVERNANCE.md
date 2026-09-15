@@ -1,3 +1,16 @@
+<!-- ===================================================================== -->
+<!-- 🏥 HUBMED PLATFORM — DOCUMENTACIÓN CANÓNICA OFICIAL                   -->
+<!-- PROYECTO: Portal_Medico | MARCA: HubMed (hubmed.app)                  -->
+<!-- REGLA DE AISLAMIENTO: Exclusivo de HubMed. Prohibida mezcla externa.  -->
+<!-- ===================================================================== -->
+
+> 🏥 **DOCUMENTO OFICIAL HUBMED PLATFORM** (`Portal_Medico`)  
+> **Plataforma:** HubMed · SaaS Médico Multi-Tenant | **URL:** [`portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app)  
+> **Base de Datos:** Supabase (`nstiomejmhmcasxqxnbf` / `us-west-2`) | **SuperAdmin:** `gerkof@gmail.com`  
+> 🔒 **INDICADOR DE ESTANQUEIDAD:** Este archivo pertenece exclusivamente a **HubMed**. Queda estrictamente prohibido mezclar directivas, esquemas o reglas con proyectos ajenos.
+
+---
+
 # 🏛️ REGLAS DE SISTEMA Y GOBERNANZA DE INGENIERÍA PARA PLATAFORMAS DE DATOS (DATABASE_GOVERNANCE.md)
 
 > **Clasificación:** Normativa Estricta de Misión Crítica  

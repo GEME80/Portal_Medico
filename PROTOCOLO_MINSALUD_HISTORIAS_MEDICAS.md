@@ -1,3 +1,16 @@
+<!-- ===================================================================== -->
+<!-- 🏥 HUBMED PLATFORM — DOCUMENTACIÓN CANÓNICA OFICIAL                   -->
+<!-- PROYECTO: Portal_Medico | MARCA: HubMed (hubmed.app)                  -->
+<!-- REGLA DE AISLAMIENTO: Exclusivo de HubMed. Prohibida mezcla externa.  -->
+<!-- ===================================================================== -->
+
+> 🏥 **DOCUMENTO OFICIAL HUBMED PLATFORM** (`Portal_Medico`)  
+> **Plataforma:** HubMed · SaaS Médico Multi-Tenant | **URL:** [`portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app)  
+> **Base de Datos:** Supabase (`nstiomejmhmcasxqxnbf` / `us-west-2`) | **SuperAdmin:** `gerkof@gmail.com`  
+> 🔒 **INDICADOR DE ESTANQUEIDAD:** Este archivo pertenece exclusivamente a **HubMed**. Queda estrictamente prohibido mezclar directivas, esquemas o reglas con proyectos ajenos.
+
+---
+
 # ⚕️ PROTOCOLO OFICIAL DE SEGURIDAD, CUSTODIA E INALTERABILIDAD DE HISTORIAS CLÍNICAS ELECTRÓNICAS (HCE)
 ## ESTÁNDARES DEL MINISTERIO DE SALUD Y PROTECCIÓN SOCIAL DE COLOMBIA
 ### PLATAFORMA SAAS: PORTAL_MEDICO (HUBMED) | MULTI-CLIENTE
@@ -5,7 +18,7 @@
 > **Proyecto Técnico:** `Portal_Medico` ([GEME80/Portal_Medico](https://github.com/GEME80/Portal_Medico.git))  
 > **Nombre Comercial:** 🏥 **HubMed** (`HubMed Platform` / `hubmed.app`)  
 > **URL de Producción:** 🌐 [`https://portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app) — Vercel Edge Network  
-> **Base de Datos:** 🗄️ **Supabase** (`nstlomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` — Auth + RLS + PgBouncer 6543)  
+> **Base de Datos:** 🗄️ **Supabase** (`nstiomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` — Auth + RLS + PgBouncer 6543)  
 > **Ámbito de Aplicación:** 100% de los médicos, especialistas y clínicas suscriptoras de HubMed (Dr. Carlos Torres = Tenant Piloto #1 y futuros clientes SaaS)  
 > **Consola de Supervisión:** 👑 **SuperAdmin** (`gerkof@gmail.com` — `/superadmin` — Métricas globales de cumplimiento sin acceso a datos clínicos privados)  
 > **Autoridad Emisora:** 🏛️ **Agente Principal & Oficial de Cumplimiento Normativo Clínico**  

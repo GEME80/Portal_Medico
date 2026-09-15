@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
 import ScrollObserver from "@/components/ScrollObserver";
@@ -37,24 +37,23 @@ const renderModernIcon = (emoji: string = "") => {
 
 export default async function TenantHomePage({ params }: PageProps) {
   const { slug } = await params;
-  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
   // Load tenant
-  const { data: tenant } = await supabase
+  const { data: tenant } = await adminSupabase
     .from("tenants")
-    .select("id, nombre")
+    .select("id, nombre, activo")
     .eq("slug", slug)
-    .eq("activo", true)
     .single();
 
-  if (!tenant) notFound();
+  if (!tenant || !tenant.activo) notFound();
 
   // Load all portal data in parallel
   const [configRes, lineasRes, hitosRes, noticiasRes] = await Promise.all([
-    supabase.from("configuracion_portal").select("*").eq("tenant_id", tenant.id).single(),
-    supabase.from("lineas_investigacion").select("*").eq("tenant_id", tenant.id).eq("activo", true).order("orden"),
-    supabase.from("hitos_timeline").select("*").eq("tenant_id", tenant.id).order("orden"),
-    supabase.from("noticias_posts").select("id,titulo,resumen,emoji,categoria,created_at,slug,imagen_portada_url").eq("tenant_id", tenant.id).eq("publicado", true).order("created_at", { ascending: false }).limit(6),
+    adminSupabase.from("configuracion_portal").select("*").eq("tenant_id", tenant.id).single(),
+    adminSupabase.from("lineas_investigacion").select("*").eq("tenant_id", tenant.id).eq("activo", true).order("orden"),
+    adminSupabase.from("hitos_timeline").select("*").eq("tenant_id", tenant.id).order("orden"),
+    adminSupabase.from("noticias_posts").select("id,titulo,resumen,emoji,categoria,created_at,slug,imagen_portada_url").eq("tenant_id", tenant.id).eq("publicado", true).order("created_at", { ascending: false }).limit(6),
   ]);
 
   const config = configRes.data;

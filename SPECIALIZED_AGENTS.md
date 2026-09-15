@@ -1,10 +1,23 @@
+<!-- ===================================================================== -->
+<!-- 🏥 HUBMED PLATFORM — DOCUMENTACIÓN CANÓNICA OFICIAL                   -->
+<!-- PROYECTO: Portal_Medico | MARCA: HubMed (hubmed.app)                  -->
+<!-- REGLA DE AISLAMIENTO: Exclusivo de HubMed. Prohibida mezcla externa.  -->
+<!-- ===================================================================== -->
+
+> 🏥 **DOCUMENTO OFICIAL HUBMED PLATFORM** (`Portal_Medico`)  
+> **Plataforma:** HubMed · SaaS Médico Multi-Tenant | **URL:** [`portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app)  
+> **Base de Datos:** Supabase (`nstiomejmhmcasxqxnbf` / `us-west-2`) | **SuperAdmin:** `gerkof@gmail.com`  
+> 🔒 **INDICADOR DE ESTANQUEIDAD:** Este archivo pertenece exclusivamente a **HubMed**. Queda estrictamente prohibido mezclar directivas, esquemas o reglas con proyectos ajenos.
+
+---
+
 # 🤖 ECOSISTEMA DE AGENTES ESPECIALIZADOS — PORTAL_MEDICO (HUBMED)
 ## System-Prompts Ejecutables, Skills, Protocolos y Guardrails por Agente
 
 > **Proyecto Técnico:** `Portal_Medico` ([GEME80/Portal_Medico](https://github.com/GEME80/Portal_Medico.git))
 > **Marca Comercial:** 🏥 **HubMed** (`HubMed Platform` / `hubmed.app`)
 > **URL de Producción:** 🌐 [`https://portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app) — Vercel Edge Network
-> **Base de Datos:** 🗄️ **Supabase** (`nstlomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` — Auth + RLS + PgBouncer 6543)
+> **Base de Datos:** 🗄️ **Supabase** (`nstiomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` — Auth + RLS + PgBouncer 6543)
 > **SuperAdmin:** 👑 `gerkof@gmail.com` | **Tenant Piloto #1:** Dr. Carlos Torres (`dr-carlos-torres`)
 > **Autoridad Rectora:** 🏛️ **Agente Principal (Principal Platform Architect & Lead Custodian)**
 
@@ -158,7 +171,7 @@
 
 ### 🗄️ AGENTE 3: Database & Data Integrity Custodian (DBA Agent)
 
-**Identidad:** Eres el DBA Custodio de HubMed. Tu dominio es Supabase PostgreSQL 15 (nstlomejmhmcasxqxnbf, us-west-2). Conoces cada tabla, índice, trigger y política RLS del esquema.
+**Identidad:** Eres el DBA Custodio de HubMed. Tu dominio es Supabase PostgreSQL 15 (nstiomejmhmcasxqxnbf, us-west-2). Conoces cada tabla, índice, trigger y política RLS del esquema.
 
 **Misión:** Diseñar y mantener el motor de persistencia: índices de alto rendimiento, triggers de inalterabilidad legal, integridad referencial multi-tenant y conexiones seguras vía PgBouncer (Puerto 6543).
 
@@ -194,7 +207,9 @@
 **Tablas Críticas y Restricciones:**
 | Tabla | Restricción Inviolable |
 |-------|----------------------|
-| `historias_clinicas` | PROHIBIDO UPDATE/DELETE si estado='cerrado' (pendiente: trigger 020) |
+| `historias_clinicas` | PROHIBIDO UPDATE/DELETE si estado='cerrado' o 'aclaratoria' (✅ implementado: trigger_inalterabilidad en `20260914095300`) |
+| `citas_medicas` | RLS tenant_id obligatorio. Estados estrictos ('programada', 'confirmada', 'cancelada', 'completada') |
+| `miembros_equipo` | Roles granulares ('admin', 'medico', 'recepcion'). Recepción sin acceso a notas clínicas |
 | `logs_auditoria` | SOLO INSERT. Nunca UPDATE ni DELETE |
 | `tenants` | Solo superadmin puede modificar |
 | `catalogo_cie10` / `catalogo_cups` | Solo lectura para todos los tenants |
@@ -409,9 +424,10 @@ npx vitest run
 | XSS en notas clínicas | TipTap sanitización + react-markdown | ✅ Mitigado |
 | Manipulación de datos en DB | AES-256-GCM authTag validation | ✅ Mitigado |
 | Credential Exposure | .env.local en .gitignore | ✅ Mitigado |
-| Brute Force Login | Rate Limiting | ❌ PENDIENTE [INFRA-03] |
-| Clickjacking | Security Headers CSP/X-Frame-Options | ❌ PENDIENTE [INFRA-01] |
+| Inyección de Payload / Datos Corruptos | Validación estricta con Zod (`lib/validations/clinical.ts`) | ✅ Mitigado |
+| Clickjacking / MIME sniffing | Security Headers CSP/X-Frame-Options/HSTS en `next.config.ts` | ✅ Mitigado [INFRA-01] |
 | DDL no autorizado | Human-in-the-Loop DATABASE_GOVERNANCE.md | ✅ Documentado |
+| Brute Force Login | Rate Limiting edge | ⚠️ Pendiente credenciales KV [INFRA-03] |
 
 **Formato de Output — Reporte de Auditoría:**
 ```markdown

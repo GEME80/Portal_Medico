@@ -41,8 +41,11 @@ export default function AdminShell({
 
   const rawNavItems = [
     { href: `/${tenantSlug}/admin`, icon: "🏠", label: "Dashboard", shortLabel: "Inicio", exact: true, key: "dashboard" },
+    { href: `/${tenantSlug}/admin/citas`, icon: "📅", label: "Agenda & Citas", shortLabel: "Citas", exact: false, key: "citas" },
     { href: `/${tenantSlug}/admin/pacientes`, icon: "🧑‍⚕️", label: "Gestión Pacientes", shortLabel: "Pacientes", exact: false, key: "pacientes" },
     { href: `/${tenantSlug}/admin/inventario`, icon: "📦", label: inventoryName, shortLabel: "Inventario", exact: false, key: "inventario" },
+    { href: `/${tenantSlug}/admin/reportes`, icon: "📊", label: "Reportes RIPS", shortLabel: "RIPS", exact: false, key: "reportes" },
+    { href: `/${tenantSlug}/admin/equipo`, icon: "👥", label: "Equipo Médico", shortLabel: "Equipo", exact: false, key: "equipo" },
     { href: `/${tenantSlug}/admin/noticias`, icon: "📰", label: "Publicaciones", shortLabel: "Noticias", exact: false, key: "noticias" },
     { href: `/${tenantSlug}/admin/personalizar`, icon: "🎨", label: "Personalizar el Portal", shortLabel: "Portal", exact: false, key: "personalizar" },
   ];

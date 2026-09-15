@@ -1,3 +1,16 @@
+<!-- ===================================================================== -->
+<!-- 🏥 HUBMED PLATFORM — DOCUMENTACIÓN CANÓNICA OFICIAL                   -->
+<!-- PROYECTO: Portal_Medico | MARCA: HubMed (hubmed.app)                  -->
+<!-- REGLA DE AISLAMIENTO: Exclusivo de HubMed. Prohibida mezcla externa.  -->
+<!-- ===================================================================== -->
+
+> 🏥 **DOCUMENTO OFICIAL HUBMED PLATFORM** (`Portal_Medico`)  
+> **Plataforma:** HubMed · SaaS Médico Multi-Tenant | **URL:** [`portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app)  
+> **Base de Datos:** Supabase (`nstiomejmhmcasxqxnbf` / `us-west-2`) | **SuperAdmin:** `gerkof@gmail.com`  
+> 🔒 **INDICADOR DE ESTANQUEIDAD:** Este archivo pertenece exclusivamente a **HubMed**. Queda estrictamente prohibido mezclar directivas, esquemas o reglas con proyectos ajenos.
+
+---
+
 # 🛡️ CÓDIGO MAESTRO DE REGLAS, CIBERSEGURIDAD Y CONTROL DE CALIDAD (QA)
 ## PROYECTO: PORTAL_MEDICO | MARCA COMERCIAL: HUBMED | ARQUITECTURA MULTI-CLIENTE
 
@@ -5,7 +18,7 @@
 > **Proyecto Técnico:** `Portal_Medico` ([GEME80/Portal_Medico](https://github.com/GEME80/Portal_Medico.git))  
 > **Marca Comercial:** 🏥 **HubMed** (`HubMed Platform` / `hubmed.app`)  
 > **URL de Producción:** 🌐 [`https://portal-medico-five.vercel.app`](https://portal-medico-five.vercel.app) — Vercel Edge Network  
-> **Base de Datos:** 🗄️ **Supabase** (`nstlomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` — Auth + RLS + PgBouncer 6543)  
+> **Base de Datos:** 🗄️ **Supabase** (`nstiomejmhmcasxqxnbf` / PostgreSQL 15 `us-west-2` — Auth + RLS + PgBouncer 6543)  
 > **Modelo de Negocio:** SaaS Multi-Tenant Elástico ($N$ Clientes Médicos / Dr. Carlos Torres = Tenant Piloto #1)  
 > **Espacio Central de Gobernanza:** 👑 **SuperAdmin Console** (`/superadmin` — `gerkof@gmail.com`)  
 > **Autoridad Emisora:** 🏛️ **Agente Principal (Principal Platform Architect & DevSecOps Lead)**  

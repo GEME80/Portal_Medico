@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = 'https://nstiomejmhmcasxqxnbf.supabase.co';
-const supabaseKey = 'sb_secret_SsKNgZ82ZkbgeJHeCrE7mg_eEJ4ZVS2';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nstiomejmhmcasxqxnbf.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'REDACTED_API_KEY';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 const tenantId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'; // Dr. Carlos Torres

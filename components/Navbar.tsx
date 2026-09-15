@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+import { Calendar } from "lucide-react";
+
 interface NavbarProps {
   tenantSlug?: string;
   nombreClinica?: string;
@@ -62,7 +64,26 @@ export default function Navbar({
 
             {/* CTA */}
             <div className="navbar-cta">
-              {/* Removed Admin Button */}
+              <Link
+                href={`${base}/citas`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  backgroundColor: "#0A4D5C",
+                  color: "#ffffff",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  textDecoration: "none",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  transition: "background 0.2s"
+                }}
+              >
+                <Calendar size={15} strokeWidth={2.2} />
+                <span>Agendar Cita</span>
+              </Link>
             </div>
 
             {/* Hamburger */}
@@ -94,6 +115,13 @@ export default function Navbar({
         {habilitarMenuVacunas && (
           <Link href={`${base}/vacunas`} onClick={() => setMenuOpen(false)}>{nombreMenuVacunas}</Link>
         )}
+        <Link 
+          href={`${base}/citas`} 
+          onClick={() => setMenuOpen(false)}
+          style={{ fontWeight: 700, color: "#00D4AA", display: "flex", alignItems: "center", gap: "8px" }}
+        >
+          <Calendar size={16} /> Agendar Cita
+        </Link>
       </div>
     </>
   );
