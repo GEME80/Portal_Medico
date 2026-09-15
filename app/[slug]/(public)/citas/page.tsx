@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import BookingForm from "./BookingForm";
 
@@ -8,23 +8,36 @@ interface PageProps {
 
 export default async function PublicCitasPage({ params }: PageProps) {
   const { slug } = await params;
+  const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
   const adminSupabase = createAdminClient();
 
   // Load tenant
-  const { data: tenant } = await adminSupabase
+  let { data: tenant, error: tenantErr } = await adminSupabase
     .from("tenants")
     .select("id, nombre, activo")
-    .eq("slug", slug)
-    .single();
+    .eq("slug", cleanSlug)
+    .maybeSingle();
+
+  if (!tenant && tenantErr) {
+    const supabase = await createClient();
+    const fallbackRes = await supabase
+      .from("tenants")
+      .select("id, nombre, activo")
+      .eq("slug", cleanSlug)
+      .maybeSingle();
+    tenant = fallbackRes.data;
+  }
 
   if (!tenant || !tenant.activo) notFound();
 
   // Load config
-  const { data: config } = await adminSupabase
+  let config: any = null;
+  const { data: configData } = await adminSupabase
     .from("configuracion_portal")
     .select("nombre_doctor, especialidad, nombre_clinica, telefono, color_primario, color_acento, hero_badge_texto")
     .eq("tenant_id", tenant.id)
-    .single();
+    .maybeSingle();
+  config = configData;
 
   const doctorName = config?.nombre_doctor || tenant.nombre || "Doctor";
   const specialty = config?.especialidad || "Medicina General y Especializada";
