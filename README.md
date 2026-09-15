@@ -18,6 +18,7 @@
 [![React](https://img.shields.io/badge/React-19.2.4-blue?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%2015-emerald?logo=supabase)](https://supabase.com/)
+[![Version](https://img.shields.io/badge/Version-v3.5.0-teal)](https://github.com/GEME80/Portal_Medico)
 [![License](https://img.shields.io/badge/License-Proprietary-red)]()
 
 ---
