@@ -13,7 +13,7 @@ interface TenantLayoutProps {
 export async function generateMetadata({ params }: TenantLayoutProps): Promise<Metadata> {
   const { slug } = await params;
   const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: tenant } = await supabase
     .from("tenants")
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: TenantLayoutProps): Promise<M
     .from("configuracion_portal")
     .select("meta_titulo, meta_descripcion")
     .eq("tenant_id", tenant.id)
-    .single();
+    .maybeSingle();
 
   return {
     title: config?.meta_titulo || tenant.nombre,
@@ -38,44 +38,42 @@ export async function generateMetadata({ params }: TenantLayoutProps): Promise<M
 export default async function TenantLayout({ children, params }: TenantLayoutProps) {
   const { slug } = await params;
   const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
-  
-  // Use admin client for data reads so suspended tenants (activo=false)
-  // are still readable — with automatic fallback to anon client if needed.
-  const adminSupabase = createAdminClient();
+  const supabase = await createClient();
 
   // Validate tenant exists and check status
-  let { data: tenant, error: tenantErr } = await adminSupabase
+  let { data: tenant } = await supabase
     .from("tenants")
     .select("id, slug, nombre, activo, estado_pago")
     .eq("slug", cleanSlug)
     .maybeSingle();
 
-  if (!tenant && tenantErr) {
-    const authSupabase = await createClient();
-    const fallbackRes = await authSupabase
-      .from("tenants")
-      .select("id, slug, nombre, activo, estado_pago")
-      .eq("slug", cleanSlug)
-      .maybeSingle();
-    tenant = fallbackRes.data;
+  if (!tenant) {
+    try {
+      const adminSupabase = createAdminClient();
+      const fallbackRes = await adminSupabase
+        .from("tenants")
+        .select("id, slug, nombre, activo, estado_pago")
+        .eq("slug", cleanSlug)
+        .maybeSingle();
+      if (fallbackRes.data) tenant = fallbackRes.data;
+    } catch (_) {}
   }
 
   if (!tenant) notFound();
 
   // Get user session to bypass suspension if superadmin
-  const authSupabase = await createClient();
-  const { data: { user } } = await authSupabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   const isSuperadmin = user?.email?.toLowerCase() === process.env.SUPERADMIN_EMAIL?.toLowerCase() || user?.email?.toLowerCase() === "gerkof@gmail.com" || user?.app_metadata?.role === "superadmin";
   const isSuspended = (!tenant.activo || tenant.estado_pago === "suspendido") && !isSuperadmin;
 
-  // Load portal config and active alert in parallel
+  // Load portal config and active alert in parallel using client SDK with anon key
   const [configRes, alertRes] = await Promise.all([
-    adminSupabase
+    supabase
       .from("configuracion_portal")
       .select("*")
       .eq("tenant_id", tenant.id)
-      .single(),
-    adminSupabase
+      .maybeSingle(),
+    supabase
       .from("alertas_epidemiologicas")
       .select("*")
       .eq("tenant_id", tenant.id)

@@ -9,35 +9,35 @@ interface PageProps {
 export default async function PublicCitasPage({ params }: PageProps) {
   const { slug } = await params;
   const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
-  const adminSupabase = createAdminClient();
+  const supabase = await createClient();
 
   // Load tenant
-  let { data: tenant, error: tenantErr } = await adminSupabase
+  let { data: tenant } = await supabase
     .from("tenants")
     .select("id, nombre, activo")
     .eq("slug", cleanSlug)
     .maybeSingle();
 
-  if (!tenant && tenantErr) {
-    const supabase = await createClient();
-    const fallbackRes = await supabase
-      .from("tenants")
-      .select("id, nombre, activo")
-      .eq("slug", cleanSlug)
-      .maybeSingle();
-    tenant = fallbackRes.data;
+  if (!tenant) {
+    try {
+      const adminSupabase = createAdminClient();
+      const fallbackRes = await adminSupabase
+        .from("tenants")
+        .select("id, nombre, activo")
+        .eq("slug", cleanSlug)
+        .maybeSingle();
+      if (fallbackRes.data) tenant = fallbackRes.data;
+    } catch (_) {}
   }
 
   if (!tenant || !tenant.activo) notFound();
 
   // Load config
-  let config: any = null;
-  const { data: configData } = await adminSupabase
+  const { data: config } = await supabase
     .from("configuracion_portal")
     .select("nombre_doctor, especialidad, nombre_clinica, telefono, color_primario, color_acento, hero_badge_texto")
     .eq("tenant_id", tenant.id)
     .maybeSingle();
-  config = configData;
 
   const doctorName = config?.nombre_doctor || tenant.nombre || "Doctor";
   const specialty = config?.especialidad || "Medicina General y Especializada";

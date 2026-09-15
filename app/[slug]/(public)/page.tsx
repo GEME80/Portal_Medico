@@ -38,33 +38,35 @@ const renderModernIcon = (emoji: string = "") => {
 export default async function TenantHomePage({ params }: PageProps) {
   const { slug } = await params;
   const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
-  const adminSupabase = createAdminClient();
+  const supabase = await createClient();
 
   // Load tenant
-  let { data: tenant, error: tenantErr } = await adminSupabase
+  let { data: tenant } = await supabase
     .from("tenants")
     .select("id, nombre, activo")
     .eq("slug", cleanSlug)
     .maybeSingle();
 
-  if (!tenant && tenantErr) {
-    const supabase = await createClient();
-    const fallbackRes = await supabase
-      .from("tenants")
-      .select("id, nombre, activo")
-      .eq("slug", cleanSlug)
-      .maybeSingle();
-    tenant = fallbackRes.data;
+  if (!tenant) {
+    try {
+      const adminSupabase = createAdminClient();
+      const fallbackRes = await adminSupabase
+        .from("tenants")
+        .select("id, nombre, activo")
+        .eq("slug", cleanSlug)
+        .maybeSingle();
+      if (fallbackRes.data) tenant = fallbackRes.data;
+    } catch (_) {}
   }
 
   if (!tenant || !tenant.activo) notFound();
 
-  // Load all portal data in parallel
+  // Load all public portal data using client SDK with anon key (RLS public policies)
   const [configRes, lineasRes, hitosRes, noticiasRes] = await Promise.all([
-    adminSupabase.from("configuracion_portal").select("*").eq("tenant_id", tenant.id).single(),
-    adminSupabase.from("lineas_investigacion").select("*").eq("tenant_id", tenant.id).eq("activo", true).order("orden"),
-    adminSupabase.from("hitos_timeline").select("*").eq("tenant_id", tenant.id).order("orden"),
-    adminSupabase.from("noticias_posts").select("id,titulo,resumen,emoji,categoria,created_at,slug,imagen_portada_url").eq("tenant_id", tenant.id).eq("publicado", true).order("created_at", { ascending: false }).limit(6),
+    supabase.from("configuracion_portal").select("*").eq("tenant_id", tenant.id).maybeSingle(),
+    supabase.from("lineas_investigacion").select("*").eq("tenant_id", tenant.id).eq("activo", true).order("orden"),
+    supabase.from("hitos_timeline").select("*").eq("tenant_id", tenant.id).order("orden"),
+    supabase.from("noticias_posts").select("id,titulo,resumen,emoji,categoria,created_at,slug,imagen_portada_url").eq("tenant_id", tenant.id).eq("publicado", true).order("created_at", { ascending: false }).limit(6),
   ]);
 
   const config = configRes.data;
