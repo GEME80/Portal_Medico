@@ -12,13 +12,14 @@ interface TenantLayoutProps {
 
 export async function generateMetadata({ params }: TenantLayoutProps): Promise<Metadata> {
   const { slug } = await params;
+  const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
   const supabase = createAdminClient();
 
   const { data: tenant } = await supabase
     .from("tenants")
     .select("id, nombre")
-    .eq("slug", slug)
-    .single();
+    .eq("slug", cleanSlug)
+    .maybeSingle();
 
   if (!tenant) return { title: "Portal Médico" };
 
@@ -36,16 +37,28 @@ export async function generateMetadata({ params }: TenantLayoutProps): Promise<M
 
 export default async function TenantLayout({ children, params }: TenantLayoutProps) {
   const { slug } = await params;
+  const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
+  
   // Use admin client for data reads so suspended tenants (activo=false)
-  // are still readable — RLS blocks anon/authenticated reads when activo=false.
+  // are still readable — with automatic fallback to anon client if needed.
   const adminSupabase = createAdminClient();
 
   // Validate tenant exists and check status
-  const { data: tenant } = await adminSupabase
+  let { data: tenant, error: tenantErr } = await adminSupabase
     .from("tenants")
     .select("id, slug, nombre, activo, estado_pago")
-    .eq("slug", slug)
-    .single();
+    .eq("slug", cleanSlug)
+    .maybeSingle();
+
+  if (!tenant && tenantErr) {
+    const authSupabase = await createClient();
+    const fallbackRes = await authSupabase
+      .from("tenants")
+      .select("id, slug, nombre, activo, estado_pago")
+      .eq("slug", cleanSlug)
+      .maybeSingle();
+    tenant = fallbackRes.data;
+  }
 
   if (!tenant) notFound();
 

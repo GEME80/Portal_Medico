@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
 import ScrollObserver from "@/components/ScrollObserver";
@@ -37,14 +37,25 @@ const renderModernIcon = (emoji: string = "") => {
 
 export default async function TenantHomePage({ params }: PageProps) {
   const { slug } = await params;
+  const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
   const adminSupabase = createAdminClient();
 
   // Load tenant
-  const { data: tenant } = await adminSupabase
+  let { data: tenant, error: tenantErr } = await adminSupabase
     .from("tenants")
     .select("id, nombre, activo")
-    .eq("slug", slug)
-    .single();
+    .eq("slug", cleanSlug)
+    .maybeSingle();
+
+  if (!tenant && tenantErr) {
+    const supabase = await createClient();
+    const fallbackRes = await supabase
+      .from("tenants")
+      .select("id, nombre, activo")
+      .eq("slug", cleanSlug)
+      .maybeSingle();
+    tenant = fallbackRes.data;
+  }
 
   if (!tenant || !tenant.activo) notFound();
 

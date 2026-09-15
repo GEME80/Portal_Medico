@@ -26,13 +26,16 @@ export async function createClient() {
   );
 }
 
-/** Admin client with full access — ONLY for Server Actions & API Routes */
+/** Admin client with full access — for Server Actions, API Routes & SSR data loading with resilient fallback */
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export function createAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://nstiomejmhmcasxqxnbf.supabase.co";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdGlvbWVqbWhtY2FzeHF4bmJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMTIxMTgsImV4cCI6MjA5Nzc4ODExOH0.lVgojsgXUOX2xuTGEEefDgKuHbIEB02YXPsgem5_8wM";
+
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    url,
+    key,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }
