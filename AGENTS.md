@@ -111,6 +111,33 @@ await supabase.from('historias_clinicas').insert({
 });
 ```
 
+### Resiliencia de Clientes Supabase & Desacoplamiento de Claves (MANDATORIO)
+```typescript
+// 1. EN RUTAS PÚBLICAS (/[slug]/(public)/*):
+// OBLIGATORIO: Usar createClient() (cliente anónimo RLS público).
+// PROHIBIDO: Usar createAdminClient() para lecturas públicas.
+// Razón: Si la clave service_role rota o se revoca, la web pública NO debe caer ni degradarse a fallbacks.
+const supabase = await createClient();
+const { data: config } = await supabase.from('configuracion_portal').select('*').eq('tenant_id', tenant.id).maybeSingle();
+
+// 2. EN RUTAS ADMINISTRATIVAS (/[slug]/admin/*):
+// OBLIGATORIO: Resolver el tenant primariamente con authSupabase (sesión del usuario).
+// Mantener createAdminClient() con try/catch solo como respaldo para tenants suspendidos/inactivos.
+const authSupabase = await createClient();
+let { data: tenant } = await authSupabase.from('tenants').select('id, nombre, activo, estado_pago').eq('slug', cleanSlug).maybeSingle();
+if (!tenant) {
+  try {
+    const adminSupabase = createAdminClient();
+    const res = await adminSupabase.from('tenants').select('id, nombre, activo, estado_pago').eq('slug', cleanSlug).maybeSingle();
+    if (res.data) tenant = res.data;
+  } catch (_) {}
+}
+
+// 3. EN ESQUEMAS CON CONFIGURACIÓN JSONB (configuracion_portal):
+// PROHIBIDO: Consultar columnas inventadas como 'nombre_menu_vacunas' (error Postgres 42703).
+// OBLIGATORIO: Parsear heroData desde 'hero_badge_texto' (JSON string).
+```
+
 ### TypeScript (TOLERANCIA CERO A ERRORES)
 ```bash
 # Ejecutar SIEMPRE antes de proponer código como final:
@@ -154,3 +181,6 @@ SUPABASE_SERVICE_ROLE_KEY, CLINICAL_ENCRYPTION_KEY
 5. **PROHIBIDO** exponer `SUPABASE_SERVICE_ROLE_KEY` o `CLINICAL_ENCRYPTION_KEY` en código del lado del cliente.
 6. **PROHIBIDO** que `tsc --noEmit` falle con errores de tipado. Todo código propuesto DEBE compilar.
 7. **PROHIBIDO** referenciar el proyecto como `lacombemedicalclinic`, `dr-carlos-torres-portal` o cualquier nombre distinto de `Portal_Medico` / `HubMed`.
+8. **PROHIBIDO** acoplar rutas públicas a `createAdminClient()`; las lecturas públicas deben operar siempre bajo RLS anónimo con `createClient()`.
+9. **PROHIBIDO** proyectar columnas inexistentes en `configuracion_portal` (como `nombre_menu_vacunas`); los metadatos de configuración residen en `hero_badge_texto` (JSON).
+10. **PROHIBIDO** usar parámetros de ruta `slug` sin normalizar; aplicar siempre `cleanSlug = decodeURIComponent(slug).trim().toLowerCase()`.

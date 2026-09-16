@@ -118,6 +118,9 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_APP_URL
 | `UPDATE` sobre `estado = 'cerrado'` | Violación de la inalterabilidad legal | Nota aclaratoria con `parent_id` |
 | Usar puerto 5432 desde funciones serverless | Agota el pool de PostgreSQL | Puerto 6543 (PgBouncer Transaction Mode) |
 | Hardcodear `tenant_id` o `slug` | Acoplamiento que rompe la arquitectura multi-tenant | Leerlo del JWT (`app_metadata.tenant_id`) |
+| `createAdminClient()` en rutas públicas | Si la clave se revoca, la web pública cae a fallbacks | Usar `createClient()` (anon key bajo RLS) |
+| Proyectar columnas inventadas en `configuracion_portal` | Error Postgres 42703 (columna inexistente) | Parsear datos de UI desde el JSON `hero_badge_texto` |
+| Usar parámetro `slug` sin normalizar | Causa falsos 404 por encoding o mayúsculas | `cleanSlug = decodeURIComponent(slug).trim().toLowerCase()` |
 
 ---
 

@@ -73,11 +73,14 @@ const decrypted = decryptClinicalData(encryptedFromDB); // Al leer de DB
 // Si authTag falla → CRITICAL AUDIT ALERT → logs_auditoria → notificar SuperAdmin
 ```
 
-### 4. Conexión a Supabase
+### 4. Conexión a Supabase & Resiliencia de Clientes
 ```typescript
 // SIEMPRE puerto 6543 (PgBouncer Transaction Mode) — NUNCA 5432 desde serverless
-// Server Components / Server Actions → lib/supabase/server.ts (service role)
-// Client Components → lib/supabase/client.ts (anon key)
+// Rutas Públicas (/[slug]/(public)/*) → createClient() (anon key bajo RLS público)
+// Rutas Administrativas (/[slug]/admin/*) → authSupabase = createClient() (sesión) con fallback
+// Server Actions mutacionales de backend → lib/supabase/server.ts createAdminClient()
+// Client Components ('use client') → lib/supabase/client.ts (anon key)
+// NOTA: 'configuracion_portal' no tiene columnas de menú sueltas; parsear hero_badge_texto (JSON)
 ```
 
 ### 5. Normativa MinSalud Colombia

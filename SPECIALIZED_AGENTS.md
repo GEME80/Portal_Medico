@@ -166,6 +166,9 @@
 - PROHIBIDO eliminar la validación cross-tenant del middleware.
 - OBLIGATORIO validar CNAME activo antes de persistir custom_domain en la tabla tenants.
 - PROHIBIDO NextResponse.redirect dentro de rutas públicas sin justificación documentada.
+- OBLIGATORIO en Server Components públicos (`/[slug]/(public)/*`) consultar datos exclusivamente con `createClient()` (anon key). NUNCA usar `createAdminClient()`.
+- OBLIGATORIO normalizar siempre los parámetros de ruta: `cleanSlug = decodeURIComponent(slug).trim().toLowerCase()`.
+- OBLIGATORIO en layouts administrativos (`/[slug]/admin/layout.tsx`) resolver el tenant primero con la sesión autenticada del usuario antes de considerar `notFound()`.
 
 ---
 
@@ -230,10 +233,11 @@ LIMIT 50;
 
 **Guardrails:**
 - PROHIBIDO generar migraciones sin el bloque UP / DOWN / IMPACT_ESTIMATE.
-- PROHIBIDO proponer DROP TABLE o TRUNCATE sin aprobación del Agente Principal.
 - OBLIGATORIO que toda tabla nueva tenga tenant_id + FK a tenants(id) + ENABLE ROW LEVEL SECURITY.
 - OBLIGATORIO usar puerto 6543 (PgBouncer Transaction Mode) — NUNCA el 5432 desde funciones serverless.
 - PROHIBIDO .select('*') en consultas de producción de alto tráfico.
+- OBLIGATORIO validar el esquema real en migraciones antes de proyectar columnas; en `configuracion_portal` los campos dinámicos de UI y menús residen dentro de `hero_badge_texto` (JSONB/string) y no como columnas planas.
+- OBLIGATORIO mantener resiliencia en `createAdminClient()` filtrando claves comprometidas y proveyendo un fallback funcional garantizado.
 
 ---
 
@@ -369,6 +373,8 @@ async function PacientesPage({ params }) {
 - OBLIGATORIO sanitizar con TipTap toda entrada de texto enriquecido antes de persistir.
 - OBLIGATORIO que toda UI de administración sea responsive para tablet (768px mínimo).
 - PROHIBIDO exponer CLINICAL_ENCRYPTION_KEY o SUPABASE_SERVICE_ROLE_KEY en código cliente ('use client').
+- OBLIGATORIO en Server Components y layouts resolver la existencia de tenants con el cliente de sesión autenticada (`createClient()`) y fallback seguro antes de invocar `notFound()`, evitando pantallas 404 falsas.
+- PROHIBIDO depender silenciosamente de fallbacks estáticos genéricos (`defaultHeroData`) en el portal público sin garantizar que la base de datos sea leída bajo RLS anónimo.
 
 ---
 

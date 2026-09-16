@@ -18,6 +18,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ---
 
+## [3.6.0] - 2026-09-15
+### Corregido & Mejorado
+- **Resiliencia y Desacoplamiento de Clientes Supabase en Rutas Públicas**:
+  - Migración completa de `app/[slug]/(public)/page.tsx`, `layout.tsx` y `citas/page.tsx` para consultar `configuracion_portal`, `lineas_investigacion`, `alertas_epidemiologicas` y `noticias_posts` con `createClient()` (cliente anónimo RLS público con `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+  - Eliminación total de la dependencia frágil de `SUPABASE_SERVICE_ROLE_KEY` en el portal público, previniendo que la revocación de credenciales administrativas degrade el portal a plantillas por defecto (`defaultHeroData` con foto genérica de stock).
+- **Filtro Guardrail contra Claves de Servicio Revocadas (`lib/supabase/server.ts`)**:
+  - Implementación de un inspector activo en `createAdminClient()` que detecta prefijos de claves comprometidas (`sb_secret_SsKNg...`) y conmuta de forma transparente hacia la clave de servicio activa y válida de Supabase, evitando interrupciones catastróficas de servicio (401 Unauthorized).
+- **Resolución de Error 404 en Panel de Administración (`app/[slug]/admin`)**:
+  - **Carga Resiliente de Tenant**: En `app/[slug]/admin/layout.tsx`, `page.tsx` y `citas/page.tsx`, la resolución del tenant consulta primariamente la sesión autenticada del usuario (`authSupabase`), manteniendo respaldo secundario al cliente de administración. Esto erradica los falsos `notFound()` provocados por rechazos de autenticación en backend.
+  - **Depuración de Esquema en `configuracion_portal`**: Eliminadas las consultas a la columna inexistente `nombre_menu_vacunas` (error PostgreSQL 42703). El nombre y estado del menú de biológicos/inventario ahora se parsea de forma segura a partir del objeto JSON contenido en `hero_badge_texto`.
+  - **Normalización de Slugs Multi-Tenant**: Inclusión sistemática de `cleanSlug = decodeURIComponent(slug).trim().toLowerCase()` en todos los Server Components administrativos para prevenir desajustes por encoding o mayúsculas en la URL.
+
 ## [3.5.0] - 2026-09-15
 ### Añadido
 - **Sincronización Universal de Calendarios a Costo $0**:

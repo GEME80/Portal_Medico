@@ -38,6 +38,8 @@
    La información diagnóstica confidencial (`enfermedad_actual`, `motivo_consulta`, `anamnesis`, `plan_manejo`) debe cifrarse obligatoriamente en reposo con **AES-256-GCM** mediante el módulo `lib/crypto.ts` antes de persistir en base de datos.
 5. **Eficiencia en Recursos y Manejo de Bases de Datos:**  
    Toda consulta debe estar indexada adecuadamente y proyectar únicamente las columnas necesarias. Queda prohibido `.select('*')` en vistas de listados de pacientes o inventarios.
+6. **Resiliencia de Conectividad y Desacoplamiento de Claves Supabase:**  
+   Las consultas de cara pública (`/[slug]/(public)/*`) deben ejecutarse mediante el cliente anónimo bajo RLS (`createClient()`), sin depender de la clave `service_role`. El backend (`createAdminClient()`) debe contar con filtros de seguridad que neutralicen claves revocadas y provean un respaldo funcional garantizado para prevenir caídas y pantallas 404 erróneas.
 
 ---
 
