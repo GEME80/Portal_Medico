@@ -16,6 +16,23 @@
 Todos los cambios notables en este proyecto se documentan en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.10.1] - 2026-09-16
+### Añadido & Seguridad
+- **Gestión de Identidad, Perfil y Credenciales de Usuario & SuperAdmin**:
+  - **Identidad Fiel del SuperAdministrador en Espacios Clínicos**:
+    - Corrección en `app/[slug]/admin/layout.tsx` para que cuando el SuperAdmin (`gerkof@gmail.com`) acceda al espacio de cualquier consultorio/doctor, el panel reconozca y muestre fielmente los datos del SuperAdministrador (nombre, correo y rol con corona distintiva 👑), en lugar de heredar estáticamente el nombre del doctor del consultorio.
+  - **Tarjeta de Usuario Interactiva & Enlace Rápido en Sidebar (`AdminShell.tsx`)**:
+    - Sidebar desktop y drawer móvil con tarjeta de usuario clicable, avatar dinámico por rol, visualización de correo electrónico y botón de acceso a "Mi Cuenta / Seguridad".
+    - Acceso directo a la **Consola Global SuperAdmin** (`/superadmin`) para el SuperAdministrador cuando navega en cualquier tenant.
+  - **Modal Integral de Perfil & Seguridad (`UserProfileModal.tsx`)**:
+    - Pestaña de **Datos de Usuario**: Edición de nombre para mostrar y correo electrónico con validación y actualización en tiempo real.
+    - Pestaña de **Seguridad & Contraseña**: Cambio inmediato de contraseña con requerimiento mínimo de 6 caracteres, confirmación asistida y visibilidad de caracteres con botón tipo ojo.
+  - **Server Actions Centralizadas (`lib/actions/account-actions.ts`)**:
+    - `updateCurrentUserPasswordAction`: Modificación segura de contraseña mediante Auth Admin API con verificación estricta de sesión activa.
+    - `updateCurrentUserProfileAction`: Actualización atómica de nombre, metadatos y correo en Auth y `miembros_equipo`, preservando metadatos de superadmin.
+  - **Consola SuperAdmin Mejorada (`app/superadmin/layout.tsx` & `SuperadminUserCard.tsx`)**:
+    - Reemplazo de datos estáticos en el footer por tarjeta de usuario dinámica con apertura directa del modal de gestión de credenciales.
+
 ## [3.10.0] - 2026-09-16
 ### Añadido & Seguridad
 - **Control de Acceso Basado en Roles (RBAC) y Segregación de Actos Médicos (Resolución 1995 de 1999 de MinSalud)**:

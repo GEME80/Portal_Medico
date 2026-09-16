@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import LogoutButton from "./components/LogoutButton";
+import SuperadminUserCard from "./components/SuperadminUserCard";
 import "../admin.css";
 
 import { headers } from "next/headers";
@@ -31,6 +32,12 @@ export default async function SuperadminLayout({ children }: SuperadminLayoutPro
   if (!user || !isSuperadmin) {
     redirect("/superadmin/login");
   }
+
+  const superadminEmail = user?.email || "gerkof@gmail.com";
+  const superadminName =
+    user?.user_metadata?.nombre ||
+    user?.user_metadata?.full_name ||
+    (user?.email?.toLowerCase() === "gerkof@gmail.com" ? "Germán Morales" : "Super Administrador");
 
   return (
     <div className="admin-shell">
@@ -81,13 +88,7 @@ export default async function SuperadminLayout({ children }: SuperadminLayoutPro
 
         <div className="sidebar-footer">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
-            <div className="sidebar-user" style={{ background: "rgba(255,255,255,0.03)" }}>
-              <div className="sidebar-avatar">👑</div>
-              <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                <div className="sidebar-user-name">gerkof@gmail.com</div>
-                <div className="sidebar-user-role">Super Administrador</div>
-              </div>
-            </div>
+            <SuperadminUserCard userDisplayName={superadminName} userEmail={superadminEmail} />
             <LogoutButton />
           </div>
         </div>

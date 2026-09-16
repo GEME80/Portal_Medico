@@ -77,9 +77,14 @@ export default async function TenantAdminLayout({ children, params }: Props) {
     noticias: true,
   };
   let userDisplayName = doctorName;
+  const userEmail = user?.email || "";
 
   if (isSuperadmin) {
     userRole = "superadmin";
+    userDisplayName =
+      user?.user_metadata?.nombre ||
+      user?.user_metadata?.full_name ||
+      (user?.email?.toLowerCase() === "gerkof@gmail.com" ? "Germán Morales" : "Super Administrador");
   } else if (user) {
     const { data: memberData } = await authSupabase
       .from("miembros_equipo")
@@ -96,6 +101,8 @@ export default async function TenantAdminLayout({ children, params }: Props) {
       userRole = user.app_metadata.role;
       if (user.user_metadata?.nombre) userDisplayName = user.user_metadata.nombre;
       if (user.user_metadata?.permisos) userPermisos = user.user_metadata.permisos;
+    } else if (user.user_metadata?.nombre) {
+      userDisplayName = user.user_metadata.nombre;
     }
   }
 
@@ -112,6 +119,7 @@ export default async function TenantAdminLayout({ children, params }: Props) {
       tenantSlug={slug}
       doctorName={doctorName}
       userDisplayName={userDisplayName}
+      userEmail={userEmail}
       userRole={userRole}
       userPermisos={userPermisos}
       primaryColor={primaryColor}

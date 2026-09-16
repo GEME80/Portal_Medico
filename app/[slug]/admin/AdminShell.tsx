@@ -22,16 +22,21 @@ import {
   Menu,
   X,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  UserCog,
+  Crown,
+  Settings
 } from "lucide-react";
 import "../../admin.css";
 import "./doctor-portal.css";
+import UserProfileModal from "./UserProfileModal";
 
 interface AdminShellProps {
   children: React.ReactNode;
   tenantSlug: string;
   doctorName: string;
   userDisplayName?: string;
+  userEmail?: string;
   userRole?: "superadmin" | "admin" | "medico" | "recepcion";
   userPermisos?: {
     citas?: boolean;
@@ -54,6 +59,7 @@ export default function AdminShell({
   tenantSlug,
   doctorName,
   userDisplayName,
+  userEmail,
   userRole = "medico",
   userPermisos,
   primaryColor,
@@ -71,6 +77,7 @@ export default function AdminShell({
   const supabase = createClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const restrictedNotice = searchParams?.get("alerta") === "restringido_medico";
 
   const rawNavItems = [
@@ -251,23 +258,125 @@ export default function AdminShell({
 
           <span className="sidebar-section-label">Sesión</span>
           <button
-            onClick={handleLogout}
+            onClick={() => {
+              setDrawerOpen(false);
+              setProfileModalOpen(true);
+            }}
             className="sidebar-link"
             style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "4px" }}
+          >
+            <span className="sidebar-link-icon"><UserCog size={16} strokeWidth={2} /></span> Mi Cuenta / Seguridad
+          </button>
+          {isSuperadmin && (
+            <a
+              href="/superadmin"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sidebar-link"
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#fbbf24" }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Crown size={16} color="#fbbf24" strokeWidth={2} />
+                <span style={{ fontWeight: 600 }}>Consola SuperAdmin</span>
+              </span>
+              <ExternalLink size={14} style={{ opacity: 0.8 }} />
+            </a>
+          )}
+          <button
+            onClick={handleLogout}
+            className="sidebar-link"
+            style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "2px" }}
           >
              <span className="sidebar-link-icon"><LogOut size={16} strokeWidth={2} /></span> Cerrar Sesión
           </button>
         </nav>
 
         <div className="sidebar-footer" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div className="sidebar-user" style={{ background: "rgba(255, 255, 255, 0.03)", padding: "12px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "14px" }}>
-            <img src="/icon.png" alt="Logo" style={{ width: "42px", height: "42px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
-            <div>
-              <div className="sidebar-user-name" style={{ fontSize: "15px", fontWeight: "700" }}>{userDisplayName || doctorName}</div>
-              <div className="sidebar-user-role">
-                {isRecepcion ? "Personal Administrativo" : isSuperadmin ? "SuperAdmin" : "Médico Especialista"}
+          <div
+            onClick={() => {
+              setDrawerOpen(false);
+              setProfileModalOpen(true);
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                setDrawerOpen(false);
+                setProfileModalOpen(true);
+              }
+            }}
+            className="sidebar-user"
+            title="Clic para gestionar tu cuenta o cambiar contraseña"
+            style={{
+              background: isSuperadmin ? "rgba(245, 158, 11, 0.08)" : "rgba(255, 255, 255, 0.03)",
+              border: isSuperadmin ? "1px solid rgba(245, 158, 11, 0.3)" : "1px solid rgba(255, 255, 255, 0.08)",
+              padding: "10px 12px",
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <div
+              style={{
+                width: "38px",
+                height: "38px",
+                borderRadius: "10px",
+                background: isSuperadmin
+                  ? "linear-gradient(135deg, #f59e0b, #d97706)"
+                  : `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ffffff",
+                flexShrink: 0,
+                boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+              }}
+            >
+              {isSuperadmin ? <Crown size={20} /> : isRecepcion ? <Users size={18} /> : <Stethoscope size={18} />}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                className="sidebar-user-name"
+                style={{
+                  fontSize: "13.5px",
+                  fontWeight: "700",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  color: "#f8fafc",
+                }}
+              >
+                {userDisplayName || doctorName}
+              </div>
+              {userEmail && (
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "rgba(255, 255, 255, 0.55)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {userEmail}
+                </div>
+              )}
+              <div
+                className="sidebar-user-role"
+                style={{
+                  fontSize: "11px",
+                  color: isSuperadmin ? "#fbbf24" : accentColor,
+                  fontWeight: 600,
+                  marginTop: "1px",
+                }}
+              >
+                {isRecepcion ? "Personal Administrativo" : isSuperadmin ? "👑 SuperAdmin" : "Médico Especialista"}
               </div>
             </div>
+            <Settings size={15} style={{ color: "rgba(255, 255, 255, 0.4)", flexShrink: 0 }} />
           </div>
         </div>
       </div>
@@ -338,23 +447,116 @@ export default function AdminShell({
 
           <span className="sidebar-section-label">Sesión</span>
           <button
-            onClick={handleLogout}
+            onClick={() => setProfileModalOpen(true)}
             className="sidebar-link"
             style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "4px" }}
+          >
+            <span className="sidebar-link-icon"><UserCog size={16} strokeWidth={2} /></span> Mi Cuenta / Seguridad
+          </button>
+          {isSuperadmin && (
+            <a
+              href="/superadmin"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sidebar-link"
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#fbbf24" }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Crown size={16} color="#fbbf24" strokeWidth={2} />
+                <span style={{ fontWeight: 600 }}>Consola SuperAdmin</span>
+              </span>
+              <ExternalLink size={14} style={{ opacity: 0.8 }} />
+            </a>
+          )}
+          <button
+            onClick={handleLogout}
+            className="sidebar-link"
+            style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "2px" }}
           >
              <span className="sidebar-link-icon"><LogOut size={16} strokeWidth={2} /></span> Cerrar Sesión
           </button>
         </nav>
 
         <div className="sidebar-footer" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div className="sidebar-user" style={{ background: "rgba(255, 255, 255, 0.03)", padding: "12px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "14px" }}>
-            <img src="/icon.png" alt="Logo" style={{ width: "42px", height: "42px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
-            <div>
-              <div className="sidebar-user-name" style={{ fontSize: "15px", fontWeight: "700" }}>{userDisplayName || doctorName}</div>
-              <div className="sidebar-user-role">
-                {isRecepcion ? "Personal Administrativo" : isSuperadmin ? "SuperAdmin" : "Médico Especialista"}
+          <div
+            onClick={() => setProfileModalOpen(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") setProfileModalOpen(true);
+            }}
+            className="sidebar-user"
+            title="Clic para gestionar tu cuenta o cambiar contraseña"
+            style={{
+              background: isSuperadmin ? "rgba(245, 158, 11, 0.08)" : "rgba(255, 255, 255, 0.03)",
+              border: isSuperadmin ? "1px solid rgba(245, 158, 11, 0.3)" : "1px solid rgba(255, 255, 255, 0.08)",
+              padding: "10px 12px",
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <div
+              style={{
+                width: "38px",
+                height: "38px",
+                borderRadius: "10px",
+                background: isSuperadmin
+                  ? "linear-gradient(135deg, #f59e0b, #d97706)"
+                  : `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ffffff",
+                flexShrink: 0,
+                boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+              }}
+            >
+              {isSuperadmin ? <Crown size={20} /> : isRecepcion ? <Users size={18} /> : <Stethoscope size={18} />}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                className="sidebar-user-name"
+                style={{
+                  fontSize: "13.5px",
+                  fontWeight: "700",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  color: "#f8fafc",
+                }}
+              >
+                {userDisplayName || doctorName}
+              </div>
+              {userEmail && (
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "rgba(255, 255, 255, 0.55)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {userEmail}
+                </div>
+              )}
+              <div
+                className="sidebar-user-role"
+                style={{
+                  fontSize: "11px",
+                  color: isSuperadmin ? "#fbbf24" : accentColor,
+                  fontWeight: 600,
+                  marginTop: "1px",
+                }}
+              >
+                {isRecepcion ? "Personal Administrativo" : isSuperadmin ? "👑 SuperAdmin" : "Médico Especialista"}
               </div>
             </div>
+            <Settings size={15} style={{ color: "rgba(255, 255, 255, 0.4)", flexShrink: 0 }} />
           </div>
         </div>
       </aside>
@@ -607,6 +809,20 @@ export default function AdminShell({
           </Link>
         ))}
       </nav>
+
+      {/* ── MODAL DE PERFIL Y SEGURIDAD ────────────────────────────── */}
+      <UserProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        userDisplayName={userDisplayName || doctorName}
+        userEmail={userEmail || ""}
+        userRole={userRole}
+        isSuperadmin={isSuperadmin}
+        tenantSlug={tenantSlug}
+        doctorName={doctorName}
+        primaryColor={primaryColor}
+        accentColor={accentColor}
+      />
     </div>
   );
 }
