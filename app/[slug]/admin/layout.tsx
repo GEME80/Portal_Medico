@@ -10,39 +10,63 @@ interface Props {
 
 export default async function TenantAdminLayout({ children, params }: Props) {
   const { slug } = await params;
+  const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
 
-  // Use service-role client to fetch tenant so that suspended tenants
-  // (activo=false) are still readable — RLS blocks anon/authenticated reads
-  // when activo=false, which would cause a 404 instead of the suspension overlay.
-  const adminSupabase = createAdminClient();
+  const authSupabase = await createClient();
+  const { data: { user } } = await authSupabase.auth.getUser();
 
-  // Load tenant
-  const { data: tenant } = await adminSupabase
+  // Load tenant with resilient fallback (auth client first, then admin client)
+  let tenant: any = null;
+  const { data: authTenant } = await authSupabase
     .from("tenants")
     .select("id, nombre, activo, estado_pago, fecha_vencimiento")
-    .eq("slug", slug)
-    .single();
+    .eq("slug", cleanSlug)
+    .maybeSingle();
+
+  if (authTenant) {
+    tenant = authTenant;
+  } else {
+    try {
+      const adminSupabase = createAdminClient();
+      const { data: adminTenant } = await adminSupabase
+        .from("tenants")
+        .select("id, nombre, activo, estado_pago, fecha_vencimiento")
+        .eq("slug", cleanSlug)
+        .maybeSingle();
+      if (adminTenant) tenant = adminTenant;
+    } catch (_) {}
+  }
 
   if (!tenant) notFound();
 
-  // Load configuration for branding (use admin client — tenant may be inactive)
-  const { data: config } = await adminSupabase
+  // Load configuration for branding
+  let config: any = null;
+  const { data: confData } = await authSupabase
     .from("configuracion_portal")
-    .select("nombre_doctor, color_primario, color_acento, nombre_menu_vacunas, habilitar_menu_vacunas")
+    .select("nombre_doctor, color_primario, color_acento, hero_badge_texto")
     .eq("tenant_id", tenant.id)
-    .single();
+    .maybeSingle();
+  config = confData;
+
+  let heroData: any = {};
+  if (config?.hero_badge_texto) {
+    try {
+      if (typeof config.hero_badge_texto === "string" && config.hero_badge_texto.startsWith("{")) {
+        heroData = JSON.parse(config.hero_badge_texto);
+      }
+    } catch (_) {}
+  }
 
   const doctorName = config?.nombre_doctor || tenant.nombre || "Doctor";
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
-  const inventoryName = config?.nombre_menu_vacunas || "Inventario Médico";
+  const inventoryName = heroData?.nombre_menu_vacunas || "Inventario Médico";
+  const habilitarMenuVacunas = heroData?.habilitar_menu_vacunas !== false;
 
   // Check if current user is superadmin (auth session is not affected by RLS)
-  const authSupabase = await createClient();
-  const { data: { user } } = await authSupabase.auth.getUser();
   const isSuperadmin = user?.email?.toLowerCase() === process.env.SUPERADMIN_EMAIL?.toLowerCase() || user?.email?.toLowerCase() === "gerkof@gmail.com" || user?.app_metadata?.role === "superadmin";
   const userMetadataPerm = user?.user_metadata?.inventario_enabled;
-  const inventarioHabilitado = isSuperadmin || (userMetadataPerm !== undefined ? Boolean(userMetadataPerm) : (config?.habilitar_menu_vacunas !== false));
+  const inventarioHabilitado = isSuperadmin || (userMetadataPerm !== undefined ? Boolean(userMetadataPerm) : habilitarMenuVacunas);
 
   const isMora = tenant.estado_pago === "mora";
   const isSuspended = !tenant.activo || tenant.estado_pago === "suspendido";

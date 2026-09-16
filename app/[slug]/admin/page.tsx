@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DashboardCharts from "./DashboardCharts";
@@ -9,43 +9,71 @@ interface Props {
 
 export default async function TenantAdminDashboard({ params }: Props) {
   const { slug } = await params;
-  // Use admin client — suspended tenants (activo=false) are blocked by RLS
-  // for the regular client, causing a 404 instead of showing the overlay.
-  const supabase = createAdminClient();
+  const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
 
-  // Load tenant first to get the ID
-  const { data: tenant } = await supabase
+  const authSupabase = await createClient();
+
+  // Load tenant with resilient fallback
+  let tenant: any = null;
+  const { data: authTenant } = await authSupabase
     .from("tenants")
     .select("id, nombre, activo, estado_pago")
-    .eq("slug", slug)
-    .single();
+    .eq("slug", cleanSlug)
+    .maybeSingle();
+
+  if (authTenant) {
+    tenant = authTenant;
+  } else {
+    try {
+      const adminSupabase = createAdminClient();
+      const { data: adminTenant } = await adminSupabase
+        .from("tenants")
+        .select("id, nombre, activo, estado_pago")
+        .eq("slug", cleanSlug)
+        .maybeSingle();
+      if (adminTenant) tenant = adminTenant;
+    } catch (_) {}
+  }
 
   if (!tenant) notFound();
 
   // Load config
-  const { data: config } = await supabase
+  let config: any = null;
+  const { data: confData } = await authSupabase
     .from("configuracion_portal")
-    .select("nombre_doctor, color_primario, color_acento, nombre_menu_vacunas")
+    .select("nombre_doctor, color_primario, color_acento, hero_badge_texto")
     .eq("tenant_id", tenant.id)
-    .single();
+    .maybeSingle();
+  config = confData;
+
+  let heroData: any = {};
+  if (config?.hero_badge_texto) {
+    try {
+      if (typeof config.hero_badge_texto === "string" && config.hero_badge_texto.startsWith("{")) {
+        heroData = JSON.parse(config.hero_badge_texto);
+      }
+    } catch (_) {}
+  }
 
   const doctorName = config?.nombre_doctor || "Doctor";
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
-  const inventoryName = config?.nombre_menu_vacunas || "Inventario Médico";
+  const inventoryName = heroData?.nombre_menu_vacunas || "Inventario Médico";
+
+  const db = createAdminClient();
 
   // KPIs Queries
-  const { count: totalInventario } = await supabase
+  const { count: totalInventario } = await db
     .from("inventario_medico")
     .select("*", { count: "exact", head: true })
     .eq("tenant_id", tenant.id);
 
-  const { count: stockBajo } = await supabase
+  const { count: stockBajo } = await db
     .from("inventario_medico")
     .select("*", { count: "exact", head: true })
     .eq("tenant_id", tenant.id)
-    .lte("stock_actual", 5); // Simplification: we'd ideally compare stock_actual <= stock_minimo but PostgREST can't do column comparison easily without RPC, so we fetch low stock or assume a generic threshold, or we fetch all and filter.
-    
+    .lte("stock_actual", 5);
+
   // Fetch all items, categories and movements
   const [
     { data: inventarioData, error: invErr },
@@ -53,10 +81,10 @@ export default async function TenantAdminDashboard({ params }: Props) {
     { data: movimientosData },
     { data: lotesData }
   ] = await Promise.all([
-    supabase.from("inventario_medico").select("*").eq("tenant_id", tenant.id),
-    supabase.from("categorias_inventario").select("*").eq("tenant_id", tenant.id),
-    supabase.from("movimientos_inventario").select("*").eq("tenant_id", tenant.id),
-    supabase.from("lotes_inventario").select("*").eq("tenant_id", tenant.id).order("fecha_registro", { ascending: false })
+    db.from("inventario_medico").select("*").eq("tenant_id", tenant.id),
+    db.from("categorias_inventario").select("*").eq("tenant_id", tenant.id),
+    db.from("movimientos_inventario").select("*").eq("tenant_id", tenant.id),
+    db.from("lotes_inventario").select("*").eq("tenant_id", tenant.id).order("fecha_registro", { ascending: false })
   ]);
 
   if (invErr) {
@@ -171,7 +199,7 @@ export default async function TenantAdminDashboard({ params }: Props) {
   // Lotes por vencer (90 días)
   const noventaDias = new Date();
   noventaDias.setDate(noventaDias.getDate() + 90);
-  const { count: lotesVencer } = await supabase
+  const { count: lotesVencer } = await db
     .from("lotes_inventario")
     .select("*", { count: "exact", head: true })
     .eq("tenant_id", tenant.id)

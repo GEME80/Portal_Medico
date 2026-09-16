@@ -8,6 +8,7 @@ interface Props {
 
 export default async function CitasPage({ params }: Props) {
   const { slug } = await params;
+  const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
   const authSupabase = await createClient();
   const { data: { user } } = await authSupabase.auth.getUser();
 
@@ -15,14 +16,27 @@ export default async function CitasPage({ params }: Props) {
     redirect(`/${slug}/login`);
   }
 
-  const adminSupabase = createAdminClient();
-
-  // Obtener tenant
-  const { data: tenant } = await adminSupabase
+  // Obtener tenant con fallback resiliente
+  let tenant: any = null;
+  const { data: authTenant } = await authSupabase
     .from("tenants")
     .select("id, nombre")
-    .eq("slug", slug)
-    .single();
+    .eq("slug", cleanSlug)
+    .maybeSingle();
+
+  if (authTenant) {
+    tenant = authTenant;
+  } else {
+    try {
+      const adminSupabase = createAdminClient();
+      const { data: adminTenant } = await adminSupabase
+        .from("tenants")
+        .select("id, nombre")
+        .eq("slug", cleanSlug)
+        .maybeSingle();
+      if (adminTenant) tenant = adminTenant;
+    } catch (_) {}
+  }
 
   if (!tenant) {
     redirect(`/${slug}/login`);
@@ -33,11 +47,11 @@ export default async function CitasPage({ params }: Props) {
   let initialConfig = undefined;
 
   try {
-    const { data: configRow } = await adminSupabase
+    const { data: configRow } = await authSupabase
       .from("configuracion_portal")
       .select("hero_badge_texto")
       .eq("tenant_id", tenant.id)
-      .single();
+      .maybeSingle();
 
     if (configRow?.hero_badge_texto) {
       try {
@@ -50,6 +64,7 @@ export default async function CitasPage({ params }: Props) {
       } catch (e) {}
     }
 
+    const adminSupabase = createAdminClient();
     const { data, error } = await adminSupabase
       .from("citas_medicas")
       .select("*, pacientes(nombres, apellidos, documento)")
