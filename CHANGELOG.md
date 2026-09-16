@@ -21,8 +21,8 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **Gestión de Identidad, Perfil y Credenciales de Usuario & SuperAdmin**:
   - **Identidad Fiel del SuperAdministrador en Espacios Clínicos**:
     - Corrección en `app/[slug]/admin/layout.tsx` para que cuando el SuperAdmin (`gerkof@gmail.com`) acceda al espacio de cualquier consultorio/doctor, el panel reconozca y muestre fielmente los datos del SuperAdministrador (nombre, correo y rol con corona distintiva 👑), en lugar de heredar estáticamente el nombre del doctor del consultorio.
-  - **Tarjeta de Usuario Interactiva & Enlace Rápido en Sidebar (`AdminShell.tsx`)**:
-    - Sidebar desktop y drawer móvil con tarjeta de usuario clicable, avatar dinámico por rol, visualización de correo electrónico y botón de acceso a "Mi Cuenta / Seguridad".
+  - **Tarjeta de Usuario Interactiva en Pie de Sidebar (`AdminShell.tsx`)**:
+    - Sidebar desktop y drawer móvil con tarjeta de usuario clicable, avatar dinámico por rol, visualización de correo electrónico y botón de engranaje para abrir el modal de perfil y seguridad, manteniendo el menú de navegación limpio sin duplicidad de opciones.
     - Acceso directo a la **Consola Global SuperAdmin** (`/superadmin`) para el SuperAdministrador cuando navega en cualquier tenant.
   - **Modal Integral de Perfil & Seguridad (`UserProfileModal.tsx`)**:
     - Pestaña de **Datos de Usuario**: Edición de nombre para mostrar y correo electrónico con validación y actualización en tiempo real.

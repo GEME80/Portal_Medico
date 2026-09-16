@@ -23,7 +23,6 @@ import {
   X,
   Clock,
   CheckCircle2,
-  UserCog,
   Crown,
   Settings
 } from "lucide-react";
@@ -257,16 +256,6 @@ export default function AdminShell({
           </Link>
 
           <span className="sidebar-section-label">Sesión</span>
-          <button
-            onClick={() => {
-              setDrawerOpen(false);
-              setProfileModalOpen(true);
-            }}
-            className="sidebar-link"
-            style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "4px" }}
-          >
-            <span className="sidebar-link-icon"><UserCog size={16} strokeWidth={2} /></span> Mi Cuenta / Seguridad
-          </button>
           {isSuperadmin && (
             <a
               href="/superadmin"
@@ -285,7 +274,7 @@ export default function AdminShell({
           <button
             onClick={handleLogout}
             className="sidebar-link"
-            style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "2px" }}
+            style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "4px" }}
           >
              <span className="sidebar-link-icon"><LogOut size={16} strokeWidth={2} /></span> Cerrar Sesión
           </button>
@@ -446,13 +435,6 @@ export default function AdminShell({
           </Link>
 
           <span className="sidebar-section-label">Sesión</span>
-          <button
-            onClick={() => setProfileModalOpen(true)}
-            className="sidebar-link"
-            style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "4px" }}
-          >
-            <span className="sidebar-link-icon"><UserCog size={16} strokeWidth={2} /></span> Mi Cuenta / Seguridad
-          </button>
           {isSuperadmin && (
             <a
               href="/superadmin"
@@ -471,7 +453,7 @@ export default function AdminShell({
           <button
             onClick={handleLogout}
             className="sidebar-link"
-            style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "2px" }}
+            style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "4px" }}
           >
              <span className="sidebar-link-icon"><LogOut size={16} strokeWidth={2} /></span> Cerrar Sesión
           </button>
