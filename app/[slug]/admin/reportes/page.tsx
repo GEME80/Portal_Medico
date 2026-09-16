@@ -46,12 +46,38 @@ export default async function ReportesPage({ params }: Props) {
 
   const adminClient = createAdminClient();
 
-  // Load portal config to extract rips_config from hero_badge_texto
-  const { data: configData } = await adminClient
-    .from("configuracion_portal")
-    .select("hero_badge_texto, nombre_doctor, nombre_clinica")
-    .eq("tenant_id", tenant.id)
-    .maybeSingle();
+  // Load portal config and clinical records concurrently
+  const [
+    { data: configData },
+    { data: historias, error }
+  ] = await Promise.all([
+    adminClient
+      .from("configuracion_portal")
+      .select("hero_badge_texto, nombre_doctor, nombre_clinica")
+      .eq("tenant_id", tenant.id)
+      .maybeSingle(),
+    adminClient
+      .from("historias_clinicas")
+      .select(`
+        id,
+        created_at,
+        estado,
+        impresion_diagnostica,
+        procedimientos,
+        snapshot_demografico,
+        pacientes (
+          id,
+          documento,
+          tipo_documento,
+          nombres,
+          apellidos,
+          fecha_nacimiento,
+          genero
+        )
+      `)
+      .eq("tenant_id", tenant.id)
+      .order("created_at", { ascending: false })
+  ]);
 
   let ripsConfig: RipsPrestadorConfig = {
     numDocumentoIdObligado: "",
@@ -74,29 +100,6 @@ export default async function ReportesPage({ params }: Props) {
       // ignore
     }
   }
-
-  // Load historias clínicas for RIPS report (safe metadata projection only)
-  const { data: historias, error } = await adminClient
-    .from("historias_clinicas")
-    .select(`
-      id,
-      created_at,
-      estado,
-      impresion_diagnostica,
-      procedimientos,
-      snapshot_demografico,
-      pacientes (
-        id,
-        documento,
-        tipo_documento,
-        nombres,
-        apellidos,
-        fecha_nacimiento,
-        genero
-      )
-    `)
-    .eq("tenant_id", tenant.id)
-    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error loading clinical records for RIPS:", error);

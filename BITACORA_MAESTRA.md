@@ -25,7 +25,7 @@
 > **Infraestructura Cloud:** ☁️ **Vercel Global Edge Network (Next.js 16) + Supabase Managed PostgreSQL (AWS Multi-AZ)**  
 > **Estándar Ciberseguridad:** 🔒 **Multi-Tenant RLS Deny-by-Default + AES-256-GCM Column Encryption + Privacy-Preserving Scheduling**  
 > **Estándar Normativo Sanitario:** ⚕️ **Ministerio de Salud de Colombia (Resolución 2275 de 2023, Resolución 000948 de 2026, RIPS, CIE-10, CUPS, REPS, ReTHUS)**  
-> **Fecha de Actualización:** 16 de Septiembre 2026 (v3.10.1)  
+> **Fecha de Actualización:** 16 de Septiembre 2026 (v3.10.2)  
 
 ---
 

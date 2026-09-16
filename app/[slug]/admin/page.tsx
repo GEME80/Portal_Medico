@@ -68,25 +68,17 @@ export default async function TenantAdminDashboard({ params }: Props) {
 
   const db = createAdminClient();
 
-  // KPIs Queries
-  const { count: totalInventario } = await db
-    .from("inventario_medico")
-    .select("*", { count: "exact", head: true })
-    .eq("tenant_id", tenant.id);
-
-  const { count: stockBajo } = await db
-    .from("inventario_medico")
-    .select("*", { count: "exact", head: true })
-    .eq("tenant_id", tenant.id)
-    .lte("stock_actual", 5);
-
-  // Fetch all items, categories and movements
+  // Fetch all items, categories, movements and KPI counts concurrently in a single batch
   const [
+    { count: totalInventario },
+    { count: stockBajo },
     { data: inventarioData, error: invErr },
     { data: categoriasData },
     { data: movimientosData },
     { data: lotesData }
   ] = await Promise.all([
+    db.from("inventario_medico").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id),
+    db.from("inventario_medico").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id).lte("stock_actual", 5),
     db.from("inventario_medico").select("*").eq("tenant_id", tenant.id),
     db.from("categorias_inventario").select("*").eq("tenant_id", tenant.id),
     db.from("movimientos_inventario").select("*").eq("tenant_id", tenant.id),

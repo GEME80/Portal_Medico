@@ -5,6 +5,10 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_PREFIXES = ["/_next", "/api", "/favicon.ico"];
 const RESERVED_SLUGS = new Set(["superadmin", "api", "admin", "_next", "favicon.ico", "auth"]);
 
+// Fast in-memory cache for tenant slug/domain to ID mapping (eliminates 150-300ms DB latency on client navigations)
+const tenantCache = new Map<string, { id: string; slug?: string; timestamp: number }>();
+const TENANT_CACHE_TTL_MS = 1000 * 60 * 5; // 5 minutes
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -42,7 +46,7 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // 3. Resolve Tenant (by Custom Domain or path slug)
+  // 3. Resolve Tenant (by Custom Domain or path slug) with fast cache
   const hostname = request.headers.get("host") || "";
   
   const getFallbackHost = () => {
@@ -61,21 +65,26 @@ export async function middleware(request: NextRequest) {
 
   let tenantSlug: string | null = null;
   let tenantId: string | null = null;
-  let isSuspended = false;
 
   if (isCustomDomain) {
-    // Look up tenant slug by custom domain
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id, slug, activo, estado_pago")
-      .eq("custom_domain", hostname)
-      .single();
+    const cacheKey = `domain:${hostname}`;
+    const cached = tenantCache.get(cacheKey);
+    const now = Date.now();
 
-    if (tenant) {
-      tenantSlug = tenant.slug;
-      tenantId = tenant.id;
-      if (!tenant.activo || tenant.estado_pago === "suspendido") {
-        isSuspended = true;
+    if (cached && (now - cached.timestamp < TENANT_CACHE_TTL_MS)) {
+      tenantSlug = cached.slug || null;
+      tenantId = cached.id;
+    } else {
+      const { data: tenant } = await supabase
+        .from("tenants")
+        .select("id, slug")
+        .eq("custom_domain", hostname)
+        .maybeSingle();
+
+      if (tenant) {
+        tenantSlug = tenant.slug;
+        tenantId = tenant.id;
+        tenantCache.set(cacheKey, { id: tenant.id, slug: tenant.slug, timestamp: now });
       }
     }
   } else {
@@ -85,18 +94,22 @@ export async function middleware(request: NextRequest) {
 
     if (potentialSlug && !RESERVED_SLUGS.has(potentialSlug)) {
       tenantSlug = potentialSlug;
-      
-      // Look up tenant to check suspension state and get ID
-      const { data: tenant } = await supabase
-        .from("tenants")
-        .select("id, activo, estado_pago")
-        .eq("slug", potentialSlug)
-        .single();
+      const cacheKey = `slug:${potentialSlug}`;
+      const cached = tenantCache.get(cacheKey);
+      const now = Date.now();
 
-      if (tenant) {
-        tenantId = tenant.id;
-        if (!tenant.activo || tenant.estado_pago === "suspendido") {
-          isSuspended = true;
+      if (cached && (now - cached.timestamp < TENANT_CACHE_TTL_MS)) {
+        tenantId = cached.id;
+      } else {
+        const { data: tenant } = await supabase
+          .from("tenants")
+          .select("id")
+          .eq("slug", potentialSlug)
+          .maybeSingle();
+
+        if (tenant) {
+          tenantId = tenant.id;
+          tenantCache.set(cacheKey, { id: tenant.id, timestamp: now });
         }
       }
     }

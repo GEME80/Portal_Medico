@@ -47,12 +47,21 @@ export default async function CitasPage({ params }: Props) {
   let initialConfig = undefined;
 
   try {
-    const { data: configRow } = await authSupabase
-      .from("configuracion_portal")
-      .select("hero_badge_texto")
-      .eq("tenant_id", tenant.id)
-      .maybeSingle();
+    const adminSupabase = createAdminClient();
+    const [configRes, citasRes] = await Promise.all([
+      authSupabase
+        .from("configuracion_portal")
+        .select("hero_badge_texto")
+        .eq("tenant_id", tenant.id)
+        .maybeSingle(),
+      adminSupabase
+        .from("citas_medicas")
+        .select("*, pacientes(nombres, apellidos, documento)")
+        .eq("tenant_id", tenant.id)
+        .order("fecha_hora", { ascending: false }),
+    ]);
 
+    const configRow = configRes.data;
     if (configRow?.hero_badge_texto) {
       try {
         const parsed = typeof configRow.hero_badge_texto === "string"
@@ -64,13 +73,7 @@ export default async function CitasPage({ params }: Props) {
       } catch (e) {}
     }
 
-    const adminSupabase = createAdminClient();
-    const { data, error } = await adminSupabase
-      .from("citas_medicas")
-      .select("*, pacientes(nombres, apellidos, documento)")
-      .eq("tenant_id", tenant.id)
-      .order("fecha_hora", { ascending: false });
-
+    const { data, error } = citasRes;
     if (error) {
       if (error.message?.includes("does not exist")) {
         tableMissing = true;

@@ -77,6 +77,7 @@ export default function AdminShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const restrictedNotice = searchParams?.get("alerta") === "restringido_medico";
 
   const rawNavItems = [
@@ -118,12 +119,15 @@ export default function AdminShell({
     return true;
   });
 
+  // Instant optimistic active state for immediate click responsiveness
+  const currentPath = pendingHref || pathname;
   const isActive = (href: string, exact: boolean) =>
-    exact ? pathname === href : pathname.startsWith(href);
+    exact ? currentPath === href : currentPath.startsWith(href);
 
-  // Close drawer on route change
+  // Close drawer and clear pending navigation state on route change
   useEffect(() => {
     setDrawerOpen(false);
+    setPendingHref(null);
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -230,6 +234,8 @@ export default function AdminShell({
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
+                onClick={() => setPendingHref(item.href)}
                 className={`sidebar-link${isActive(item.href, item.exact) ? " active" : ""}`}
                 aria-current={isActive(item.href, item.exact) ? "page" : undefined}
                 style={isActive(item.href, item.exact) ? {
@@ -408,6 +414,8 @@ export default function AdminShell({
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={true}
+                onClick={() => setPendingHref(item.href)}
                 className={`sidebar-link${isActive(item.href, item.exact) ? " active" : ""}`}
                 aria-current={isActive(item.href, item.exact) ? "page" : undefined}
                 style={isActive(item.href, item.exact) ? {
@@ -545,6 +553,31 @@ export default function AdminShell({
 
       {/* ── MAIN CONTENT ──────────────────────────────────────────── */}
       <div className="admin-main" style={{ position: "relative" }}>
+        {/* Top Loading Progress Bar when navigating between options */}
+        {pendingHref && (
+          <>
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: "3px",
+                background: `linear-gradient(90deg, ${primaryColor}, ${accentColor})`,
+                zIndex: 999999,
+                boxShadow: `0 0 12px ${accentColor}`,
+                animation: "adminNavProgress 1.1s ease-in-out infinite",
+              }}
+            />
+            <style>{`
+              @keyframes adminNavProgress {
+                0% { transform: scaleX(0.1); transform-origin: left; }
+                50% { transform: scaleX(0.75); transform-origin: center; }
+                100% { transform: scaleX(1); transform-origin: right; }
+              }
+            `}</style>
+          </>
+        )}
         {/* ── ALERTA DE RESTRICCIÓN MÉDICA ── */}
         {restrictedNotice && (
           <div style={{
@@ -779,6 +812,8 @@ export default function AdminShell({
           <Link
             key={item.href}
             href={item.href}
+            prefetch={true}
+            onClick={() => setPendingHref(item.href)}
             className={`admin-bottom-tab${isActive(item.href, item.exact) ? " active" : ""}`}
             aria-current={isActive(item.href, item.exact) ? "page" : undefined}
             style={isActive(item.href, item.exact) ? { color: accentColor } : undefined}

@@ -16,6 +16,23 @@
 Todos los cambios notables en este proyecto se documentan en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.10.2] - 2026-09-16
+### Rendimiento & Experiencia de Usuario (Zero-Lag Navigation)
+- **Eliminación de la Sensación de Lentitud en Navegación del Panel Admin**:
+  - **Suspense Boundary con `loading.tsx` (`app/[slug]/admin/loading.tsx`)**:
+    - Creación de esqueleto de carga clínico con microanimación de pulso y shimmer (`@keyframes adminShimmer`), eliminando el congelamiento de pantalla entre cambios de página.
+  - **Retroalimentación Táctil Inmediata & Barra de Progreso (`AdminShell.tsx`)**:
+    - Activación de prefetching (`prefetch={true}`) en todas las rutas del menú, permitiendo a Next.js precargar los paquetes de ruta en segundo plano.
+    - Cambio de pestaña visual instantáneo (0ms) mediante estado optimista (`pendingHref`), dando confirmación inmediata de clic.
+    - Barra de progreso superior ultra-delgada y brillante (`adminNavProgress`) durante las transiciones de red.
+  - **Caché en Memoria para Resolución de Tenants (`middleware.ts`)**:
+    - Implementación de `tenantCache` con TTL de 5 minutos, eliminando la consulta recurrente a la base de datos Supabase en cada navegación o prefetch de subruta (ahorro de 150-300ms por clic).
+  - **Paralelización de Consultas de Servidor (`Promise.all`)**:
+    - `citas/page.tsx`: Ejecución paralela de configuración de agenda y listado de citas.
+    - `reportes/page.tsx`: Carga concurrente de configuración RIPS e historias clínicas.
+    - `page.tsx` (Dashboard): Fusión de consultas de conteo KPI y datasets de inventario en una única llamada paralela.
+    - `equipo/page.tsx`: Carga paralela de tenant y miembros de equipo.
+
 ## [3.10.1] - 2026-09-16
 ### Añadido & Seguridad
 - **Gestión de Identidad, Perfil y Credenciales de Usuario & SuperAdmin**:

@@ -24,14 +24,18 @@ export default async function EquipoPage({ params }: Props) {
     redirect(`/${cleanSlug}/admin?alerta=restringido_medico`);
   }
 
-  // Cargar colores del consultorio
+  // Cargar tenant y miembros concurrentemente
   const adminSupabase = createAdminClient();
-  const { data: tenant } = await adminSupabase
-    .from('tenants')
-    .select('id')
-    .eq('slug', cleanSlug)
-    .maybeSingle();
+  const [tenantRes, miembrosRes] = await Promise.all([
+    adminSupabase
+      .from('tenants')
+      .select('id')
+      .eq('slug', cleanSlug)
+      .maybeSingle(),
+    getMiembrosEquipo(cleanSlug),
+  ]);
 
+  const tenant = tenantRes.data;
   let primaryColor = '#0A4D5C';
   let accentColor = '#00D4AA';
 
@@ -46,8 +50,6 @@ export default async function EquipoPage({ params }: Props) {
     if (config?.color_acento) accentColor = config.color_acento;
   }
 
-  // Obtener miembros del equipo
-  const miembrosRes = await getMiembrosEquipo(cleanSlug);
   const miembros = miembrosRes.data || [];
 
   return (
