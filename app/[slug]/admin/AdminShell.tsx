@@ -4,7 +4,28 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { payInvoiceAction } from "./actions";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  Users,
+  Package,
+  FileSpreadsheet,
+  Stethoscope,
+  Newspaper,
+  Palette,
+  Activity,
+  LogOut,
+  ExternalLink,
+  AlertTriangle,
+  CreditCard,
+  Lock,
+  Menu,
+  X,
+  Clock,
+  CheckCircle2
+} from "lucide-react";
 import "../../admin.css";
+import "./doctor-portal.css";
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -40,14 +61,14 @@ export default function AdminShell({
   const [isPaying, setIsPaying] = useState(false);
 
   const rawNavItems = [
-    { href: `/${tenantSlug}/admin`, icon: "🏠", label: "Dashboard", shortLabel: "Inicio", exact: true, key: "dashboard" },
-    { href: `/${tenantSlug}/admin/citas`, icon: "📅", label: "Agenda & Citas", shortLabel: "Citas", exact: false, key: "citas" },
-    { href: `/${tenantSlug}/admin/pacientes`, icon: "🧑‍⚕️", label: "Gestión Pacientes", shortLabel: "Pacientes", exact: false, key: "pacientes" },
-    { href: `/${tenantSlug}/admin/inventario`, icon: "📦", label: inventoryName, shortLabel: "Inventario", exact: false, key: "inventario" },
-    { href: `/${tenantSlug}/admin/reportes`, icon: "📊", label: "Reportes RIPS", shortLabel: "RIPS", exact: false, key: "reportes" },
-    { href: `/${tenantSlug}/admin/equipo`, icon: "👥", label: "Equipo Médico", shortLabel: "Equipo", exact: false, key: "equipo" },
-    { href: `/${tenantSlug}/admin/noticias`, icon: "📰", label: "Publicaciones", shortLabel: "Noticias", exact: false, key: "noticias" },
-    { href: `/${tenantSlug}/admin/personalizar`, icon: "🎨", label: "Personalizar el Portal", shortLabel: "Portal", exact: false, key: "personalizar" },
+    { href: `/${tenantSlug}/admin`, icon: LayoutDashboard, label: "Dashboard", shortLabel: "Inicio", exact: true, key: "dashboard" },
+    { href: `/${tenantSlug}/admin/citas`, icon: CalendarDays, label: "Agenda & Citas", shortLabel: "Citas", exact: false, key: "citas" },
+    { href: `/${tenantSlug}/admin/pacientes`, icon: Users, label: "Gestión Pacientes", shortLabel: "Pacientes", exact: false, key: "pacientes" },
+    { href: `/${tenantSlug}/admin/inventario`, icon: Package, label: inventoryName, shortLabel: "Inventario", exact: false, key: "inventario" },
+    { href: `/${tenantSlug}/admin/reportes`, icon: FileSpreadsheet, label: "Reportes RIPS", shortLabel: "RIPS", exact: false, key: "reportes" },
+    { href: `/${tenantSlug}/admin/equipo`, icon: Stethoscope, label: "Equipo Médico", shortLabel: "Equipo", exact: false, key: "equipo" },
+    { href: `/${tenantSlug}/admin/noticias`, icon: Newspaper, label: "Publicaciones", shortLabel: "Noticias", exact: false, key: "noticias" },
+    { href: `/${tenantSlug}/admin/personalizar`, icon: Palette, label: "Personalizar el Portal", shortLabel: "Portal", exact: false, key: "personalizar" },
   ];
 
   const navItems = rawNavItems.filter(item => {
@@ -107,9 +128,7 @@ export default function AdminShell({
           onClick={() => setDrawerOpen(true)}
           aria-label="Abrir menú"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M4 6h16M4 12h16M4 18h16"/>
-          </svg>
+          <Menu size={22} strokeWidth={2.2} />
         </button>
         <span className="admin-mobile-title">{activeLabel}</span>
         <Link href={`/${tenantSlug}`} target="_blank" className="admin-mobile-portal-btn" aria-label="Ver portal">
@@ -136,11 +155,13 @@ export default function AdminShell({
                 background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
                 borderRadius: "var(--radius-md)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "18px",
-              }}>💉</div>
+                color: "#ffffff"
+              }}>
+                <Activity size={18} strokeWidth={2.5} />
+              </div>
               <div>
                 <div className="sidebar-brand-name">HubMed</div>
-                <div className="sidebar-brand-sub">Panel Admin</div>
+                <div className="sidebar-brand-sub">Panel Médico</div>
               </div>
             </Link>
             <button
@@ -148,15 +169,13 @@ export default function AdminShell({
               style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", padding: "8px", borderRadius: "8px" }}
               aria-label="Cerrar menú"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
+              <X size={20} strokeWidth={2} />
             </button>
           </div>
         </div>
 
         <nav className="sidebar-nav" style={{ flex: 1 }} aria-label="Menú móvil">
-          <span className="sidebar-section-label">Gestión Operativa</span>
+          <span className="sidebar-section-label">Gestión Clínica</span>
           {navItems.map((item) => (
             isSuspended ? (
               <span
@@ -164,7 +183,7 @@ export default function AdminShell({
                 className="sidebar-link"
                 style={{ opacity: 0.35, cursor: "not-allowed", pointerEvents: "none", userSelect: "none" }}
               >
-                <span className="sidebar-link-icon">{item.icon}</span>
+                <span className="sidebar-link-icon"><item.icon size={18} strokeWidth={2} /></span>
                 {item.label}
               </span>
             ) : (
@@ -179,7 +198,7 @@ export default function AdminShell({
                   borderLeft: `3px solid ${accentColor}`
                 } : undefined}
               >
-                <span className="sidebar-link-icon">{item.icon}</span>
+                <span className="sidebar-link-icon"><item.icon size={18} strokeWidth={2} /></span>
                 {item.label}
               </Link>
             )
@@ -187,22 +206,22 @@ export default function AdminShell({
 
           <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.05)", margin: "12px 0" }}></div>
 
-          <span className="sidebar-section-label">Portal</span>
+          <span className="sidebar-section-label">Portal Público</span>
           <Link href={`/${tenantSlug}`} className="sidebar-link" target="_blank" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ display: "flex", alignItems: "center" }}>
-              <img src="/icon.png" alt="Icono" style={{ width: "18px", height: "18px", marginRight: "12px", borderRadius: "4px" }} />
+            <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <img src="/icon.png" alt="Icono" style={{ width: "18px", height: "18px", borderRadius: "4px" }} />
               <span>Ver Portal Público</span>
             </span>
-            <span style={{ opacity: 0.5, fontSize: "14px" }}>↗</span>
+            <ExternalLink size={14} style={{ opacity: 0.6 }} />
           </Link>
 
-          <span className="sidebar-section-label">Configuración / Cuenta</span>
+          <span className="sidebar-section-label">Sesión</span>
           <button
             onClick={handleLogout}
             className="sidebar-link"
             style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "4px" }}
           >
-             <span className="sidebar-link-icon">🚪</span> Cerrar Sesión
+             <span className="sidebar-link-icon"><LogOut size={16} strokeWidth={2} /></span> Cerrar Sesión
           </button>
         </nav>
 
@@ -211,7 +230,7 @@ export default function AdminShell({
             <img src="/icon.png" alt="Logo" style={{ width: "42px", height: "42px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
             <div>
               <div className="sidebar-user-name" style={{ fontSize: "15px", fontWeight: "700" }}>{doctorName}</div>
-              <div className="sidebar-user-role">Administrador</div>
+              <div className="sidebar-user-role">Médico Especialista</div>
             </div>
           </div>
         </div>
@@ -227,18 +246,20 @@ export default function AdminShell({
                 background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
                 borderRadius: "var(--radius-md)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "18px",
-              }}>💉</div>
+                color: "#ffffff"
+              }}>
+                <Activity size={18} strokeWidth={2.5} />
+              </div>
               <div>
                 <div className="sidebar-brand-name">HubMed</div>
-                <div className="sidebar-brand-sub">Panel Admin</div>
+                <div className="sidebar-brand-sub">Panel Médico</div>
               </div>
             </div>
           </Link>
         </div>
 
         <nav className="sidebar-nav" aria-label="Navegación del panel admin">
-          <span className="sidebar-section-label">Gestión Operativa</span>
+          <span className="sidebar-section-label">Gestión Clínica</span>
           {navItems.map((item) => (
             isSuspended ? (
               <span
@@ -246,7 +267,7 @@ export default function AdminShell({
                 className="sidebar-link"
                 style={{ opacity: 0.35, cursor: "not-allowed", pointerEvents: "none", userSelect: "none" }}
               >
-                <span className="sidebar-link-icon">{item.icon}</span>
+                <span className="sidebar-link-icon"><item.icon size={18} strokeWidth={2} /></span>
                 {item.label}
               </span>
             ) : (
@@ -261,7 +282,7 @@ export default function AdminShell({
                   borderLeft: `3px solid ${accentColor}`
                 } : undefined}
               >
-                <span className="sidebar-link-icon">{item.icon}</span>
+                <span className="sidebar-link-icon"><item.icon size={18} strokeWidth={2} /></span>
                 {item.label}
               </Link>
             )
@@ -270,23 +291,22 @@ export default function AdminShell({
 
           <div style={{ height: "1px", background: "rgba(255, 255, 255, 0.05)", margin: "12px 0" }}></div>
 
-          <span className="sidebar-section-label">Portal</span>
+          <span className="sidebar-section-label">Portal Público</span>
           <Link href={`/${tenantSlug}`} className="sidebar-link" target="_blank" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ display: "flex", alignItems: "center" }}>
-              <img src="/icon.png" alt="Icono" style={{ width: "18px", height: "18px", marginRight: "12px", borderRadius: "4px" }} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling!.removeAttribute('style'); }} />
-              <span className="sidebar-link-icon" style={{ display: "none" }}>🌐</span>
-              Ver Portal Público
+            <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <img src="/icon.png" alt="Icono" style={{ width: "18px", height: "18px", borderRadius: "4px" }} />
+              <span>Ver Portal Público</span>
             </span>
-            <span style={{ opacity: 0.5, fontSize: "14px" }}>↗</span>
+            <ExternalLink size={14} style={{ opacity: 0.6 }} />
           </Link>
 
-          <span className="sidebar-section-label">Configuración / Cuenta</span>
+          <span className="sidebar-section-label">Sesión</span>
           <button
             onClick={handleLogout}
             className="sidebar-link"
             style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", marginTop: "4px" }}
           >
-             <span className="sidebar-link-icon">🚪</span> Cerrar Sesión
+             <span className="sidebar-link-icon"><LogOut size={16} strokeWidth={2} /></span> Cerrar Sesión
           </button>
         </nav>
 
@@ -295,7 +315,7 @@ export default function AdminShell({
             <img src="/icon.png" alt="Logo" style={{ width: "42px", height: "42px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
             <div>
               <div className="sidebar-user-name" style={{ fontSize: "15px", fontWeight: "700" }}>{doctorName}</div>
-              <div className="sidebar-user-role">Administrador</div>
+              <div className="sidebar-user-role">Médico Especialista</div>
             </div>
           </div>
         </div>
@@ -323,7 +343,9 @@ export default function AdminShell({
             flexWrap: "wrap",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
-              <span style={{ fontSize: "22px" }}>⚠️</span>
+              <span style={{ display: "flex", alignItems: "center", color: "#1a0a00" }}>
+                <AlertTriangle size={22} strokeWidth={2.2} />
+              </span>
               <div>
                 <div style={{ fontWeight: 800, fontSize: "15px" }}>Suscripción en mora</div>
                 <div style={{ fontWeight: 500, opacity: 0.85, fontSize: "13px" }}>
@@ -348,9 +370,22 @@ export default function AdminShell({
                 fontFamily: "inherit",
                 letterSpacing: "0.3px",
                 opacity: isPaying ? 0.7 : 1,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px"
               }}
             >
-              {isPaying ? "⏳ Procesando..." : "💳 Pagar Ahora"}
+              {isPaying ? (
+                <>
+                  <Clock size={15} />
+                  <span>Procesando...</span>
+                </>
+              ) : (
+                <>
+                  <CreditCard size={15} />
+                  <span>Pagar Ahora</span>
+                </>
+              )}
             </button>
           </div>
         )}
@@ -418,10 +453,12 @@ export default function AdminShell({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "32px",
                 margin: "0 auto 20px",
                 boxShadow: "0 8px 24px rgba(239,68,68,0.4)",
-              }}>🔒</div>
+                color: "#ffffff"
+              }}>
+                <Lock size={32} strokeWidth={2} />
+              </div>
 
               <h2 style={{
                 color: "#fca5a5",
@@ -465,7 +502,17 @@ export default function AdminShell({
                   transition: "all 0.15s",
                 }}
               >
-                {isPaying ? "⏳ Procesando pago..." : "💳 Pagar y Reactivar Portal"}
+                {isPaying ? (
+                  <>
+                    <Clock size={16} />
+                    <span>Procesando pago...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard size={16} />
+                    <span>Pagar y Reactivar Portal</span>
+                  </>
+                )}
               </button>
 
               <p style={{
@@ -494,7 +541,7 @@ export default function AdminShell({
             aria-current={isActive(item.href, item.exact) ? "page" : undefined}
             style={isActive(item.href, item.exact) ? { color: accentColor } : undefined}
           >
-            <span className="admin-bottom-tab-icon">{item.icon}</span>
+            <span className="admin-bottom-tab-icon"><item.icon size={18} strokeWidth={2} /></span>
             <span className="admin-bottom-tab-label">{item.shortLabel}</span>
             {isActive(item.href, item.exact) && (
               <span className="admin-bottom-tab-dot" style={{ background: accentColor }} />

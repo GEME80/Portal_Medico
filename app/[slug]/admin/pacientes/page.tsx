@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { guardarHistoriaClinica, crearPacienteExpress, buscarCIE10, getDiagnosticosMasUsados } from "@/lib/actions/clinical-actions";
 import CustomConfirmModal from "@/components/CustomConfirmModal";
+import { Search, UserPlus, ShieldCheck } from "lucide-react";
 
 
 export default function PacientesPage({ params }: { params: { slug: string } }) {
@@ -258,21 +259,23 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
           <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#1e293b", margin: "0 0 16px 0" }}>
             Pacientes
           </h1>
-          <div style={{ position: "relative" }}>
+          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+            <Search size={18} style={{ position: "absolute", left: "16px", color: "#64748b", pointerEvents: "none" }} />
             <input 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="🔍 Buscar por nombre o número de documento..." 
+              placeholder="Buscar por nombre o número de documento..." 
               style={{
                 width: "100%",
-                padding: "16px 20px 16px 48px",
+                padding: "14px 20px 14px 44px",
                 borderRadius: "12px",
-                border: "2px solid rgba(0, 212, 170, 0.3)",
+                border: "1px solid #cbd5e1",
                 background: "#ffffff",
                 color: "#1e293b",
-                fontSize: "16px",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
-                transition: "border-color 0.2s"
+                fontSize: "15px",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+                transition: "border-color 0.2s",
+                outline: "none"
               }}
             />
           </div>
@@ -283,17 +286,21 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
           style={{
             background: "#00D4AA",
             color: "#0f172a",
-            fontWeight: "800",
-            fontSize: "16px",
-            padding: "16px 32px",
-            borderRadius: "12px",
+            fontWeight: "700",
+            fontSize: "14px",
+            padding: "12px 24px",
+            borderRadius: "10px",
             border: "none",
             cursor: "pointer",
-            boxShadow: "0 8px 16px rgba(0, 212, 170, 0.25)",
-            transition: "transform 0.2s, box-shadow 0.2s"
+            boxShadow: "0 4px 12px rgba(0, 212, 170, 0.25)",
+            transition: "transform 0.15s, box-shadow 0.15s",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px"
           }}
         >
-          + Nuevo Paciente
+          <UserPlus size={16} />
+          <span>Nuevo Paciente</span>
         </button>
       </div>
 

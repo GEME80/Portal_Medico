@@ -1,0 +1,324 @@
+/* ─── HUBMED DOCTOR PORTAL · DESIGN SYSTEM MINIMALISTA ─────────────────── */
+:root {
+  --doc-bg: #f8fafc;
+  --doc-surface: #ffffff;
+  --doc-border: #e2e8f0;
+  --doc-border-subtle: #f1f5f9;
+  --doc-text-primary: #0f172a;
+  --doc-text-secondary: #475569;
+  --doc-text-muted: #94a3b8;
+  --doc-primary: #0a4d5c;
+  --doc-primary-hover: #083c48;
+  --doc-accent: #00d4aa;
+  --doc-accent-hover: #00b894;
+  --doc-accent-light: rgba(0, 212, 170, 0.12);
+  --doc-danger: #ef4444;
+  --doc-danger-light: rgba(239, 68, 68, 0.1);
+  --doc-warning: #f59e0b;
+  --doc-warning-light: rgba(245, 158, 11, 0.1);
+  --doc-success: #10b981;
+  --doc-success-light: rgba(16, 185, 129, 0.1);
+  --doc-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --doc-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --doc-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --doc-radius-sm: 6px;
+  --doc-radius-md: 10px;
+  --doc-radius-lg: 14px;
+  --doc-radius-xl: 20px;
+}
+
+/* ─── SIDEBAR REFINEMENTS ─────────────────────────────────────────────── */
+.admin-sidebar {
+  background: #090e17 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.sidebar-brand {
+  padding: 20px 18px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.sidebar-brand-name {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  color: #ffffff !important;
+}
+
+.sidebar-brand-sub {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  color: var(--doc-accent) !important;
+  text-transform: uppercase !important;
+  margin-top: 2px !important;
+}
+
+.sidebar-section-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: #64748b !important;
+  padding: 12px 10px 4px !important;
+  margin-top: 4px !important;
+}
+
+.sidebar-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 9px 12px !important;
+  border-radius: var(--doc-radius-md) !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #94a3b8 !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #f1f5f9 !important;
+}
+
+.sidebar-link.active {
+  background: rgba(0, 212, 170, 0.1) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-left: 3px solid var(--doc-accent) !important;
+}
+
+.sidebar-link-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0 !important;
+  color: inherit !important;
+}
+
+.sidebar-footer {
+  padding: 16px 14px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.sidebar-user {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: var(--doc-radius-md) !important;
+  padding: 10px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.sidebar-user-name {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #f8fafc !important;
+}
+
+.sidebar-user-role {
+  font-size: 11px !important;
+  color: #64748b !important;
+}
+
+/* ─── TOPBAR REFINEMENTS ──────────────────────────────────────────────── */
+.admin-topbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--doc-border) !important;
+  height: 60px !important;
+  padding: 0 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: var(--doc-shadow-sm) !important;
+}
+
+.admin-topbar-title {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: var(--doc-text-primary) !important;
+}
+
+/* ─── DOCTOR HERO BANNER ──────────────────────────────────────────────── */
+.doc-dashboard-header {
+  background: #ffffff;
+  border: 1px solid var(--doc-border);
+  border-radius: var(--doc-radius-lg);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  box-shadow: var(--doc-shadow-sm);
+}
+
+.doc-welcome-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--doc-text-primary);
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.doc-welcome-sub {
+  font-size: 13.5px;
+  color: var(--doc-text-secondary);
+  margin: 0;
+}
+
+.doc-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.doc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--doc-radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  font-family: inherit;
+  border: 1px solid transparent;
+}
+
+.doc-btn-primary {
+  background: var(--doc-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(10, 77, 92, 0.2);
+}
+
+.doc-btn-primary:hover {
+  background: var(--doc-primary-hover);
+  transform: translateY(-1px);
+}
+
+.doc-btn-accent {
+  background: var(--doc-accent);
+  color: #0c111d;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 212, 170, 0.25);
+}
+
+.doc-btn-accent:hover {
+  background: var(--doc-accent-hover);
+  transform: translateY(-1px);
+}
+
+.doc-btn-ghost {
+  background: var(--doc-bg);
+  color: var(--doc-text-secondary);
+  border-color: var(--doc-border);
+}
+
+.doc-btn-ghost:hover {
+  background: #ffffff;
+  color: var(--doc-text-primary);
+  border-color: var(--doc-text-muted);
+}
+
+/* ─── RIPS COMMAND CENTER ─────────────────────────────────────────────── */
+.rips-card {
+  background: #ffffff;
+  border: 1px solid var(--doc-border);
+  border-radius: var(--doc-radius-lg);
+  padding: 24px;
+  box-shadow: var(--doc-shadow-sm);
+}
+
+.rips-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.rips-kpi-box {
+  background: #ffffff;
+  border: 1px solid var(--doc-border);
+  border-radius: var(--doc-radius-md);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.rips-kpi-box:hover {
+  border-color: var(--doc-primary);
+  transform: translateY(-1px);
+}
+
+.rips-kpi-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--doc-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rips-kpi-number {
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--doc-text-primary);
+  line-height: 1;
+}
+
+.rips-kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--doc-text-secondary);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rips-compliance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rips-badge-ready {
+  background: var(--doc-success-light);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.rips-badge-draft {
+  background: var(--doc-warning-light);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.rips-badge-info {
+  background: rgba(10, 77, 92, 0.08);
+  color: var(--doc-primary);
+  border: 1px solid rgba(10, 77, 92, 0.18);
+}

@@ -2,6 +2,12 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DashboardCharts from "./DashboardCharts";
+import { 
+  CalendarDays, 
+  Users, 
+  FileSpreadsheet, 
+  ShieldCheck 
+} from "lucide-react";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -206,31 +212,50 @@ export default async function TenantAdminDashboard({ params }: Props) {
     .lte("fecha_vencimiento", noventaDias.toISOString())
     .gt("cantidad", 0);
 
-  
-
-
-  
-
   return (
     <>
       <div className="admin-topbar">
-        <h1 className="admin-topbar-title">Dashboard</h1>
-        <div className="admin-topbar-right">
-          <span className="badge badge-emerald">Sistema activo</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <h1 className="admin-topbar-title">Dashboard Médico</h1>
+          <span style={{ fontSize: "12px", color: "var(--doc-text-muted)" }}>/ Resumen Clínico</span>
+        </div>
+        <div className="admin-topbar-right" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span className="rips-compliance-badge rips-badge-ready">
+            <ShieldCheck size={14} /> MinSalud RIPS 2026
+          </span>
+          <span className="badge badge-emerald" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <span className="pulse-dot" /> En Línea
+          </span>
         </div>
       </div>
 
       <div className="admin-content">
-        <div style={{ marginBottom: "32px" }}>
-          <h2 style={{ fontFamily: "Outfit, sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "8px", color: "var(--slate-900)" }}>
-            Bienvenido, {doctorName} 👋
-          </h2>
-          <p style={{ color: "var(--slate-500)", fontSize: "14px" }}>
-            Resumen de tu operación. Selecciona un módulo para gestionar tu portal.
-          </p>
+        {/* ── HEADER CORPORATIVO Y ACCESOS RÁPIDOS ─────────────────── */}
+        <div className="doc-dashboard-header">
+          <div>
+            <h2 className="doc-welcome-title">
+              Dr. {doctorName}
+            </h2>
+            <p className="doc-welcome-sub">
+              Control operacional y clínico centralizado · Consultorio Habilitado
+            </p>
+          </div>
+
+          <div className="doc-quick-actions">
+            <Link href={`/${slug}/admin/citas`} className="doc-btn doc-btn-accent">
+              <CalendarDays size={16} />
+              <span>Ver Agenda</span>
+            </Link>
+            <Link href={`/${slug}/admin/pacientes`} className="doc-btn doc-btn-primary">
+              <Users size={16} />
+              <span>Pacientes</span>
+            </Link>
+            <Link href={`/${slug}/admin/reportes`} className="doc-btn doc-btn-ghost">
+              <FileSpreadsheet size={16} />
+              <span>Reportes RIPS</span>
+            </Link>
+          </div>
         </div>
-
-
 
         <DashboardCharts 
           inventario={safeInventario}
