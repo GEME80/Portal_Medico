@@ -18,7 +18,7 @@
 [![React](https://img.shields.io/badge/React-19.2.4-blue?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%2015-emerald?logo=supabase)](https://supabase.com/)
-[![Version](https://img.shields.io/badge/Version-v3.6.0-teal)](https://github.com/GEME80/Portal_Medico)
+[![Version](https://img.shields.io/badge/Version-v3.8.0-teal)](https://github.com/GEME80/Portal_Medico)
 [![License](https://img.shields.io/badge/License-Proprietary-red)]()
 
 ---
@@ -105,9 +105,10 @@
 
 ## 📦 Módulos Funcionales Implementados
 
+* 🧭 **Arquitectura de Navegación Persistente en Scroll:** Sidebar desktop fijo (`position: fixed`) y Topbar sticky con efecto glassmorphism (`backdrop-filter: blur(12px)`) en todo el Portal del Doctor, junto con submenús flotantes (`.sticky-subnav`) en formularios extensos y erradicación total de emojis informales con **Lucide Icons**.
+* 📊 **Centro de Comando RIPS MinSalud 2026 (`/[slug]/admin/reportes`):** Exportación interoperable en JSON bajo Resolución 000948/2026 y 2275/2023 con validación previa de folios cerrados vs borradores (soporte obligatorio de Factura Electrónica en Salud FEV ante la DIAN).
 * 📅 **Agenda de Citas (`/[slug]/admin/citas`):** Programación y control de estados (`programada`, `confirmada`, `cancelada`, `completada`) con persistencia multi-tenant y revalidación de caché.
 * 🪪 **Carné Vacunal Digital (`/[slug]/carne/[token]`):** Portal público interactivo accesible mediante Magic Token criptográfico (sin coste de usuarios MAU en Supabase Auth) con exportación nativa a PDF.
-* 📊 **Panel de Reportes RIPS (`/[slug]/admin/reportes`):** Exportación masiva en JSON estructurado conforme a la Resolución 000948/2026 de MinSalud (CIE-10, CUPS y snapshot demográfico).
 * 👥 **Gestión de Equipo y Roles (`/[slug]/admin/equipo`):** Aprovisionamiento y asignación de roles (`admin`, `medico`, `recepcion`) protegiendo el acceso a historias clínicas confidenciales.
 * 💳 **Facturación y Finanzas SuperAdmin (`/superadmin/facturacion`):** Consola ejecutiva global con control de ingresos recurrentes (MRR), suspensiones y activaciones de consultorios.
 * 📈 **Somatometría & Curvas OMS (`/[slug]/admin/pacientes/[id]`):** Gráficos calibrados interactivos con percentiles y z-scores oficiales de la OMS.

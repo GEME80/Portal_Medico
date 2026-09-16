@@ -147,12 +147,21 @@ En cumplimiento de la Ley 1581 de 2012 (Tratamiento de Datos Sensibles), HubMed 
 
 ---
 
-## ⚡ 5. Eficiencia en Base de Datos para Extracción RIPS 2026
+## ⚡ 5. Consola y Extracción RIPS 2026 (Resolución 000948 de 2026 & Res. 2275 de 2023)
 
-La generación periódica de archivos RIPS para el Ministerio de Salud exige consultar cientos o miles de folios por consultorio sin degradar el rendimiento general:
-1. **Índices GIN sobre `impresion_diagnostica` y `procedimientos`:** Permiten filtrar folios clínicos por códigos CIE-10 (`@> '[{"codigo": "J06.9"}]'`) de forma instantánea.
-2. **Consultas Proyectadas para RIPS:** El generador de RIPS consulta únicamente los campos requeridos por la Resolución 000948 de 2026, evitando cargar texto clínico largo en memoria.
-3. **Pistas de Auditoría Indexadas:** La tabla `logs_auditoria` cuenta con índices B-Tree sobre `(tenant_id, created_at DESC)` para generar informes de trazabilidad pericial en milisegundos.
+La generación periódica de archivos RIPS para el Ministerio de Salud exige consultar cientos o miles de folios por consultorio sin degradar el rendimiento general y garantizando la estricta inalterabilidad legal:
+
+1. **Semaforización Preventiva (Folios Cerrados vs. Borradores):**
+   * **Solo se reportan folios con `estado = 'cerrado'`**: Las historias clínicas en borrador carecen de validez jurídica y el sistema las aísla para evitar rechazos o glosas en el MUV (Mecanismo Único de Validación).
+   * La consola médica en `/[slug]/admin/reportes` alerta proactivamente al doctor sobre consultas pendientes de firma antes de cerrar el período.
+2. **Estructura JSON Interoperable MinSalud:**
+   * Sustitución total de los antiguos archivos planos `.txt` por el formato estándar `.json` que incluye: documento, diagnóstico principal (CIE-10), tipo de diagnóstico, código de procedimiento (CUPS), fecha y hora de atención.
+3. **Flujo de Facturación Electrónica en Salud (FEV / DIAN):**
+   * Los RIPS descargados desde HubMed actúan como el soporte técnico obligatorio que el médico o su contador cargan en su proveedor tecnológico de facturación electrónica (Siigo, Facturatech, Alegra, etc.) o en el portal web de MinSalud (SISPRO / MUV) para obtener el Código Único de Validación (CUV) requerido por la DIAN.
+4. **Eficiencia en Base de Datos:**
+   * **Índices GIN sobre `impresion_diagnostica` y `procedimientos`:** Permiten filtrar folios clínicos por códigos CIE-10 (`@> '[{"codigo": "J06.9"}]'`) de forma instantánea.
+   * **Consultas Proyectadas para RIPS:** El generador consulta únicamente metadatos no cifrados requeridos por la norma, sin sobrecargar la memoria con textos clínicos extensos.
+   * **Pistas de Auditoría Indexadas:** La tabla `logs_auditoria` cuenta con índices B-Tree sobre `(tenant_id, created_at DESC)` para generar informes de trazabilidad pericial en milisegundos.
 
 ---
 

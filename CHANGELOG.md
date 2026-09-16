@@ -18,6 +18,29 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ---
 
+## [3.8.0] - 2026-09-15
+### Añadido & Mejorado
+- **Arquitectura de Navegación Persistente en Scroll (Sticky & Fixed Navigation)**:
+  - **Corrección de Trampa W3C (`overflow-x: clip`)**: Reemplazo de `overflow-x: hidden` por `overflow-x: clip` en `.admin-shell` y `.admin-main`, resolviendo el bloqueo del cálculo de scroll del navegador y permitiendo que `position: sticky` funcione al 100% relativo a la ventana.
+  - **Sidebar Lateral Fijo en Desktop (`.admin-sidebar`)**: Configurado como `position: fixed; top: 0; left: 0; bottom: 0; width: 240px; height: 100vh; overflow: hidden;` con Brand superior y Tarjeta de Perfil inferior anclados (`flex-shrink: 0`). Lista central de accesos con scroll interior contenido (`overscroll-behavior: contain`) y espaciado compacto (padding `8px 10px`, font-size `13px`) para evitar desbordamiento vertical en laptops estándar.
+  - **Barra Superior Sticky con Glassmorphism (`.admin-topbar`)**: Estandarizada con `position: sticky; top: 0; z-index: 40; height: 60px; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); border-bottom: 1px solid var(--doc-border);` en todas las pantallas del portal (`/admin`, `/citas`, `/pacientes`, `/inventario`, `/reportes`, `/noticias`, `/personalizar`, `/equipo`).
+  - **Submenú de Pestañas Flotante (`.sticky-subnav`)**: En `app/[slug]/admin/personalizar/page.tsx`, el panel de pestañas (`TABS SIDEBAR`) ahora flota a `top: 76px; align-self: start;` con scroll propio contenido (`max-height: calc(100vh - 96px)`), manteniéndose accesible al desplazarse por formularios extensos.
+- **Erradicación Total de Emojis Residuales**:
+  - Reemplazo de emojis informales (`🎨`, `📰`, `📦`, `＋`, `▼`, `👨‍⚕️`, `🏠`, `🔬`, `🎓`, `📈`) en `personalizar`, `noticias` e `inventario` por iconos vectoriales de **Lucide Icons** (`Palette`, `Newspaper`, `Package`, `Plus`, `ChevronDown`, etc.).
+
+## [3.7.0] - 2026-09-15
+### Añadido & Mejorado
+- **Rediseño Minimalista del Portal del Doctor (`app/[slug]/admin`)**:
+  - Transformación visual completa de la consola médica hacia un estándar enterprise B2B (inspirado en Linear y Stripe Clinic) sin alterar el backend ni los triggers de PostgreSQL.
+  - Sustitución de iconografía informal por la suite **Lucide Icons** en navegación lateral, drawer móvil, barra inferior y modales de suspensión/mora.
+  - Creación de la hoja de estilos dedicada `doctor-portal.css` con tokens clínicos, contraste WCAG 2.1 AA y tipografía Outfit.
+- **Centro de Comando RIPS MinSalud 2026 (`app/[slug]/admin/reportes/RipsManager.tsx`)**:
+  - Módulo interactivo de exportación de RIPS bajo **Resolución 000948 de 2026 y Resolución 2275 de 2023** del Ministerio de Salud y Protección Social.
+  - **KPIs Sanitarios Preventivos**: Conteo en vivo de atenciones listas (cerradas con firma médica) frente a borradores sin cerrar, garantizando la inalterabilidad exigida por la **Resolución 1995 de 1999**.
+  - **Filtros Temporales Rápidos**: Presets para "Este Mes", "Mes Anterior", "Últimos 30 días" e intervalos por fecha.
+  - **Vista Dual**: Tabla de auditoría clínica (documento, CIE-10, CUPS) y visor en código coloreado del JSON MinSalud con botón de copiado rápido.
+  - **Descarga en 1 Clic**: Generación y descarga directa del archivo `.json` formateado como soporte mandatorio de la Factura Electrónica de Venta en Salud (FEV) ante la DIAN y pagadores.
+
 ## [3.6.0] - 2026-09-15
 ### Corregido & Mejorado
 - **Resiliencia y Desacoplamiento de Clientes Supabase en Rutas Públicas**:

@@ -13,7 +13,7 @@
 
 # 🔍 AUDITORÍA INTEGRAL DE PLATAFORMA Y SCORECARD DE MADUREZ (AUDITORIA_PLATAFORMA.md)
 
-**Versión de Plataforma:** 3.3.0  
+**Versión de Plataforma:** 3.8.0  
 **Fecha de Auditoría:** Septiembre 2026  
 **Auditor Rector:** 🔐 QA, Seguridad & Cryptography Auditor  
 **Supervisión y Aprobación:** 🏛️ Principal Platform Architect  
@@ -36,13 +36,19 @@
 | **Espacio 1** | `/superadmin` | Server Component (`page.tsx`) | Métricas SaaS consolidadas, KPIs de clínicas | Solo SuperAdmin (`gerkof@gmail.com`) |
 | **Espacio 1** | `/superadmin/config` | Client Component (`page.tsx`) | Monitor de latencia PostgreSQL, test crypto | Solo SuperAdmin |
 | **Espacio 1** | `/superadmin/login` | Client Component (`page.tsx`) | Portal de acceso exclusivo del operador | Público |
+| **Espacio 1** | `/superadmin/facturacion` | Server + Client (`page.tsx`) | Facturación SaaS de suscripciones y mora | Solo SuperAdmin |
 | **Espacio 2** | `/[slug]/admin` | Server Component (`page.tsx`) | Dashboard clínico del médico, resumen diario | Médico del consultorio (`doctor`) |
+| **Espacio 2** | `/[slug]/admin/citas` | Server + Client (`page.tsx` + `AdminCitasManager.tsx`) | Agenda médica, citas y bloqueos | Médico / Recepción |
 | **Espacio 2** | `/[slug]/admin/pacientes` | Server + Client (`page.tsx`) | Censo de pacientes, buscador rápido por doc | Personal asistencial del tenant |
 | **Espacio 2** | `/[slug]/admin/pacientes/[id]`| Server Component (`page.tsx`) | Expediente médico individual, historial folios | Médico del consultorio |
+| **Espacio 2** | `/[slug]/admin/reportes` | Server + Client (`page.tsx` + `RipsManager.tsx`) | Centro de comando RIPS MinSalud 2026 | Médico del consultorio |
 | **Espacio 2** | `/[slug]/admin/inventario` | Server + Client (`page.tsx`) | POS de biológicos, lotes, regla FEFO, merma | Médico / Recepción |
-| **Espacio 2** | `/[slug]/admin/personalizar`| Client Component (`page.tsx`) | Identidad visual, colores, logos del portal | Médico del consultorio |
+| **Espacio 2** | `/[slug]/admin/equipo` | Server Component (`page.tsx`) | Gestión de accesos, roles y recepcionistas | Médico del consultorio |
+| **Espacio 2** | `/[slug]/admin/personalizar`| Client Component (`page.tsx`) | Identidad visual, colores, subnav sticky | Médico del consultorio |
 | **Espacio 2** | `/[slug]/admin/noticias` | Client Component (`page.tsx`) | Editor de publicaciones y artículos médicos | Médico del consultorio |
 | **Espacio 3** | `/[slug]` | Server Component (`page.tsx`) | Landing page pública del médico | Pacientes / Público general |
+| **Espacio 3** | `/[slug]/citas` | Server + Client (`BookingForm.tsx`) | Agendamiento en línea para pacientes | Pacientes / Público general |
+| **Espacio 3** | `/[slug]/carne/[token]` | Server Component (`page.tsx`) | Carné vacunal digital público (token UUID) | Pacientes / Acudientes |
 | **Espacio 3** | `/[slug]/servicios` | Server Component (`page.tsx`) | Catálogo de servicios y especialidades | Pacientes / Público general |
 | **Espacio 3** | `/[slug]/noticias` | Server Component (`page.tsx`) | Blog y noticias divulgativas de salud | Pacientes / Público general |
 
