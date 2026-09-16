@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { payInvoiceAction } from "./actions";
@@ -31,6 +31,14 @@ interface AdminShellProps {
   children: React.ReactNode;
   tenantSlug: string;
   doctorName: string;
+  userDisplayName?: string;
+  userRole?: "superadmin" | "admin" | "medico" | "recepcion";
+  userPermisos?: {
+    citas?: boolean;
+    pacientes_demograficos?: boolean;
+    inventario?: boolean;
+    noticias?: boolean;
+  };
   primaryColor: string;
   accentColor: string;
   inventoryName?: string;
@@ -45,6 +53,9 @@ export default function AdminShell({
   children,
   tenantSlug,
   doctorName,
+  userDisplayName,
+  userRole = "medico",
+  userPermisos,
   primaryColor,
   accentColor,
   inventoryName = "Inventario",
@@ -56,9 +67,11 @@ export default function AdminShell({
 }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+  const restrictedNotice = searchParams?.get("alerta") === "restringido_medico";
 
   const rawNavItems = [
     { href: `/${tenantSlug}/admin`, icon: LayoutDashboard, label: "Dashboard", shortLabel: "Inicio", exact: true, key: "dashboard" },
@@ -71,9 +84,30 @@ export default function AdminShell({
     { href: `/${tenantSlug}/admin/personalizar`, icon: Palette, label: "Personalizar el Portal", shortLabel: "Portal", exact: false, key: "personalizar" },
   ];
 
+  const isRecepcion = userRole === "recepcion";
+
   const navItems = rawNavItems.filter(item => {
-    if (item.key === "inventario" && !inventarioHabilitado && !isSuperadmin) {
-      return false;
+    if (isRecepcion) {
+      // Opciones estrictamente bloqueadas para personal administrativo
+      if (item.key === "reportes" || item.key === "equipo" || item.key === "personalizar") {
+        return false;
+      }
+      if (item.key === "citas" && userPermisos?.citas === false) {
+        return false;
+      }
+      if (item.key === "pacientes" && userPermisos?.pacientes_demograficos === false) {
+        return false;
+      }
+      if (item.key === "inventario" && (!userPermisos?.inventario || !inventarioHabilitado)) {
+        return false;
+      }
+      if (item.key === "noticias" && userPermisos?.noticias === false) {
+        return false;
+      }
+    } else {
+      if (item.key === "inventario" && !inventarioHabilitado && !isSuperadmin) {
+        return false;
+      }
     }
     return true;
   });
@@ -229,8 +263,10 @@ export default function AdminShell({
           <div className="sidebar-user" style={{ background: "rgba(255, 255, 255, 0.03)", padding: "12px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "14px" }}>
             <img src="/icon.png" alt="Logo" style={{ width: "42px", height: "42px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
             <div>
-              <div className="sidebar-user-name" style={{ fontSize: "15px", fontWeight: "700" }}>{doctorName}</div>
-              <div className="sidebar-user-role">Médico Especialista</div>
+              <div className="sidebar-user-name" style={{ fontSize: "15px", fontWeight: "700" }}>{userDisplayName || doctorName}</div>
+              <div className="sidebar-user-role">
+                {isRecepcion ? "Personal Administrativo" : isSuperadmin ? "SuperAdmin" : "Médico Especialista"}
+              </div>
             </div>
           </div>
         </div>
@@ -314,8 +350,10 @@ export default function AdminShell({
           <div className="sidebar-user" style={{ background: "rgba(255, 255, 255, 0.03)", padding: "12px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "14px" }}>
             <img src="/icon.png" alt="Logo" style={{ width: "42px", height: "42px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
             <div>
-              <div className="sidebar-user-name" style={{ fontSize: "15px", fontWeight: "700" }}>{doctorName}</div>
-              <div className="sidebar-user-role">Médico Especialista</div>
+              <div className="sidebar-user-name" style={{ fontSize: "15px", fontWeight: "700" }}>{userDisplayName || doctorName}</div>
+              <div className="sidebar-user-role">
+                {isRecepcion ? "Personal Administrativo" : isSuperadmin ? "SuperAdmin" : "Médico Especialista"}
+              </div>
             </div>
           </div>
         </div>
@@ -323,6 +361,26 @@ export default function AdminShell({
 
       {/* ── MAIN CONTENT ──────────────────────────────────────────── */}
       <div className="admin-main" style={{ position: "relative" }}>
+        {/* ── ALERTA DE RESTRICCIÓN MÉDICA ── */}
+        {restrictedNotice && (
+          <div style={{
+            background: "#7f1d1d",
+            color: "#fecaca",
+            padding: "12px 24px",
+            fontSize: "13px",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            position: "sticky",
+            top: 0,
+            zIndex: 98,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+          }}>
+            <Lock size={16} />
+            <span>Acceso restringido: Esta sección contiene registros clínicos o gobernanza reservada a profesionales médicos autorizados (Res. 1995 de 1999 de MinSalud).</span>
+          </div>
+        )}
         {/* ── EN MORA: Banner sticky en la parte superior ── */}
         {isMora && (
           <div style={{

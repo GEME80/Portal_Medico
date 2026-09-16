@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { Lock, ShieldCheck } from "lucide-react";
 import { getHistoriasClinicas, getHistoriaClinicaDetalle, getCurvasOMS, getPuntosCrecimientoPaciente, agregarMedicionHistorica, getOmsChartCalibrations } from "@/lib/actions/clinical-actions";
 import OfficialGrowthChart from "@/components/OfficialGrowthChart";
 
@@ -13,9 +14,22 @@ export default function PerfilPaciente() {
   const tenantSlug = params.slug as string;
   const pacienteId = params.pacienteId as string;
 
+  const [currentUserRole, setCurrentUserRole] = useState<string>("medico");
   const [paciente, setPaciente] = useState<any>(null);
   const [historias, setHistorias] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.app_metadata?.role) {
+        setCurrentUserRole(user.app_metadata.role);
+      }
+    });
+  }, []);
+
+  const isRecepcion = currentUserRole === "recepcion";
 
   // Modo edición demográfica
   const [isEditing, setIsEditing] = useState(false);
@@ -115,8 +129,6 @@ export default function PerfilPaciente() {
     }
   };
 
-  const supabase = createClient();
-
   const calcularEdad = (fechaNacimiento: string) => {
     if (!fechaNacimiento) return "Edad desconocida";
     const hoy = new Date();
@@ -150,7 +162,7 @@ export default function PerfilPaciente() {
 
   useEffect(() => {
     fetchPacienteYHistorias();
-  }, [pacienteId]);
+  }, [pacienteId, isRecepcion]);
 
   const fetchPacienteYHistorias = async () => {
     setLoading(true);
@@ -167,12 +179,14 @@ export default function PerfilPaciente() {
       setEditForm(pData);
     }
 
-    // Traer historias clínicas usando server action (desencriptadas)
-    try {
-      const hData = await getHistoriasClinicas(pacienteId);
-      setHistorias(hData);
-    } catch (error) {
-      console.error("Error trayendo historias:", error);
+    // Traer historias clínicas SOLO si tiene rol médico
+    if (!isRecepcion) {
+      try {
+        const hData = await getHistoriasClinicas(pacienteId);
+        setHistorias(hData);
+      } catch (error) {
+        console.error("Error trayendo historias:", error);
+      }
     }
 
     setLoading(false);
@@ -247,9 +261,11 @@ export default function PerfilPaciente() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
             <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: 0 }}>Perfil del Paciente</h2>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={handleOpenCurvas} style={{ background: "#f0fdf4", border: "1px solid #00b28e", color: "#00b28e", fontWeight: "600", padding: "4px 12px", borderRadius: "16px", cursor: "pointer", fontSize: "12px" }}>
-                Curvas OMS
-              </button>
+              {!isRecepcion && (
+                <button onClick={handleOpenCurvas} style={{ background: "#f0fdf4", border: "1px solid #00b28e", color: "#00b28e", fontWeight: "600", padding: "4px 12px", borderRadius: "16px", cursor: "pointer", fontSize: "12px" }}>
+                  Curvas OMS
+                </button>
+              )}
               {!isEditing && (
                 <button onClick={() => setIsEditing(true)} style={{ background: "none", border: "none", color: "#00b28e", fontWeight: "700", cursor: "pointer" }}>
                   Editar
@@ -414,78 +430,122 @@ export default function PerfilPaciente() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
             <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: 0 }}>Historial de Consultas</h2>
             
-            <Link 
-              href={`/${tenantSlug}/admin/pacientes?action=new&pid=${paciente.id}`}
-              style={{
-                background: "rgba(0, 212, 170, 0.1)",
-                color: "#00b28e",
-                padding: "10px 20px",
-                borderRadius: "8px",
-                fontWeight: "700",
-                textDecoration: "none",
-                transition: "all 0.2s"
-              }}
-            >
-              + Nueva Consulta
-            </Link>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {historias.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
-                El paciente no tiene historias clínicas registradas.
-              </div>
-            ) : (
-              historias.map((hist) => (
-                <div key={hist.id} style={{ 
-                  borderLeft: "3px solid #00D4AA", 
-                  paddingLeft: "20px", 
-                  position: "relative" 
-                }}>
-                  <div style={{ 
-                    position: "absolute", left: "-9px", top: "0", width: "15px", height: "15px", 
-                    background: hist.estado === 'cerrado' ? "#10b981" : "#f59e0b", 
-                    borderRadius: "50%", border: "3px solid white" 
-                  }} />
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                    <div>
-                      <h4 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "700", color: "#1e293b" }}>
-                        Consulta General
-                      </h4>
-                      <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
-                        {new Date(hist.created_at).toLocaleDateString("es-CO", { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
-                      </p>
-                    </div>
-                    <span style={{
-                      padding: "4px 10px",
-                      borderRadius: "12px",
-                      fontSize: "11px",
-                      fontWeight: "700",
-                      background: hist.estado === 'cerrado' ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)",
-                      color: hist.estado === 'cerrado' ? "#059669" : "#d97706",
-                    }}>
-                      {hist.estado.toUpperCase()}
-                    </span>
-                  </div>
-                  
-                  
-                  <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "12px", marginTop: "12px", fontSize: "14px", color: "#334155" }}>
-                    <p style={{ margin: "0 0 8px 0" }}><strong>Motivo:</strong> {hist.motivo_consulta || 'No especificado'}</p>
-                    <p style={{ margin: "0 0 12px 0" }}>
-                      <strong>Diagnóstico (CIE-10):</strong> {hist.impresion_diagnostica?.[0] ? `${hist.impresion_diagnostica[0].codigo} - ${hist.impresion_diagnostica[0].descripcion}` : 'Sin diagnóstico principal'}
-                    </p>
-                    
-                    <button 
-                      onClick={() => openHistoriaViewer(hist.id)}
-                      style={{ color: "#0ea5e9", background: "none", border: "none", padding: 0, fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
-                    >
-                      Ver historia completa →
-                    </button>
-                  </div>
-                </div>
-              ))
+            {!isRecepcion && (
+              <Link 
+                href={`/${tenantSlug}/admin/pacientes?action=new&pid=${paciente.id}`}
+                style={{
+                  background: "rgba(0, 212, 170, 0.1)",
+                  color: "#00b28e",
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  fontWeight: "700",
+                  textDecoration: "none",
+                  transition: "all 0.2s"
+                }}
+              >
+                + Nueva Consulta
+              </Link>
             )}
           </div>
+
+          {isRecepcion ? (
+            <div style={{
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: "16px",
+              padding: "48px 24px",
+              textAlign: "center"
+            }}>
+              <div style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "50%",
+                background: "rgba(10, 77, 92, 0.08)",
+                color: "#0A4D5C",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: "16px"
+              }}>
+                <Lock size={24} />
+              </div>
+              <h3 style={{ margin: "0 0 8px 0", fontSize: "17px", fontWeight: 800, color: "#1e293b" }}>
+                Historial Clínico Bajo Reserva Médica
+              </h3>
+              <p style={{ margin: "0 0 16px 0", fontSize: "13px", color: "#64748b", lineHeight: 1.6, maxWidth: "440px", marginInline: "auto" }}>
+                Las evoluciones médicas, diagnósticos CIE-10 y notas de consulta están protegidas por reserva legal sanitaria y son de acceso exclusivo para el profesional médico autorizado (Resolución 1995 de 1999 de MinSalud).
+              </p>
+              <div style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#f1f5f9",
+                color: "#475569",
+                padding: "6px 14px",
+                borderRadius: "20px",
+                fontSize: "12px",
+                fontWeight: 600
+              }}>
+                <ShieldCheck size={14} /> Acceso Administrativo: Solo Edición de Datos Demográficos
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {historias.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
+                  El paciente no tiene historias clínicas registradas.
+                </div>
+              ) : (
+                historias.map((hist) => (
+                  <div key={hist.id} style={{ 
+                    borderLeft: "3px solid #00D4AA", 
+                    paddingLeft: "20px", 
+                    position: "relative" 
+                  }}>
+                    <div style={{ 
+                      position: "absolute", left: "-9px", top: "0", width: "15px", height: "15px", 
+                      background: hist.estado === 'cerrado' ? "#10b981" : "#f59e0b", 
+                      borderRadius: "50%", border: "3px solid white" 
+                    }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                      <div>
+                        <h4 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "700", color: "#1e293b" }}>
+                          Consulta General
+                        </h4>
+                        <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                          {new Date(hist.created_at).toLocaleDateString("es-CO", { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                        </p>
+                      </div>
+                      <span style={{
+                        padding: "4px 10px",
+                        borderRadius: "12px",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        background: hist.estado === 'cerrado' ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)",
+                        color: hist.estado === 'cerrado' ? "#059669" : "#d97706",
+                      }}>
+                        {hist.estado.toUpperCase()}
+                      </span>
+                    </div>
+                    
+                    <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "12px", marginTop: "12px", fontSize: "14px", color: "#334155" }}>
+                      <p style={{ margin: "0 0 8px 0" }}><strong>Motivo:</strong> {hist.motivo_consulta || 'No especificado'}</p>
+                      <p style={{ margin: "0 0 12px 0" }}>
+                        <strong>Diagnóstico (CIE-10):</strong> {hist.impresion_diagnostica?.[0] ? `${hist.impresion_diagnostica[0].codigo} - ${hist.impresion_diagnostica[0].descripcion}` : 'Sin diagnóstico principal'}
+                      </p>
+                      
+                      <button 
+                        onClick={() => openHistoriaViewer(hist.id)}
+                        style={{ color: "#0ea5e9", background: "none", border: "none", padding: 0, fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
+                      >
+                        Ver historia completa →
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
       </div>

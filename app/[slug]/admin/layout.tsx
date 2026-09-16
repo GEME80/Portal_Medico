@@ -68,6 +68,37 @@ export default async function TenantAdminLayout({ children, params }: Props) {
   const userMetadataPerm = user?.user_metadata?.inventario_enabled;
   const inventarioHabilitado = isSuperadmin || (userMetadataPerm !== undefined ? Boolean(userMetadataPerm) : habilitarMenuVacunas);
 
+  // Determine role and permissions
+  let userRole: "superadmin" | "admin" | "medico" | "recepcion" = "medico";
+  let userPermisos: any = {
+    citas: true,
+    pacientes_demograficos: true,
+    inventario: true,
+    noticias: true,
+  };
+  let userDisplayName = doctorName;
+
+  if (isSuperadmin) {
+    userRole = "superadmin";
+  } else if (user) {
+    const { data: memberData } = await authSupabase
+      .from("miembros_equipo")
+      .select("rol, nombre, permisos, activo")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (memberData) {
+      userRole = memberData.rol;
+      if (memberData.nombre) userDisplayName = memberData.nombre;
+      if (memberData.permisos) userPermisos = memberData.permisos;
+    } else if (user.app_metadata?.role) {
+      userRole = user.app_metadata.role;
+      if (user.user_metadata?.nombre) userDisplayName = user.user_metadata.nombre;
+      if (user.user_metadata?.permisos) userPermisos = user.user_metadata.permisos;
+    }
+  }
+
   const isMora = tenant.estado_pago === "mora";
   const isSuspended = !tenant.activo || tenant.estado_pago === "suspendido";
 
@@ -80,6 +111,9 @@ export default async function TenantAdminLayout({ children, params }: Props) {
     <AdminShell
       tenantSlug={slug}
       doctorName={doctorName}
+      userDisplayName={userDisplayName}
+      userRole={userRole}
+      userPermisos={userPermisos}
       primaryColor={primaryColor}
       accentColor={accentColor}
       inventoryName={inventoryName}

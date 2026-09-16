@@ -89,3 +89,4 @@ Conforme a `DATABASE_GOVERNANCE.md` y `SPECIALIZED_AGENTS.md`, queda terminantem
 | `20260914095400_performance_indexes.sql` | 2026-09-14 | Índices compuestos B-Tree multi-tenant y GIN en `impresion_diagnostica` JSONB. | ✅ Aplicada |
 | `20260914100000_rename_ecovaccine.sql` | 2026-09-14 | Actualización de CHECK constraint en `noticias_posts` a marca 'HubMed'. | ✅ Aplicada |
 | `20260914104000_citas_y_carne.sql` | 2026-09-14 | Tablas `citas_medicas`, `miembros_equipo` y columna `token_acceso` en `pacientes` para carné digital. | ✅ Aplicada |
+| `20260916120000_permisos_administrativos.sql` | 2026-09-16 | Permisos JSONB en `miembros_equipo` y segregación RLS en `historias_clinicas`. | ✅ Aplicada |

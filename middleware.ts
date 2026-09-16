@@ -149,6 +149,22 @@ export async function middleware(request: NextRequest) {
     if (!isSuperadminUser && tenantId && user.app_metadata?.tenant_id !== tenantId) {
       return new NextResponse("Acceso no autorizado: El tenant de la sesión no coincide con la ruta solicitada.", { status: 403 });
     }
+
+    // Role-based route protection: personal administrativo no puede acceder a rutas médicas ni gobernanza
+    const userRole = user.app_metadata?.role;
+    if (userRole === 'recepcion') {
+      const isRestrictedForAdminStaff = 
+        pathname.includes('/admin/reportes') ||
+        pathname.includes('/admin/personalizar') ||
+        pathname.includes('/admin/equipo') ||
+        pathname.includes('/historia');
+
+      if (isRestrictedForAdminStaff) {
+        const redirectUrl = new URL(`/${tenantSlug || 'admin'}/admin`, request.url);
+        redirectUrl.searchParams.set("alerta", "restringido_medico");
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
   }
 
   // 8. Custom Domain Rewriting

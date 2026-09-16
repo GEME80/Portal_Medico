@@ -51,7 +51,20 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
   const router = useRouter();
   const tenantSlug = pathname.split('/')[1];
 
+  const [currentUserRole, setCurrentUserRole] = useState<string>("medico");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.app_metadata?.role) {
+        setCurrentUserRole(user.app_metadata.role);
+      }
+    });
+  }, []);
+
+  const isRecepcion = currentUserRole === "recepcion";
+
   const loadCieFrecuentes = async () => {
+    if (isRecepcion) return;
     try {
       const res = await getDiagnosticosMasUsados(tenantSlug);
       setCieFrecuentes(res);
@@ -62,7 +75,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
 
   useEffect(() => {
     loadCieFrecuentes();
-  }, [tenantSlug]);
+  }, [tenantSlug, isRecepcion]);
 
   const fetchPacientes = async () => {
 
@@ -172,6 +185,21 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
       throw new Error(res.error || 'Error al registrar el paciente.');
     }
     return res.data.id;
+  };
+
+  const handleCreatePacienteExpressOnly = async (form: HTMLFormElement) => {
+    setSavingForm(true);
+    setErrorMsg("");
+    try {
+      const formData = new FormData(form);
+      await handleCreatePaciente(formData);
+      closeSlideOver();
+      fetchPacientes();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error al registrar paciente.');
+    } finally {
+      setSavingForm(false);
+    }
   };
 
   const handleSubmit = async (form: HTMLFormElement, estado: "borrador" | "cerrado") => {
@@ -422,21 +450,23 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                       >
                         Consultar
                       </Link>
-                      <button 
-                        onClick={() => openNewHistory(paciente.id, paciente)}
-                        style={{
-                          background: "rgba(0, 212, 170, 0.1)",
-                          color: "#00b28e",
-                          border: "1px solid rgba(0, 212, 170, 0.3)",
-                          padding: "8px 16px",
-                          borderRadius: "8px",
-                          fontWeight: "600",
-                          cursor: "pointer",
-                          transition: "all 0.2s"
-                        }}
-                      >
-                        Nueva Consulta
-                      </button>
+                      {!isRecepcion && (
+                        <button 
+                          onClick={() => openNewHistory(paciente.id, paciente)}
+                          style={{
+                            background: "rgba(0, 212, 170, 0.1)",
+                            color: "#00b28e",
+                            border: "1px solid rgba(0, 212, 170, 0.3)",
+                            padding: "8px 16px",
+                            borderRadius: "8px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          Nueva Consulta
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -468,10 +498,19 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
               @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
             `}</style>
             
-            <div style={{ padding: "32px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ margin: 0, color: "#1e293b", fontSize: "24px" }}>
-                Nueva Historia Médica {selectedPacienteData && `- ${selectedPacienteData.nombres} ${selectedPacienteData.apellidos}`}
-              </h2>
+            <div style={{ padding: "32px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h2 style={{ margin: 0, color: "#1e293b", fontSize: "22px", fontWeight: 800 }}>
+                  {isRecepcion 
+                    ? "Registro de Nuevo Paciente" 
+                    : `Nueva Historia Médica ${selectedPacienteData ? `- ${selectedPacienteData.nombres} ${selectedPacienteData.apellidos}` : ""}`}
+                </h2>
+                {isRecepcion && (
+                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#64748b" }}>
+                    Ingresa los datos demográficos básicos para la admisión en sala de espera.
+                  </p>
+                )}
+              </div>
               <button onClick={closeSlideOver} style={{ background: "transparent", border: "none", color: "#9ca3af", fontSize: "28px", cursor: "pointer" }}>&times;</button>
             </div>
 
@@ -479,6 +518,25 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
               {errorMsg && (
                 <div style={{ background: "rgba(239, 68, 68, 0.1)", color: "#f87171", border: "1px solid rgba(239, 68, 68, 0.3)", padding: "16px", borderRadius: "8px", marginBottom: "24px" }}>
                   {errorMsg}
+                </div>
+              )}
+
+              {/* Banner informativo para recepción */}
+              {isRecepcion && (
+                <div style={{
+                  background: "rgba(10, 77, 92, 0.06)",
+                  border: "1px solid rgba(10, 77, 92, 0.18)",
+                  borderRadius: "10px",
+                  padding: "12px 16px",
+                  marginBottom: "24px",
+                  fontSize: "13px",
+                  color: "#0A4D5C",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <ShieldCheck size={18} />
+                  <span><strong>Modo Admisión / Secretaría:</strong> Solo se capturan datos demográficos. El historial clínico y diagnósticos CIE-10 son exclusivos del médico.</span>
                 </div>
               )}
 
@@ -495,30 +553,32 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                 </div>
               )}
 
-              {/* Tabs Nav */}
-              <div style={{ display: "flex", borderBottom: "2px solid rgba(255,255,255,0.1)", marginBottom: "32px" }}>
-                {tabs.filter(tab => !selectedPacienteId || tab.id !== 1).map(tab => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    style={{
-                      flex: 1,
-                      padding: "16px",
-                      background: "transparent",
-                      color: activeTab === tab.id ? "#00D4AA" : "#9ca3af",
-                      border: "none",
-                      borderBottom: activeTab === tab.id ? "3px solid #00D4AA" : "3px solid transparent",
-                      fontWeight: activeTab === tab.id ? "700" : "500",
-                      fontSize: "15px",
-                      cursor: "pointer",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              {/* Tabs Nav (solo para rol médico) */}
+              {!isRecepcion && (
+                <div style={{ display: "flex", borderBottom: "2px solid rgba(255,255,255,0.1)", marginBottom: "32px" }}>
+                  {tabs.filter(tab => !selectedPacienteId || tab.id !== 1).map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      style={{
+                        flex: 1,
+                        padding: "16px",
+                        background: "transparent",
+                        color: activeTab === tab.id ? "#00D4AA" : "#9ca3af",
+                        border: "none",
+                        borderBottom: activeTab === tab.id ? "3px solid #00D4AA" : "3px solid transparent",
+                        fontWeight: activeTab === tab.id ? "700" : "500",
+                        fontSize: "15px",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <form id="clinical-form">
                 {/* Tab 1: Identificación */}
@@ -605,7 +665,34 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                     </div>
                   </div>
                   <div style={{ marginTop: "32px", textAlign: "right" }}>
-                    <button type="button" onClick={() => setActiveTab(2)} style={nextBtnStyle}>Siguiente: Atención & Signos →</button>
+                    {isRecepcion ? (
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+                        <button type="button" onClick={closeSlideOver} style={prevBtnStyle}>
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          disabled={savingForm}
+                          onClick={() => {
+                            const form = document.getElementById("clinical-form") as HTMLFormElement;
+                            if (form) handleCreatePacienteExpressOnly(form);
+                          }}
+                          style={{
+                            background: "#00D4AA",
+                            color: "#0f172a",
+                            border: "none",
+                            padding: "12px 28px",
+                            borderRadius: "8px",
+                            fontWeight: "700",
+                            cursor: savingForm ? "not-allowed" : "pointer"
+                          }}
+                        >
+                          {savingForm ? "Registrando..." : "Registrar Paciente"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => setActiveTab(2)} style={nextBtnStyle}>Siguiente: Atención & Signos →</button>
+                    )}
                   </div>
                 </div>
 

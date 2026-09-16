@@ -16,6 +16,28 @@
 Todos los cambios notables en este proyecto se documentan en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.10.0] - 2026-09-16
+### Añadido & Seguridad
+- **Control de Acceso Basado en Roles (RBAC) y Segregación de Actos Médicos (Resolución 1995 de 1999 de MinSalud)**:
+  - **Módulo de Gestión de Equipo y Permisos (`/[slug]/admin/equipo`)**:
+    - Consola administrativa interactiva (`EquipoClient.tsx`) con diseño clínico sobrio para que el médico/admin aprovisione y gestione colaboradores administrativos (recepcionistas, secretarias, auxiliares de caja).
+    - Modal de creación en 1-click con generación de credenciales iniciales en Supabase Auth y asignación granular de permisos.
+    - Modal de edición instantánea de permisos en caliente y alternador de estado Activo/Suspendido.
+  - **Matriz de Permisos Granulares (`PermisosAdministrativos`)**:
+    - `citas`: Acceso a la agenda y calendario para programar, mover o cancelar citas y registrar asistencia.
+    - `pacientes_demograficos`: Admisión y registro de pacientes en sala de espera, actualización de teléfonos, acudientes y EPS.
+    - `inventario`: Registro de cobros de consultas y deducción de existencias en caja POS.
+    - `noticias`: Redacción de artículos y avisos en el portal público.
+  - **Segregación Inviolable de Opciones Médicas**:
+    - Bloqueo total para personal administrativo en `pacientes`: Ocultamiento del botón "+ Nueva Consulta", supresión de selectores CIE-10 y fórmulas médicas. En el slide-over, modo admisión exclusivo para datos demográficos.
+    - En `pacientes/[pacienteId]`: Desactivación del botón "Curvas OMS", ocultamiento de "+ Nueva Consulta" y sustitución del historial clínico por una tarjeta institucional de reserva legal médica con fundamento en la Resolución 1995 de 1999 de MinSalud.
+    - Menú de navegación (`AdminShell.tsx`): Ocultamiento automático de "Reportes RIPS", "Personalizar el Portal" y "Equipo Médico" para usuarios de recepción.
+  - **Seguridad en Profundidad (Defense-in-Depth)**:
+    - **Base de Datos (RLS)**: Migración `20260916120000_permisos_administrativos.sql` que añade `permisos JSONB` en `miembros_equipo` y actualiza las políticas RLS en `historias_clinicas` para bloquear operaciones directas a personal de recepción.
+    - **Middleware**: Bloqueo perimetral en `middleware.ts` para interceptar peticiones directas por URL a rutas clínicas (`/reportes`, `/personalizar`, `/equipo`, `/historia`) y redireccionar de forma segura.
+    - **Criptografía & Server Actions**: Guardias en `guardarHistoriaClinica` y `getHistoriaClinicaDetalle` en `lib/actions/clinical-actions.ts` impidiendo la desencriptación con `CLINICAL_ENCRYPTION_KEY` o manipulación clínica a personal administrativo.
+    - **TypeScript & Build**: 0 errores de compilación (`tsc --noEmit`) y build de producción Next.js 16 validado exitosamente.
+
 ## [3.9.0] - 2026-09-16
 ### Añadido & Mejorado
 - **Estándar Oficial RIPS MinSalud (Resolución 2275 de 2023 & Resolución 000948 de 2026)**:

@@ -33,6 +33,15 @@ export async function guardarHistoriaClinica(data: any, slug: string): Promise<A
       return { success: false, error: 'No autorizado: Sesión inválida', code: 'UNAUTHORIZED' };
     }
 
+    const userRole = user.app_metadata?.role;
+    if (userRole === 'recepcion') {
+      return {
+        success: false,
+        error: 'Acceso denegado: El personal administrativo no tiene autorización legal para crear o modificar historias clínicas (Resolución 1995 de 1999 de MinSalud).',
+        code: 'FORBIDDEN_CLINICAL_OPERATION'
+      };
+    }
+
     let tenantId = user.app_metadata?.tenant_id;
     if (!tenantId) {
       const slug_to_use = user.app_metadata?.tenant_slug || slug;
@@ -191,6 +200,11 @@ export async function getHistoriaClinicaDetalle(historiaId: string) {
 
   if (!user) {
     throw new Error('No autorizado');
+  }
+
+  const userRole = user.app_metadata?.role;
+  if (userRole === 'recepcion') {
+    throw new Error('Acceso denegado: Información clínica confidencial reservada exclusivamente al profesional médico (Resolución 1995 de 1999).');
   }
 
   const { data: historia, error } = await supabase
