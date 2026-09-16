@@ -16,7 +16,29 @@
 Todos los cambios notables en este proyecto se documentan en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
----
+## [3.9.0] - 2026-09-16
+### Añadido & Mejorado
+- **Estándar Oficial RIPS MinSalud (Resolución 2275 de 2023 & Resolución 000948 de 2026)**:
+  - **Estructura Oficial Jerárquica**: Actualización de `lib/rips/generator.ts` para producir la estructura oficial requerida por el **Validador MUV (Mecanismo Único de Validación en SISPRO)** y la DIAN para Factura Electrónica en Salud (FEV).
+  - **Agrupación por Usuario Único (`usuarios`)**: Agrupación automática de consultas bajo el identificador único del paciente, con datos demográficos, municipio DANE, zona territorial y consecutivo secuencial.
+  - **Detalle de Atenciones (`consultas`)**: Inclusión de `codPrestador` de 12 dígitos, fecha/hora, CUPS (`codConsulta`), modalidad (`modalidadGrupoServicioTecSal`), grupo de servicios, código de servicio REPS (`codServicio`), finalidad, causa externa, diagnóstico CIE-10 (`codDiagnosticoPrincipal`), tipo de diagnóstico, valor del servicio (`vrServicio`), concepto de recaudo (`05 - Particular`) y consecutivo.
+  - **Catálogos de Normalización**: Inclusión de diccionarios de códigos DANE de municipios colombianos, servicios REPS más comunes (302 Pediatría, 301 Medicina General, 334 Infectología, etc.) y modalidades de atención.
+- **Espacio de Configuración de Habilitación del Doctor / Consultorio (`/personalizar?tab=rips_habilitacion`)**:
+  - Pestaña dedicada en la consola de personalización con diseño clínico sobrio para gestionar: Código REPS de 12 dígitos (con contador de dígitos y enlace a consulta REPS oficial), NIT o Cédula del obligado a facturar, Código de Servicio REPS, Municipio DANE, Modalidad de atención, Prefijo FEV y Honorarios habituales de consulta.
+  - **Persistencia Zero-DDL**: Almacenamiento directo dentro del campo JSON extensible `hero_badge_texto.rips_config`, sin requerir alteraciones de esquema (DDL) en PostgreSQL/Supabase.
+  - Soporte de activación directa de pestaña mediante parámetro en URL (`?tab=rips_habilitacion`).
+- **Etiquetas de Información y Tooltips Contextuales (UX/UI)**:
+  - Implementación del componente interactivo `RipsInfoTooltip` en cada campo técnico del formulario para traducir términos regulatorios complejos a lenguaje médico claro y accesible.
+- **Manual de Apoyo & Guía RIPS 2026 (Slide-Over Drawer)**:
+  - Drawer deslizante interactivo con backdrop blur accesible desde `/reportes` con 4 pestañas especializadas:
+    1. *¿Qué es RIPS?*: Fundamento legal y explicación de por qué los archivos se descargan para pasar por el MUV antes de la factura DIAN.
+    2. *Flujo Paso a Paso*: Proceso visual desde la atención médica hasta la expedición de la FEV.
+    3. *Glosario Médico-Normativo*: Definiciones claras de REPS, CUPS, CIE-10, MUV, CUV, FEV y DANE.
+    4. *Preguntas Frecuentes*: Explicación de inalterabilidad, búsqueda de códigos REPS y conexión con software contables (Siigo, Facturatech, Alegra).
+- **Pre-Validador MUV en Tiempo Real & Tarjeta de Estado REPS**:
+  - Banner en `/reportes` con semaforización en vivo del estado de habilitación del prestador.
+  - Función `validarReglasRips()` que audita en vivo la completitud de historias cerradas (documentos válidos, diagnósticos CIE-10, código REPS de 12 dígitos) antes de generar el archivo.
+  - Tabla de atenciones enriquecida con número de consecutivo, valor pactado en pesos colombianos y código CUPS.
 
 ## [3.8.0] - 2026-09-15
 ### Añadido & Mejorado

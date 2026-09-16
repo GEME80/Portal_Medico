@@ -1,6 +1,7 @@
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import RipsManager, { HistoriaItem } from "./RipsManager";
+import { RipsPrestadorConfig } from "@/lib/rips/generator";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -43,8 +44,38 @@ export default async function ReportesPage({ params }: Props) {
 
   if (!tenant) notFound();
 
-  // Load historias clínicas for RIPS report (safe metadata projection only)
   const adminClient = createAdminClient();
+
+  // Load portal config to extract rips_config from hero_badge_texto
+  const { data: configData } = await adminClient
+    .from("configuracion_portal")
+    .select("hero_badge_texto, nombre_doctor, nombre_clinica")
+    .eq("tenant_id", tenant.id)
+    .maybeSingle();
+
+  let ripsConfig: RipsPrestadorConfig = {
+    numDocumentoIdObligado: "",
+    codigoPrestador: "",
+    codigoServicio: "302",
+    codigoMunicipio: "11001",
+    modalidadAtencion: "01",
+    prefijoFactura: "FEV",
+    numFactura: "",
+    valorHonorariosDefecto: 150000
+  };
+
+  if (configData?.hero_badge_texto) {
+    try {
+      const parsed = JSON.parse(configData.hero_badge_texto);
+      if (parsed.rips_config) {
+        ripsConfig = { ...ripsConfig, ...parsed.rips_config };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Load historias clínicas for RIPS report (safe metadata projection only)
   const { data: historias, error } = await adminClient
     .from("historias_clinicas")
     .select(`
@@ -59,7 +90,9 @@ export default async function ReportesPage({ params }: Props) {
         documento,
         tipo_documento,
         nombres,
-        apellidos
+        apellidos,
+        fecha_nacimiento,
+        genero
       )
     `)
     .eq("tenant_id", tenant.id)
@@ -77,6 +110,7 @@ export default async function ReportesPage({ params }: Props) {
         tenantSlug={cleanSlug}
         tenantName={tenant.nombre}
         historias={safeHistorias}
+        ripsConfig={ripsConfig}
       />
     </div>
   );

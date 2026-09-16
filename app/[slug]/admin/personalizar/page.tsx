@@ -4,7 +4,26 @@ import { createClient } from "@/lib/supabase/client";
 import { saveConfigAction, saveAlertAction } from "./actions";
 import { uploadImageAction } from "../noticias/actions";
 import { getOmsChartCalibrations, saveOmsChartImage } from "@/lib/actions/clinical-actions";
-import { Palette, ChevronDown } from "lucide-react";
+import {
+  Palette,
+  ChevronDown,
+  ShieldCheck,
+  Building2,
+  FileSpreadsheet,
+  HelpCircle,
+  ExternalLink,
+  CheckCircle2,
+  AlertCircle,
+  Coins,
+  MapPin,
+  Stethoscope
+} from "lucide-react";
+import {
+  MUNICIPIOS_DANE_COMUNES,
+  SERVICIOS_REPS_COMUNES,
+  MODALIDADES_ATENCION,
+  RipsPrestadorConfig
+} from "@/lib/rips/generator";
 
 const TABS = [
   { id: "identidad", label: "Identidad & Estilos", desc: "Logo, contacto, redes, estilos" },
@@ -18,6 +37,7 @@ const TABS = [
       { id: "extra_portal", label: "Pestaña Extra" }
     ]
   },
+  { id: "rips_habilitacion", label: "Habilitación RIPS & MinSalud", desc: "REPS, NIT, DANE, FEV y Honorarios" },
   { id: "investigacion", label: "Líneas de Investigación", desc: "Gestor de tarjetas y títulos" },
   { id: "trayectoria", label: "Trayectoria Profesional", desc: "Hitos académicos y títulos" },
   { id: "graficas_oms", label: "Curvas de Crecimiento OMS", desc: "Configurar imágenes de curvas" },
@@ -157,7 +177,19 @@ const defaultHeroData = {
   vacunas_catalog_pdf_url: "",
   vacunas_banner_imagen_url: "",
   vacunas_banner_btn_2_text: "",
-  vacunas_banner_btn_2_url: ""
+  vacunas_banner_btn_2_url: "",
+
+  // Configuración Habilitación RIPS MinSalud (Res. 2275/2023)
+  rips_config: {
+    numDocumentoIdObligado: "",
+    codigoPrestador: "",
+    codigoServicio: "302",
+    codigoMunicipio: "11001",
+    modalidadAtencion: "01",
+    prefijoFactura: "FEV",
+    numFactura: "",
+    valorHonorariosDefecto: "150000"
+  }
 };
 
 export default function PersonalizarPage({ params }: Props) {
@@ -288,6 +320,15 @@ export default function PersonalizarPage({ params }: Props) {
         setAlertNivel(alertRes.data.nivel || "warning");
         setAlertActiva(alertRes.data.activa);
       }
+
+      if (typeof window !== "undefined") {
+        const searchParams = new URLSearchParams(window.location.search);
+        const tabParam = searchParams.get("tab");
+        if (tabParam && ["identidad", "home_portal", "sobre_doctor_portal", "extra_portal", "rips_habilitacion", "investigacion", "trayectoria", "graficas_oms"].includes(tabParam)) {
+          setActiveTab(tabParam);
+        }
+      }
+
       setLoading(false);
     });
   }, []);
@@ -723,6 +764,12 @@ export default function PersonalizarPage({ params }: Props) {
 
   const setWaData = (n: string, t: string) => setConfig(c => ({ ...c, whatsapp: JSON.stringify({ n, t }) }));
   const setHeroData = (k: string, v: any) => setConfig(c => ({ ...c, hero_badge_texto: JSON.stringify({ ...heroData, [k]: v }) }));
+
+  const ripsConfig: RipsPrestadorConfig = heroData.rips_config || defaultHeroData.rips_config;
+  const setRipsField = (k: string, v: any) => {
+    const updated = { ...ripsConfig, [k]: v };
+    setHeroData("rips_config", updated);
+  };
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "50vh", color: "var(--slate-400)" }}>
@@ -2041,6 +2088,353 @@ export default function PersonalizarPage({ params }: Props) {
                 </div>
               </div>
             )}
+
+            {/* ── HABILITACIÓN RIPS & MINSALUD (RES. 2275 / 2023) ── */}
+            {activeTab === "rips_habilitacion" && (
+              <div className="card tab-pane">
+                <div className="card-header" style={{ borderBottom: "1px solid var(--slate-200)", padding: "24px 28px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                        <h2 className="card-title" style={{ margin: 0, fontSize: "18px", fontWeight: 800, fontFamily: "Outfit, sans-serif" }}>
+                          🏛️ Habilitación RIPS & MinSalud (Res. 2275 / 2023)
+                        </h2>
+                        <span style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          padding: "3px 10px",
+                          borderRadius: "12px",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          background: ripsConfig.codigoPrestador && ripsConfig.codigoPrestador.trim().length === 12 && ripsConfig.numDocumentoIdObligado
+                            ? "rgba(16, 185, 129, 0.12)"
+                            : "rgba(245, 158, 11, 0.12)",
+                          color: ripsConfig.codigoPrestador && ripsConfig.codigoPrestador.trim().length === 12 && ripsConfig.numDocumentoIdObligado
+                            ? "#059669"
+                            : "#d97706"
+                        }}>
+                          {ripsConfig.codigoPrestador && ripsConfig.codigoPrestador.trim().length === 12 && ripsConfig.numDocumentoIdObligado ? (
+                            <>
+                              <CheckCircle2 size={13} />
+                              Habilitado para RIPS
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle size={13} />
+                              Configuración Pendiente
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      <p className="card-desc" style={{ margin: 0, fontSize: "13px", color: "var(--slate-500)", maxWidth: "720px" }}>
+                        Configura los identificadores oficiales exigidos por el Ministerio de Salud y la DIAN para la generación del archivo JSON interoperable con el Validador MUV (SISPRO) y el soporte de Facturación Electrónica en Salud (FEV).
+                      </p>
+                    </div>
+
+                    <a
+                      href={`/${slug}/admin/reportes`}
+                      className="btn btn-outline"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        fontSize: "12px",
+                        padding: "8px 14px",
+                        textDecoration: "none"
+                      }}
+                    >
+                      <FileSpreadsheet size={14} />
+                      <span>Ir a Reportes RIPS →</span>
+                    </a>
+                  </div>
+
+                  {/* Banner de Estado */}
+                  {ripsConfig.codigoPrestador && ripsConfig.codigoPrestador.trim().length === 12 && ripsConfig.numDocumentoIdObligado ? (
+                    <div style={{
+                      marginTop: "16px",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      background: "rgba(16, 185, 129, 0.08)",
+                      border: "1px solid rgba(16, 185, 129, 0.25)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px"
+                    }}>
+                      <CheckCircle2 size={18} style={{ color: "#059669", flexShrink: 0 }} />
+                      <div style={{ fontSize: "12.5px", color: "#065f46" }}>
+                        <strong>Prestador Configurado:</strong> REPS <code>{ripsConfig.codigoPrestador}</code> · Obligado <code>{ripsConfig.numDocumentoIdObligado}</code> · Servicio {ripsConfig.codigoServicio || 302}. Las exportaciones generadas en Reportes RIPS cumplirán los requisitos de la Resolución 2275 de 2023.
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{
+                      marginTop: "16px",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      background: "rgba(245, 158, 11, 0.08)",
+                      border: "1px solid rgba(245, 158, 11, 0.25)",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "10px"
+                    }}>
+                      <AlertCircle size={18} style={{ color: "#d97706", flexShrink: 0, marginTop: "2px" }} />
+                      <div style={{ fontSize: "12.5px", color: "#92400e" }}>
+                        <strong>Acción requerida:</strong> El Ministerio de Salud rechaza los archivos RIPS que no cuenten con el Código de Habilitación REPS de 12 dígitos y el NIT/Cédula del prestador. Completa los datos a continuación y haz clic en &quot;Guardar datos de habilitación RIPS&quot;.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="card-body" style={{ padding: "24px 28px" }}>
+                  <div className="form-grid">
+                    {/* SECCIÓN 1: IDENTIFICACIÓN REPS */}
+                    <div style={{ gridColumn: "1 / -1", borderBottom: "1px solid var(--slate-100)", paddingBottom: "8px", marginBottom: "4px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Building2 size={16} style={{ color: "var(--teal-700)" }} />
+                        <h3 style={{ fontSize: "14px", fontWeight: 700, margin: 0, color: "var(--slate-800)" }}>
+                          1. Identificación del Prestador de Salud (REPS)
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* NIT u Obligado a Facturar */}
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center" }}>
+                        NIT o Cédula del Obligado a Facturar *
+                        <RipsInfoTooltip
+                          title="Obligado a Facturar"
+                          text="Identificación fiscal (NIT del consultorio o Cédula del médico independiente) registrada ante la DIAN para expedir Facturación Electrónica en Salud (campo numDocumentoIdObligado)."
+                        />
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={ripsConfig.numDocumentoIdObligado || ""}
+                        onChange={(e) => setRipsField("numDocumentoIdObligado", e.target.value.trim())}
+                        placeholder="Ej: 901234567 o 1020304050"
+                      />
+                      <span style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "4px", display: "block" }}>
+                        Sin puntos ni guiones de verificación.
+                      </span>
+                    </div>
+
+                    {/* Código REPS de 12 Dígitos */}
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ display: "flex", alignItems: "center" }}>
+                          Código de Habilitación REPS (12 dígitos) *
+                          <RipsInfoTooltip
+                            title="Código REPS (12 dígitos)"
+                            text="Número de 12 dígitos otorgado por la Secretaría de Salud al registrar tu consultorio en el REPS. El validador MUV de SISPRO rechaza el lote si no coincide con este código."
+                          />
+                        </span>
+                        <a
+                          href="https://prestadores.minsalud.gov.co/habilitacion/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: "11px", color: "var(--teal-700)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "3px" }}
+                        >
+                          Consultar en REPS <ExternalLink size={10} />
+                        </a>
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type="text"
+                          maxLength={12}
+                          className="form-input"
+                          value={ripsConfig.codigoPrestador || ""}
+                          onChange={(e) => setRipsField("codigoPrestador", e.target.value.replace(/\D/g, "").slice(0, 12))}
+                          placeholder="Ej: 110010999901"
+                          style={{
+                            fontFamily: "monospace",
+                            letterSpacing: "0.08em",
+                            borderColor: ripsConfig.codigoPrestador && ripsConfig.codigoPrestador.length === 12 ? "#10b981" : undefined
+                          }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginTop: "4px" }}>
+                        <span style={{ color: ripsConfig.codigoPrestador && ripsConfig.codigoPrestador.length === 12 ? "#059669" : "#d97706" }}>
+                          {ripsConfig.codigoPrestador && ripsConfig.codigoPrestador.length === 12
+                            ? "✓ Código válido de 12 dígitos"
+                            : `Faltan ${12 - (ripsConfig.codigoPrestador?.length || 0)} dígitos`}
+                        </span>
+                        <span style={{ color: "var(--slate-400)" }}>
+                          {ripsConfig.codigoPrestador?.length || 0} / 12
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Código de Servicio REPS */}
+                    <div className="form-group full-width">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center" }}>
+                        Código de Servicio Habilitado en REPS *
+                        <RipsInfoTooltip
+                          title="Servicio REPS"
+                          text="Código numérico del servicio ambulatorio habilitado según el REPS. Para Pediatría es 302, Medicina General 301, Infectología 334, etc."
+                        />
+                      </label>
+                      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "10px" }}>
+                        <select
+                          className="form-input"
+                          value={
+                            SERVICIOS_REPS_COMUNES.some((s) => String(s.codigo) === String(ripsConfig.codigoServicio))
+                              ? String(ripsConfig.codigoServicio || "302")
+                              : "otro"
+                          }
+                          onChange={(e) => {
+                            if (e.target.value !== "otro") {
+                              setRipsField("codigoServicio", e.target.value);
+                            }
+                          }}
+                        >
+                          {SERVICIOS_REPS_COMUNES.map((srv) => (
+                            <option key={srv.codigo} value={String(srv.codigo)}>
+                              {srv.nombre}
+                            </option>
+                          ))}
+                          <option value="otro">Otro código personalizado...</option>
+                        </select>
+                        <input
+                          type="number"
+                          className="form-input"
+                          placeholder="Código (ej. 302)"
+                          value={ripsConfig.codigoServicio || ""}
+                          onChange={(e) => setRipsField("codigoServicio", e.target.value.replace(/\D/g, ""))}
+                        />
+                      </div>
+                      <span style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "4px", display: "block" }}>
+                        Se reportará en el campo obligatorio <code>codServicio</code> de cada consulta.
+                      </span>
+                    </div>
+
+                    {/* SECCIÓN 2: LOCALIZACIÓN Y MODALIDAD */}
+                    <div style={{ gridColumn: "1 / -1", borderBottom: "1px solid var(--slate-100)", paddingBottom: "8px", marginTop: "12px", marginBottom: "4px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <MapPin size={16} style={{ color: "var(--teal-700)" }} />
+                        <h3 style={{ fontSize: "14px", fontWeight: 700, margin: 0, color: "var(--slate-800)" }}>
+                          2. Localización y Modalidad de Atención
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Municipio DANE */}
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center" }}>
+                        Municipio de Atención (Código DANE 5 dígitos) *
+                        <RipsInfoTooltip
+                          title="Código DANE"
+                          text="Código de 5 dígitos asignado por el DANE a tu municipio de prestación. Se reporta en codMunicipioResidencia de los usuarios."
+                        />
+                      </label>
+                      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "10px" }}>
+                        <select
+                          className="form-input"
+                          value={
+                            MUNICIPIOS_DANE_COMUNES.some((m) => m.codigo === ripsConfig.codigoMunicipio)
+                              ? ripsConfig.codigoMunicipio || "11001"
+                              : "otro"
+                          }
+                          onChange={(e) => {
+                            if (e.target.value !== "otro") {
+                              setRipsField("codigoMunicipio", e.target.value);
+                            }
+                          }}
+                        >
+                          {MUNICIPIOS_DANE_COMUNES.map((muni) => (
+                            <option key={muni.codigo} value={muni.codigo}>
+                              {muni.nombre} ({muni.departamento}) - {muni.codigo}
+                            </option>
+                          ))}
+                          <option value="otro">Otro código DANE...</option>
+                        </select>
+                        <input
+                          type="text"
+                          maxLength={5}
+                          className="form-input"
+                          placeholder="DANE (ej. 11001)"
+                          value={ripsConfig.codigoMunicipio || ""}
+                          onChange={(e) => setRipsField("codigoMunicipio", e.target.value.replace(/\D/g, "").slice(0, 5))}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Modalidad de Atención */}
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center" }}>
+                        Modalidad de Prestación Habitual *
+                        <RipsInfoTooltip
+                          title="Modalidad de Atención"
+                          text="'01 - Intramural' aplica a consultas presenciales en el consultorio. '03 - Telemedicina interactiva' aplica a consultas por videollamada sincronizada."
+                        />
+                      </label>
+                      <select
+                        className="form-input"
+                        value={ripsConfig.modalidadAtencion || "01"}
+                        onChange={(e) => setRipsField("modalidadAtencion", e.target.value)}
+                      >
+                        {MODALIDADES_ATENCION.map((mod) => (
+                          <option key={mod.codigo} value={mod.codigo}>
+                            {mod.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* SECCIÓN 3: FACTURACIÓN ELECTRÓNICA & HONORARIOS */}
+                    <div style={{ gridColumn: "1 / -1", borderBottom: "1px solid var(--slate-100)", paddingBottom: "8px", marginTop: "12px", marginBottom: "4px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Coins size={16} style={{ color: "var(--teal-700)" }} />
+                        <h3 style={{ fontSize: "14px", fontWeight: 700, margin: 0, color: "var(--slate-800)" }}>
+                          3. Facturación Electrónica en Salud (FEV) & Honorarios Base
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Prefijo FEV */}
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center" }}>
+                        Prefijo de Facturación FEV
+                        <RipsInfoTooltip
+                          title="Prefijo Factura"
+                          text="Prefijo alfabético autorizado por la DIAN en tu resolución de facturación (ej. FEV, SETT, MED). Se utilizará para armar el identificador numFactura del JSON."
+                        />
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={ripsConfig.prefijoFactura || ""}
+                        onChange={(e) => setRipsField("prefijoFactura", e.target.value.toUpperCase().trim())}
+                        placeholder="Ej: FEV"
+                      />
+                    </div>
+
+                    {/* Honorarios habituales */}
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", alignItems: "center" }}>
+                        Honorarios Habituales por Consulta ($ COP)
+                        <RipsInfoTooltip
+                          title="Valor del Servicio"
+                          text="Valor en pesos colombianos asignado por defecto a las consultas particulares (campo vrServicio). Puedes ajustarlo individualmente en cada atención."
+                        />
+                      </label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={ripsConfig.valorHonorariosDefecto || 150000}
+                        onChange={(e) => setRipsField("valorHonorariosDefecto", Number(e.target.value) || 0)}
+                        placeholder="150000"
+                        step={5000}
+                      />
+                      <span style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "4px", display: "block" }}>
+                        Se consignará en el campo <code>vrServicio</code> con concepto de recaudo <code>05 (No aplica / Particular)</code>.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <SaveBar onSave={saveConfig} isPending={isPending} label="Guardar datos de habilitación RIPS" />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -2058,6 +2452,59 @@ export default function PersonalizarPage({ params }: Props) {
 }
 
 // ─── SUB-COMPONENTS ──────────────────────────────────────────
+function RipsInfoTooltip({ text, title }: { text: string; title?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span style={{ position: "relative", display: "inline-flex", alignItems: "center", marginLeft: "6px" }}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        style={{
+          border: "none",
+          background: "rgba(10, 77, 92, 0.08)",
+          color: "var(--teal-700)",
+          borderRadius: "50%",
+          width: "18px",
+          height: "18px",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          padding: 0
+        }}
+        title="Ver explicación clínica"
+      >
+        <HelpCircle size={12} />
+      </button>
+      {open && (
+        <span
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 6px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#0f172a",
+            color: "#f8fafc",
+            padding: "8px 12px",
+            borderRadius: "6px",
+            fontSize: "11.5px",
+            lineHeight: 1.4,
+            width: "240px",
+            zIndex: 100,
+            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.2)",
+            pointerEvents: "none"
+          }}
+        >
+          {title && <strong style={{ display: "block", color: "#38bdf8", marginBottom: "3px" }}>{title}</strong>}
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function Field({ label, id, value, onChange, placeholder, type = "text", fullWidth = false }: {
   label: string; id: string; value: string;
   onChange: (v: string) => void; placeholder?: string;
