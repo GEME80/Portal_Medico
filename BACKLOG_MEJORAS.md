@@ -77,3 +77,14 @@
 - [x] **[FEAT-04]** Gestión de equipo del consultorio (`/[slug]/admin/equipo`) con rol `recepcion`
 - [x] **[INFRA-05]** Monitoreo de errores Sentry (`@sentry/nextjs`)
 - [x] **[INFRA-06]** Módulo de Facturación SuperAdmin (`/superadmin/facturacion`)
+
+---
+
+## 🟣 FASE 4 — AUTOMATIZACIÓN INTEGRAL RIPS & FACTURACIÓN ELECTRÓNICA (EN ROADMAP / ADR-005)
+
+- [ ] **[RIPS-AUTO-01]** Pipeline Asíncrono de Auto-Generación RIPS al Cerrar Historia (`/api/rips/auto-process` o Edge Function en segundo plano sin bloquear al médico).
+- [ ] **[RIPS-AUTO-02]** Conector API con Pasarela Contable / Validador MUV (Siigo API, Facturatech o Alegra) para transmisión del payload Res. 2275 y obtención del CUV.
+- [ ] **[RIPS-AUTO-03]** Emisión automática de Factura Electrónica de Venta en Salud (FEV / DIAN) asociada al CUFE y CUV.
+- [ ] **[RIPS-AUTO-04]** Trazabilidad y persistencia en la Historia Clínica (`historias_clinicas.facturacion`: CUV, CUFE, número de factura y URL del PDF/XML).
+- [ ] **[RIPS-AUTO-05]** Envío automático o en 1-clic del PDF de la Factura y Carné al correo o WhatsApp del paciente.
+
