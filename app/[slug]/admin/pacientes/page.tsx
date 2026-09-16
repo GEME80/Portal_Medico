@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { guardarHistoriaClinica, crearPacienteExpress, buscarCIE10, getDiagnosticosMasUsados } from "@/lib/actions/clinical-actions";
 import CustomConfirmModal from "@/components/CustomConfirmModal";
-import { Search, UserPlus, ShieldCheck } from "lucide-react";
+import { Search, UserPlus, ShieldCheck, Users } from "lucide-react";
 
 
 export default function PacientesPage({ params }: { params: { slug: string } }) {
@@ -253,7 +253,54 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
   const RipsBadge = () => <span style={{ marginLeft: "6px", fontSize: "10px", padding: "2px 6px", background: "rgba(59, 130, 246, 0.1)", color: "#3b82f6", borderRadius: "4px", fontWeight: "700" }}>RIPS</span>;
 
   return (
-    <div style={{ padding: "40px", fontFamily: "'Outfit', sans-serif", minHeight: "100vh", background: "#f8fafc" }}>
+    <>
+      {/* ── TOPBAR STICKY ── */}
+      <div className="admin-topbar">
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "8px",
+            background: "rgba(10, 77, 92, 0.08)",
+            color: "var(--doc-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <Users size={18} strokeWidth={2.2} />
+          </div>
+          <div>
+            <h1 className="admin-topbar-title" style={{ margin: 0, lineHeight: 1.2 }}>Gestión de Pacientes</h1>
+            <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "2px 0 0" }}>
+              Directorio de pacientes, historias clínicas y registro de consultas
+            </p>
+          </div>
+        </div>
+        <div className="admin-topbar-right">
+          <button 
+            onClick={() => openNewHistory()}
+            style={{
+              background: "#00D4AA",
+              color: "#0f172a",
+              fontWeight: "700",
+              fontSize: "13px",
+              padding: "9px 18px",
+              borderRadius: "9px",
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0, 212, 170, 0.25)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px"
+            }}
+          >
+            <UserPlus size={15} />
+            <span>Nuevo Paciente</span>
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: "32px", fontFamily: "'Outfit', sans-serif", minHeight: "calc(100vh - 64px)", background: "#f8fafc" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
         <div style={{ flex: 1, maxWidth: "600px" }}>
           <h1 style={{ fontSize: "32px", fontWeight: "700", color: "#1e293b", margin: "0 0 16px 0" }}>
@@ -847,6 +894,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
         onCancel={() => setShowConfirmCerrar(false)}
       />
     </div>
+    </>
   );
 }
 

@@ -165,7 +165,43 @@ export default function RipsManager({ tenantSlug, tenantName, historias }: RipsM
   };
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+    <>
+      {/* ── TOPBAR STICKY ── */}
+      <div className="admin-topbar">
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "8px",
+            background: "rgba(10, 77, 92, 0.08)",
+            color: "var(--doc-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <FileSpreadsheet size={18} strokeWidth={2.2} />
+          </div>
+          <div>
+            <h1 className="admin-topbar-title" style={{ margin: 0, lineHeight: 1.2 }}>Reportes RIPS 2026</h1>
+            <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "2px 0 0" }}>
+              MinSalud Colombia Res. 000948 / 2026 · Validación interoperable JSON
+            </p>
+          </div>
+        </div>
+        <div className="admin-topbar-right">
+          <button
+            onClick={handleDownload}
+            disabled={aptasParaRips.length === 0}
+            className="doc-btn doc-btn-accent"
+            style={{ opacity: aptasParaRips.length === 0 ? 0.5 : 1, cursor: aptasParaRips.length === 0 ? "not-allowed" : "pointer", padding: "8px 16px", fontSize: "13px" }}
+          >
+            <Download size={14} />
+            <span>Descargar JSON ({aptasParaRips.length})</span>
+          </button>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px" }}>
       {/* ── HEADER DE SECCIÓN ──────────────────────────────────────── */}
       <div className="doc-dashboard-header" style={{ marginBottom: "20px" }}>
         <div>
@@ -527,5 +563,6 @@ export default function RipsManager({ tenantSlug, tenantName, historias }: RipsM
         )}
       </div>
     </div>
+    </>
   );
 }

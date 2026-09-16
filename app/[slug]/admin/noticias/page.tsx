@@ -12,6 +12,7 @@ import {
 import EmojiPicker from 'emoji-picker-react';
 import dynamic from 'next/dynamic';
 import CustomConfirmModal from "@/components/CustomConfirmModal";
+import { Newspaper, Plus, Tag } from "lucide-react";
 
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), { ssr: false });
 
@@ -267,20 +268,34 @@ export default function AdminNoticiasPage({ params }: Props) {
     <>
       {/* TOPBAR */}
       <div className="admin-topbar">
-        <div>
-          <h1 className="admin-topbar-title">📰 Gestión de Publicaciones</h1>
-          <p style={{ fontSize: "12px", color: "var(--slate-500)", marginTop: "2px" }}>
-            Escribe artículos, boletines científicos y gestiona categorías.
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "8px",
+            background: "rgba(10, 77, 92, 0.08)",
+            color: "var(--doc-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <Newspaper size={18} strokeWidth={2.2} />
+          </div>
+          <div>
+            <h1 className="admin-topbar-title" style={{ margin: 0, lineHeight: 1.2 }}>Gestión de Publicaciones</h1>
+            <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "2px 0 0" }}>
+              Escribe artículos, boletines científicos y gestiona categorías.
+            </p>
+          </div>
         </div>
         <div className="admin-topbar-right">
           {activeTab === "posts" ? (
             <button onClick={handleOpenCreate} className="btn btn-emerald" style={{ display: "inline-flex", gap: "8px", alignItems: "center" }}>
-              <span>＋</span> Nueva Publicación
+              <Plus size={16} /> Nueva Publicación
             </button>
           ) : (
             <button onClick={handleOpenCreateCat} className="btn btn-emerald" style={{ display: "inline-flex", gap: "8px", alignItems: "center" }}>
-              <span>＋</span> Nueva Categoría
+              <Plus size={16} /> Nueva Categoría
             </button>
           )}
         </div>
@@ -290,8 +305,8 @@ export default function AdminNoticiasPage({ params }: Props) {
         {/* TABS */}
         <div style={{ display: "flex", gap: "4px", marginBottom: "20px", background: "var(--slate-100)", borderRadius: "12px", padding: "4px", width: "fit-content" }}>
           {([
-            { key: "posts",      label: "📰 Publicaciones" },
-            { key: "categorias", label: "🏷️ Categorías" },
+            { key: "posts",      label: "Publicaciones", icon: Newspaper },
+            { key: "categorias", label: "Categorías", icon: Tag },
           ] as const).map(tab => (
             <button
               key={tab.key}
@@ -303,8 +318,12 @@ export default function AdminNoticiasPage({ params }: Props) {
                 background: activeTab === tab.key ? "white" : "transparent",
                 color: activeTab === tab.key ? "var(--teal-800)" : "var(--slate-500)",
                 boxShadow: activeTab === tab.key ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px"
               }}
             >
+              <tab.icon size={15} />
               {tab.label}
             </button>
           ))}

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { Stethoscope, UserPlus } from 'lucide-react';
 
 export default async function EquipoPage({ params }: { params: { slug: string } }) {
   const supabase = await createClient();
@@ -22,16 +23,37 @@ export default async function EquipoPage({ params }: { params: { slug: string } 
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Gestión de Equipo</h1>
-          <p className="text-slate-500 mt-1">Administra los accesos de tus recepcionistas y médicos auxiliares.</p>
+    <>
+      {/* ── TOPBAR STICKY ── */}
+      <div className="admin-topbar">
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "8px",
+            background: "rgba(10, 77, 92, 0.08)",
+            color: "var(--doc-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <Stethoscope size={18} strokeWidth={2.2} />
+          </div>
+          <div>
+            <h1 className="admin-topbar-title" style={{ margin: 0, lineHeight: 1.2 }}>Gestión de Equipo</h1>
+            <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "2px 0 0" }}>
+              Administra los accesos de tus recepcionistas y médicos auxiliares
+            </p>
+          </div>
         </div>
-        <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm">
-          + Invitar Miembro
-        </button>
+        <div className="admin-topbar-right">
+          <button className="btn btn-emerald" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <UserPlus size={15} /> Invitar Miembro
+          </button>
+        </div>
       </div>
+
+      <div className="p-6 max-w-5xl mx-auto">
 
       <div className="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
         {miembros.length === 0 ? (
@@ -75,5 +97,6 @@ export default async function EquipoPage({ params }: { params: { slug: string } 
         )}
       </div>
     </div>
+    </>
   );
 }

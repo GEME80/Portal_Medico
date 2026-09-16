@@ -237,7 +237,7 @@ export default function AdminShell({
       </div>
 
       {/* ── DESKTOP SIDEBAR ───────────────────────────────────────── */}
-      <aside className="admin-sidebar" style={{ borderRight: "1px solid var(--slate-200)" }}>
+      <aside className="admin-sidebar">
         <div className="sidebar-brand">
           <Link href={`/${tenantSlug}/admin`} style={{ textDecoration: "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

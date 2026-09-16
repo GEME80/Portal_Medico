@@ -3,7 +3,8 @@
   display: flex;
   min-height: 100vh;
   background: var(--slate-100);
-  overflow-x: hidden;
+  overflow-x: clip;
+  position: relative;
 }
 
 /* ─── SIDEBAR ───────────────────────────────────────────────────────── */
@@ -13,16 +14,19 @@
   background: var(--slate-900);
   display: flex;
   flex-direction: column;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  bottom: 0;
   height: 100vh;
-  overflow-y: auto;
-  z-index: 40;
+  overflow: hidden;
+  z-index: 50;
 }
 
 .sidebar-brand {
-  padding: 24px 20px 20px;
+  padding: 20px 18px 16px;
   border-bottom: 1px solid rgba(255,255,255,.07);
+  flex-shrink: 0;
 }
 
 .sidebar-brand-name {
@@ -44,10 +48,15 @@
 
 .sidebar-nav {
   flex: 1;
-  padding: 16px 12px;
+  padding: 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  overscroll-behavior: contain;
 }
 
 .sidebar-section-label {
@@ -56,8 +65,8 @@
   letter-spacing: .12em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.5);
-  padding: 8px 8px 4px;
-  margin-top: 8px;
+  padding: 6px 8px 3px;
+  margin-top: 4px;
 }
 
 .sidebar-link {
@@ -108,8 +117,9 @@
 }
 
 .sidebar-footer {
-  padding: 16px 12px;
+  padding: 12px 12px;
   border-top: 1px solid rgba(255,255,255,.07);
+  flex-shrink: 0;
 }
 
 .sidebar-user {
@@ -148,12 +158,17 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  min-height: 100vh;
 }
 
 .admin-topbar {
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--slate-200);
   padding: 0 32px;
   height: 64px;
@@ -162,8 +177,8 @@
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 30;
-  box-shadow: var(--shadow-sm);
+  z-index: 40;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
 .admin-topbar-title {
@@ -949,6 +964,8 @@ dialog::backdrop {
   /* Shift main content for mobile header + bottom bar */
   .admin-shell { display: block !important; }
   .admin-main  {
+    margin-left: 0 !important;
+    width: 100% !important;
     padding: 72px 0 88px !important;
     min-height: 100vh;
   }

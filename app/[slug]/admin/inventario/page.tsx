@@ -3,6 +3,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import CustomConfirmModal from "@/components/CustomConfirmModal";
+import { Package, Plus } from "lucide-react";
 
 type EstadoStock = "ok" | "low" | "critical";
 type TipoMovimiento = "ENTRADA" | "SALIDA";
@@ -683,30 +684,44 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     <>
       {/* ── TOP BAR ───────────────────────────────────────────────── */}
       <div className="admin-topbar">
-        <div>
-          <h1 className="admin-topbar-title">📦 Inventario Médico y Farmacia</h1>
-          <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "2px" }}>
-            Gestión de stock, lotes, insumos refrigerados y trazabilidad de vencimientos
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "8px",
+            background: "rgba(10, 77, 92, 0.08)",
+            color: "var(--doc-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <Package size={18} strokeWidth={2.2} />
+          </div>
+          <div>
+            <h1 className="admin-topbar-title" style={{ margin: 0, lineHeight: 1.2 }}>Inventario Médico y Farmacia</h1>
+            <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "2px 0 0" }}>
+              Gestión de stock, lotes, insumos refrigerados y trazabilidad de vencimientos
+            </p>
+          </div>
         </div>
         <div className="admin-topbar-right" style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
           {activeTab === "catalogo" && (
             <button
               id="btn-nueva-vacuna"
               className="btn btn-primary"
-              style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
+              style={{ padding: "8px 18px", fontSize: "13px", background: primaryColor, display: "inline-flex", alignItems: "center", gap: "6px" }}
               onClick={() => newVacunaRef.current?.showModal()}
             >
-              ＋ Registrar Nuevo Ítem
+              <Plus size={15} /> Registrar Nuevo Ítem
             </button>
           )}
           {activeTab === "categorias" && (
             <button
               className="btn btn-primary"
-              style={{ padding: "10px 20px", fontSize: "13px", background: primaryColor }}
+              style={{ padding: "8px 18px", fontSize: "13px", background: primaryColor, display: "inline-flex", alignItems: "center", gap: "6px" }}
               onClick={openNewCategoria}
             >
-              ＋ Nueva Categoría
+              <Plus size={15} /> Nueva Categoría
             </button>
           )}
         </div>

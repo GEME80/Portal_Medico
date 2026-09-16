@@ -4,22 +4,23 @@ import { createClient } from "@/lib/supabase/client";
 import { saveConfigAction, saveAlertAction } from "./actions";
 import { uploadImageAction } from "../noticias/actions";
 import { getOmsChartCalibrations, saveOmsChartImage } from "@/lib/actions/clinical-actions";
+import { Palette, ChevronDown } from "lucide-react";
 
 const TABS = [
-  { id: "identidad", label: "👨‍⚕️ Identidad y Estilos", desc: "Logo, contacto, redes, estilos" },
+  { id: "identidad", label: "Identidad & Estilos", desc: "Logo, contacto, redes, estilos" },
   { 
     id: "home_config", 
-    label: "🏠 Configuración del Home", 
+    label: "Configuración del Home", 
     desc: "Portada, doctor, pestaña extra",
     subitems: [
-      { id: "home_portal", label: "🖥️ Portada Principal" },
-      { id: "sobre_doctor_portal", label: "👨‍⚕️ Sobre el Doctor" },
-      { id: "extra_portal", label: "✨ Pestaña Extra" }
+      { id: "home_portal", label: "Portada Principal" },
+      { id: "sobre_doctor_portal", label: "Sobre el Doctor" },
+      { id: "extra_portal", label: "Pestaña Extra" }
     ]
   },
-  { id: "investigacion", label: "🔬 Líneas Invest.", desc: "Gestor de tarjetas y títulos" },
-  { id: "trayectoria", label: "🎓 Trayectoria", desc: "Hitos académicos y títulos" },
-  { id: "graficas_oms", label: "📈 Gráficas OMS", desc: "Configurar imágenes de curvas" },
+  { id: "investigacion", label: "Líneas de Investigación", desc: "Gestor de tarjetas y títulos" },
+  { id: "trayectoria", label: "Trayectoria Profesional", desc: "Hitos académicos y títulos" },
+  { id: "graficas_oms", label: "Curvas de Crecimiento OMS", desc: "Configurar imágenes de curvas" },
 ];
 
 interface Config {
@@ -732,12 +733,26 @@ export default function PersonalizarPage({ params }: Props) {
   return (
     <>
       {/* TOPBAR */}
-      <div className="admin-topbar" style={{ position: "sticky", top: 0, zIndex: 30, background: "#fff", borderBottom: "1px solid var(--slate-200)" }}>
-        <div>
-          <h1 className="admin-topbar-title">🎨 Personalizar Portal</h1>
-          <p style={{ fontSize: "13px", color: "var(--slate-500)", marginTop: "4px" }}>
-            Edita el contenido y estilo visual de tu sitio público.
-          </p>
+      <div className="admin-topbar">
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "8px",
+            background: "rgba(10, 77, 92, 0.08)",
+            color: "var(--doc-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <Palette size={18} strokeWidth={2.2} />
+          </div>
+          <div>
+            <h1 className="admin-topbar-title" style={{ margin: 0, lineHeight: 1.2 }}>Personalizar Portal</h1>
+            <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "2px 0 0" }}>
+              Edita el contenido y estilo visual de tu sitio público.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -745,7 +760,7 @@ export default function PersonalizarPage({ params }: Props) {
         <div className="personalizar-layout">
 
           {/* TABS SIDEBAR */}
-          <div style={{ background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-xl)", overflow: "hidden", position: "sticky", top: "88px" }}>
+          <div className="sticky-subnav" style={{ background: "white", border: "1px solid var(--slate-200)", borderRadius: "var(--radius-xl)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
             {TABS.map((tab) => {
               const isHomeConfig = tab.id === "home_config";
               const isSelected = activeTab === tab.id || 
@@ -778,9 +793,7 @@ export default function PersonalizarPage({ params }: Props) {
                     <span style={{ fontSize: "13px", fontWeight: 700, color: isSelected ? "var(--teal-800)" : "var(--slate-700)", display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
                       {tab.label}
                       {isHomeConfig && (
-                        <span style={{ fontSize: "10px", transform: homeMenuExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }}>
-                          ▼
-                        </span>
+                        <ChevronDown size={14} style={{ transform: homeMenuExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
                       )}
                     </span>
                     <span style={{ fontSize: "11px", color: "var(--slate-400)", marginTop: "2px" }}>{tab.desc}</span>

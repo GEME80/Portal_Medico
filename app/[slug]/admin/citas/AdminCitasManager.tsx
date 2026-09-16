@@ -460,7 +460,80 @@ export default function AdminCitasManager({
   }, [citas, searchTerm]);
 
   return (
-    <div style={{ maxWidth: "1320px", margin: "0 auto", padding: "24px" }}>
+    <>
+      {/* ── TOPBAR STICKY ── */}
+      <div className="admin-topbar">
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "8px",
+            background: "rgba(10, 77, 92, 0.08)",
+            color: "var(--doc-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <Calendar size={18} strokeWidth={2.2} />
+          </div>
+          <div>
+            <h1 className="admin-topbar-title" style={{ margin: 0, lineHeight: 1.2 }}>Agenda Médica & Citas</h1>
+            <p style={{ fontSize: "12px", color: "var(--slate-500)", margin: "2px 0 0" }}>
+              Programación en tiempo real · Duración por consulta: {agendaConfig.duracion_cita_minutos} min
+            </p>
+          </div>
+        </div>
+        <div className="admin-topbar-right" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <button
+            onClick={() => setShowConfigModal(true)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 14px",
+              borderRadius: "8px",
+              background: "#ffffff",
+              color: "#334155",
+              fontWeight: 600,
+              fontSize: "13px",
+              border: "1px solid #cbd5e1",
+              cursor: "pointer",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+            }}
+          >
+            <Settings size={14} />
+            <span>Ajustes</span>
+          </button>
+          <button
+            onClick={() => {
+              setBloqueoForm(prev => ({
+                ...prev,
+                fecha_inicio: currentDateStr,
+                fecha_fin: currentDateStr
+              }));
+              setShowBloqueoModal(true);
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 14px",
+              borderRadius: "8px",
+              background: "#fef3c7",
+              color: "#92400e",
+              fontWeight: 700,
+              fontSize: "13px",
+              border: "1px solid #fde68a",
+              cursor: "pointer"
+            }}
+          >
+            <Lock size={14} />
+            <span>Bloquear Horario</span>
+          </button>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: "1320px", margin: "0 auto", padding: "24px" }}>
       {/* Header Principal */}
       <div style={{
         display: "flex",
@@ -2396,5 +2469,6 @@ export default function AdminCitasManager({
         </div>
       )}
     </div>
+    </>
   );
 }
