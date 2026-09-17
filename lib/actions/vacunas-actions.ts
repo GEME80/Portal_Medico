@@ -404,6 +404,23 @@ export async function registrarVacunaCombinada(
             notas: `Lote: ${input.numero_lote || 'N/A'}`,
             fecha: input.fecha_aplicacion
           }]);
+
+          // Descontar del lote si coincide
+          if (input.numero_lote) {
+            const { data: loteRow } = await adminSupabase
+              .from('lotes_inventario')
+              .select('id, cantidad')
+              .eq('item_id', input.vacuna_id)
+              .eq('numero_lote', input.numero_lote.trim())
+              .single();
+
+            if (loteRow) {
+              await adminSupabase
+                .from('lotes_inventario')
+                .update({ cantidad: Math.max(0, (loteRow.cantidad || 0) - 1) })
+                .eq('id', loteRow.id);
+            }
+          }
         }
       } catch (stockErr) {
         console.error('Advertencia descuento inventario combinada:', stockErr);
@@ -425,6 +442,7 @@ export async function registrarVacunaCombinada(
 
 /**
  * Eliminar una aplicación de vacuna (por error de digitación)
+ * Restaura automáticamente el stock y lote si provino de inventario
  */
 export async function eliminarAplicacionVacuna(
   aplicacionId: string,
@@ -432,9 +450,11 @@ export async function eliminarAplicacionVacuna(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
+
     const { data: aplicacion, error: fetchErr } = await supabase
       .from('aplicaciones_vacunas')
-      .select('id, paciente_id')
+      .select('id, paciente_id, vacuna_id, numero_lote, tenant_id, nombre_vacuna, dosis')
       .eq('id', aplicacionId)
       .single();
 
@@ -449,8 +469,57 @@ export async function eliminarAplicacionVacuna(
 
     if (delErr) throw delErr;
 
+    // Restaurar stock si estaba vinculado a inventario
+    if (aplicacion.vacuna_id) {
+      try {
+        const { data: item } = await adminSupabase
+          .from('inventario_medico')
+          .select('id, stock_actual')
+          .eq('id', aplicacion.vacuna_id)
+          .single();
+
+        if (item) {
+          await adminSupabase
+            .from('inventario_medico')
+            .update({ stock_actual: (item.stock_actual || 0) + 1 })
+            .eq('id', aplicacion.vacuna_id);
+
+          // Registrar movimiento inverso en kardex
+          await adminSupabase.from('movimientos_inventario').insert([{
+            tenant_id: aplicacion.tenant_id,
+            item_id: aplicacion.vacuna_id,
+            tipo_movimiento: 'ENTRADA',
+            cantidad: 1,
+            motivo: `Reversión por eliminación de aplicación: ${aplicacion.nombre_vacuna || ''} (${aplicacion.dosis || ''})`,
+            notas: `Lote: ${aplicacion.numero_lote || 'N/A'}. ID Aplicación eliminada: ${aplicacion.id}`,
+            fecha: new Date().toISOString().split('T')[0]
+          }]);
+
+          // Restaurar cantidad en lote
+          if (aplicacion.numero_lote) {
+            const { data: loteRow } = await adminSupabase
+              .from('lotes_inventario')
+              .select('id, cantidad')
+              .eq('item_id', aplicacion.vacuna_id)
+              .eq('numero_lote', aplicacion.numero_lote.trim())
+              .single();
+
+            if (loteRow) {
+              await adminSupabase
+                .from('lotes_inventario')
+                .update({ cantidad: (loteRow.cantidad || 0) + 1 })
+                .eq('id', loteRow.id);
+            }
+          }
+        }
+      } catch (restErr) {
+        console.warn('Advertencia al restaurar inventario tras eliminación:', restErr);
+      }
+    }
+
     if (tenantSlug) {
       revalidatePath(`/${tenantSlug}/admin/pacientes/${aplicacion.paciente_id}`);
+      revalidatePath(`/${tenantSlug}/admin/inventario`);
     }
 
     return { success: true };
