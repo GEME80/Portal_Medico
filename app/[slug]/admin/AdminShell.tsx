@@ -84,7 +84,7 @@ export default function AdminShell({
     { href: `/${tenantSlug}/admin`, icon: LayoutDashboard, label: "Dashboard", shortLabel: "Inicio", exact: true, key: "dashboard" },
     { href: `/${tenantSlug}/admin/citas`, icon: CalendarDays, label: "Agenda & Citas", shortLabel: "Citas", exact: false, key: "citas" },
     { href: `/${tenantSlug}/admin/pacientes`, icon: Users, label: "Gestión Pacientes", shortLabel: "Pacientes", exact: false, key: "pacientes" },
-    { href: `/${tenantSlug}/admin/inventario`, icon: Package, label: inventoryName, shortLabel: "Inventario", exact: false, key: "inventario" },
+    { href: `/${tenantSlug}/admin/inventario`, icon: Package, label: inventoryName, shortLabel: "Vacunas", exact: false, key: "inventario" },
     { href: `/${tenantSlug}/admin/reportes`, icon: FileSpreadsheet, label: "Reportes RIPS", shortLabel: "RIPS", exact: false, key: "reportes" },
     { href: `/${tenantSlug}/admin/equipo`, icon: Stethoscope, label: "Equipo Médico", shortLabel: "Equipo", exact: false, key: "equipo" },
     { href: `/${tenantSlug}/admin/noticias`, icon: Newspaper, label: "Publicaciones", shortLabel: "Noticias", exact: false, key: "noticias" },

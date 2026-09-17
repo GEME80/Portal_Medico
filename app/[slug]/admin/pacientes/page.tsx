@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { guardarHistoriaClinica, crearPacienteExpress, buscarCIE10, getDiagnosticosMasUsados } from "@/lib/actions/clinical-actions";
 import CustomConfirmModal from "@/components/CustomConfirmModal";
-import { Search, UserPlus, ShieldCheck, Users } from "lucide-react";
+import { Search, UserPlus, ShieldCheck, Users, Syringe } from "lucide-react";
+import CarneVacunacionModal from "./[pacienteId]/CarneVacunacionModal";
 
 
 export default function PacientesPage({ params }: { params: { slug: string } }) {
@@ -31,6 +32,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
   const [selectedPacienteId, setSelectedPacienteId] = useState<string | null>(null);
   const [selectedPacienteData, setSelectedPacienteData] = useState<any>(null);
   const [showConfirmCerrar, setShowConfirmCerrar] = useState(false);
+  const [carneModalPaciente, setCarneModalPaciente] = useState<any | null>(null);
 
   const handleConfirmCerrar = () => {
     setShowConfirmCerrar(false);
@@ -85,11 +87,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
       let query = supabase
         .from("pacientes")
         .select(`
-          id,
-          nombres,
-          apellidos,
-          documento,
-          created_at,
+          *,
           historias_clinicas ( created_at )
         `)
         .eq("tenant_id", tenant.id)
@@ -450,6 +448,26 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                       >
                         Consultar
                       </Link>
+                      <button 
+                        onClick={() => setCarneModalPaciente(paciente)}
+                        style={{
+                          background: "#f0fdfa",
+                          color: "#0A4D5C",
+                          border: "1px solid #00D4AA",
+                          padding: "8px 14px",
+                          borderRadius: "8px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          fontSize: "13px"
+                        }}
+                        title="Ver y Registrar Carné de Vacunación"
+                      >
+                        <Syringe size={14} color="#00b28e" /> Carné
+                      </button>
                       {!isRecepcion && (
                         <button 
                           onClick={() => openNewHistory(paciente.id, paciente)}
@@ -980,6 +998,18 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
         onConfirm={handleConfirmCerrar}
         onCancel={() => setShowConfirmCerrar(false)}
       />
+
+      {/* MODAL CARNÉ DE VACUNACIÓN DIRECTO */}
+      {carneModalPaciente && (
+        <CarneVacunacionModal
+          isOpen={!!carneModalPaciente}
+          onClose={() => setCarneModalPaciente(null)}
+          paciente={carneModalPaciente}
+          tenantSlug={tenantSlug}
+          tenantId={carneModalPaciente.tenant_id}
+          currentUserRole={currentUserRole}
+        />
+      )}
     </div>
     </>
   );

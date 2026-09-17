@@ -88,3 +88,4 @@
 - [ ] **[RIPS-AUTO-04]** Trazabilidad y persistencia en la Historia Clínica (`historias_clinicas.facturacion`: CUV, CUFE, número de factura y URL del PDF/XML).
 - [ ] **[RIPS-AUTO-05]** Envío automático o en 1-clic del PDF de la Factura y Carné al correo o WhatsApp del paciente.
 
+

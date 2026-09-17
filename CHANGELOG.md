@@ -16,6 +16,21 @@
 Todos los cambios notables en este proyecto se documentan en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.11.0] - 2026-09-16
+### Tarjetas y Carné de Vacunación Digital
+- **Módulo Integral de Inmunización y Carné Digital**:
+  - **Migración de Base de Datos (`20260916170000_aplicaciones_vacunas.sql`)**:
+    - Tabla `aplicaciones_vacunas` con claves foráneas, índices compuestos y políticas RLS multi-tenant y de lectura pública por Magic Token (`token_acceso`).
+  - **Server Actions Seguras (`lib/actions/vacunas-actions.ts`) & Constantes (`lib/vacunas/constants.ts`)**:
+    - `registrarAplicacionVacuna`: Registro de dosis con descuento opcional de inventario (`inventario_medico` y `lotes_inventario`) y creación de movimiento en Kardex.
+    - Catálogo precargado de esquemas vacunales (PAI infantil y ampliado privado).
+  - **Modal de Gestión en Perfil del Paciente (`CarneVacunacionModal.tsx`)**:
+    - Botón `💉 Carné de Vacunación` en `app/[slug]/admin/pacientes/[pacienteId]`.
+    - Pestaña de visualización de tarjetas de dosis aplicadas y pestaña de registro rápido desde inventario o plantillas.
+    - Botón de 1-clic para compartir el carné oficial por WhatsApp a los acudientes.
+  - **Visor Institucional de Carné Digital (`app/[slug]/carne/[token]`)**:
+    - Visor responsivo con sellos de verificación digital, resumen demográfico con cálculo de edad en años/meses, tarjetas de vacunas aplicadas y componente de impresión/guardado en PDF (`CarnePrintButton.tsx`).
+
 ## [3.10.2] - 2026-09-16
 ### Rendimiento & Experiencia de Usuario (Zero-Lag Navigation)
 - **Eliminación de la Sensación de Lentitud en Navegación del Panel Admin**:

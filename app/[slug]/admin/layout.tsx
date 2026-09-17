@@ -60,7 +60,9 @@ export default async function TenantAdminLayout({ children, params }: Props) {
   const doctorName = config?.nombre_doctor || tenant.nombre || "Doctor";
   const primaryColor = config?.color_primario || "#0A4D5C";
   const accentColor = config?.color_acento || "#00D4AA";
-  const inventoryName = heroData?.nombre_menu_vacunas || "Inventario Médico";
+  const inventoryName = (heroData?.nombre_menu_vacunas && heroData.nombre_menu_vacunas !== "Servicios")
+    ? heroData.nombre_menu_vacunas 
+    : "Vacunas e Inventario";
   const habilitarMenuVacunas = heroData?.habilitar_menu_vacunas !== false;
 
   // Check if current user is superadmin (auth session is not affected by RLS)

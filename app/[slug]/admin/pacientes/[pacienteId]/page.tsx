@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Lock, ShieldCheck } from "lucide-react";
+import { Lock, ShieldCheck, Syringe } from "lucide-react";
 import { getHistoriasClinicas, getHistoriaClinicaDetalle, getCurvasOMS, getPuntosCrecimientoPaciente, agregarMedicionHistorica, getOmsChartCalibrations } from "@/lib/actions/clinical-actions";
 import OfficialGrowthChart from "@/components/OfficialGrowthChart";
+import CarneVacunacionModal from "./CarneVacunacionModal";
 
 export default function PerfilPaciente() {
   const params = useParams();
@@ -53,6 +54,9 @@ export default function PerfilPaciente() {
   const [newTalla, setNewTalla] = useState("");
   const [newFecha, setNewFecha] = useState(new Date().toISOString().split('T')[0]);
   const [savingMedicion, setSavingMedicion] = useState(false);
+
+  // Carné de Vacunación Digital
+  const [viewingCarne, setViewingCarne] = useState(false);
 
   const calcularMesesDiff = (fechaNacimiento: string, fechaAtencion: string) => {
     if (!fechaNacimiento) return 0;
@@ -260,7 +264,25 @@ export default function PerfilPaciente() {
         <div style={{ background: "white", padding: "32px", borderRadius: "16px", boxShadow: "0 10px 30px rgba(0,0,0,0.05)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
             <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: 0 }}>Perfil del Paciente</h2>
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                onClick={() => setViewingCarne(true)}
+                style={{
+                  background: "#f0fdfa",
+                  border: "1px solid #00D4AA",
+                  color: "#0A4D5C",
+                  fontWeight: "700",
+                  padding: "4px 12px",
+                  borderRadius: "16px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px"
+                }}
+              >
+                <Syringe size={13} color="#00b28e" /> Carné de Vacunación
+              </button>
               {!isRecepcion && (
                 <button onClick={handleOpenCurvas} style={{ background: "#f0fdf4", border: "1px solid #00b28e", color: "#00b28e", fontWeight: "600", padding: "4px 12px", borderRadius: "16px", cursor: "pointer", fontSize: "12px" }}>
                   Curvas OMS
@@ -690,6 +712,16 @@ export default function PerfilPaciente() {
           </div>
         </div>
       )}
+
+      {/* MODAL CARNÉ DE VACUNACIÓN DIGITAL */}
+      <CarneVacunacionModal
+        isOpen={viewingCarne}
+        onClose={() => setViewingCarne(false)}
+        paciente={paciente}
+        tenantSlug={tenantSlug}
+        tenantId={paciente?.tenant_id}
+        currentUserRole={currentUserRole}
+      />
     </div>
   );
 }
