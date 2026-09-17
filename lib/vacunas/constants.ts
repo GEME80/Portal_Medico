@@ -635,3 +635,139 @@ export function getVacunasOtras(aplicaciones: any[], claimedIds: Set<string>): a
   return aplicaciones.filter(app => !claimedIds.has(app.id));
 }
 
+export interface HitoEdadPediatrica {
+  id: string;
+  titulo: string;
+  subtitulo: string;
+  edadMesesMin: number;
+  edadMesesMax: number;
+  badgeColor: string;
+  bgLight: string;
+  borderColor: string;
+  icono: string;
+  filasIds: string[];
+}
+
+/**
+ * Hitos cronológicos de vacunación pediátrica para la vista gráfica / timeline de los padres
+ */
+export const HITOS_EDAD_PEDIATRICA: HitoEdadPediatrica[] = [
+  {
+    id: "rn",
+    titulo: "Recién Nacido",
+    subtitulo: "Primeras 24 - 48 horas de vida",
+    edadMesesMin: 0,
+    edadMesesMax: 1,
+    badgeColor: "#065f46",
+    bgLight: "#ecfdf5",
+    borderColor: "#a7f3d0",
+    icono: "🍼",
+    filasIds: ["bcg_0", "hepb_rn"]
+  },
+  {
+    id: "2m",
+    titulo: "2º Mes",
+    subtitulo: "A los 2 meses de edad (60 días)",
+    edadMesesMin: 2,
+    edadMesesMax: 3,
+    badgeColor: "#0369a1",
+    bgLight: "#f0f9ff",
+    borderColor: "#bae6fd",
+    icono: "👶",
+    filasIds: ["polio_1", "hepb_2m", "hib_1", "dtp_1", "neumo_1", "rota_1"]
+  },
+  {
+    id: "4m",
+    titulo: "4º Mes",
+    subtitulo: "A los 4 meses de edad (120 días)",
+    edadMesesMin: 4,
+    edadMesesMax: 5,
+    badgeColor: "#1d4ed8",
+    bgLight: "#eff6ff",
+    borderColor: "#bfdbfe",
+    icono: "👶",
+    filasIds: ["polio_2", "hib_2", "dtp_2", "neumo_2", "rota_2"]
+  },
+  {
+    id: "6m",
+    titulo: "6º Mes",
+    subtitulo: "A los 6 meses de edad (180 días)",
+    edadMesesMin: 6,
+    edadMesesMax: 8,
+    badgeColor: "#4338ca",
+    bgLight: "#eef2ff",
+    borderColor: "#c7d2fe",
+    icono: "👶",
+    filasIds: ["polio_3", "hepb_6m", "hib_3", "dtp_3", "neumo_3", "rota_3", "influ_1"]
+  },
+  {
+    id: "9m_12m",
+    titulo: "9 a 12 Meses",
+    subtitulo: "Entre los 9 y 12 meses",
+    edadMesesMin: 9,
+    edadMesesMax: 11,
+    badgeColor: "#b45309",
+    bgLight: "#fffbeb",
+    borderColor: "#fde68a",
+    icono: "🛡️",
+    filasIds: ["meningo_1"]
+  },
+  {
+    id: "12m",
+    titulo: "1 Año (12 Meses)",
+    subtitulo: "Al cumplir el primer año",
+    edadMesesMin: 12,
+    edadMesesMax: 17,
+    badgeColor: "#be185d",
+    bgLight: "#fdf2f8",
+    borderColor: "#fbcfe8",
+    icono: "🎂",
+    filasIds: ["srp_1", "vari_1", "hepa_1", "fa_unica", "neumo_ref", "meningo_2"]
+  },
+  {
+    id: "18m",
+    titulo: "18 Meses (1er Refuerzo)",
+    subtitulo: "1 año después de la 3ª dosis",
+    edadMesesMin: 18,
+    edadMesesMax: 47,
+    badgeColor: "#6d28d9",
+    bgLight: "#f5f3ff",
+    borderColor: "#ddd6fe",
+    icono: "🏃",
+    filasIds: ["polio_ref1", "hib_ref", "dtp_ref1", "hepa_2"]
+  },
+  {
+    id: "5a",
+    titulo: "4 a 5 Años (2º Refuerzo)",
+    subtitulo: "Refuerzos escolares previos a primaria",
+    edadMesesMin: 48,
+    edadMesesMax: 107,
+    badgeColor: "#0f766e",
+    bgLight: "#f0fdfa",
+    borderColor: "#99f6e4",
+    icono: "🎒",
+    filasIds: ["polio_ref2", "dtp_ref2", "srp_2", "vari_2"]
+  },
+  {
+    id: "9a",
+    titulo: "9 Años en adelante",
+    subtitulo: "Preadolescencia y refuerzos",
+    edadMesesMin: 108,
+    edadMesesMax: 999,
+    badgeColor: "#7e22ce",
+    bgLight: "#faf5ff",
+    borderColor: "#e9d5ff",
+    icono: "🧑",
+    filasIds: ["vph_1", "vph_2", "vph_3", "influ_anual", "fa_refuerzo"]
+  }
+];
+
+export function getFilaPorId(filaId: string): FilaEsquema | undefined {
+  for (const cat of ESQUEMA_MATRIZ_CANONICO) {
+    const f = cat.filas.find(row => row.id === filaId);
+    if (f) return f;
+  }
+  return undefined;
+}
+
+
