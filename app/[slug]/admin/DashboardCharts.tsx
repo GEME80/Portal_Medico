@@ -5,6 +5,35 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, ComposedChart, Line
 } from 'recharts';
+import {
+  BarChart3,
+  Calendar,
+  ShoppingCart,
+  DollarSign,
+  TrendingDown,
+  TrendingUp,
+  Activity,
+  Trash2,
+  Receipt,
+  Building2,
+  Package,
+  Boxes,
+  XCircle,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Filter,
+  ShoppingBag,
+  PackageCheck,
+  Tag,
+  Coins,
+  Scale,
+  FileText,
+  Download,
+  Printer,
+  HelpCircle,
+  Info
+} from "lucide-react";
 
 interface Props {
   inventario: any[];
@@ -40,7 +69,7 @@ const HelpTooltip = ({ text }: { text: string }) => {
       onMouseLeave={() => setVisible(false)}
       onClick={() => setVisible(!visible)}
     >
-      <span style={{ color: 'var(--slate-400)', fontSize: '13px', display: 'inline-block', lineHeight: 1 }}>ⓘ</span>
+      <HelpCircle size={13} style={{ color: 'var(--slate-400)', display: 'inline-block' }} />
       {visible && (
         <span style={{
           position: 'absolute',
@@ -943,27 +972,69 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       
       {/* TABS Y FILTRO GLOBAL DE CATEGORÍA */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--slate-200)", paddingBottom: "8px", flexWrap: "wrap", gap: "16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--slate-200)", paddingBottom: "10px", flexWrap: "wrap", gap: "16px" }}>
         
         {/* Selector de Pestañas */}
         <div style={{ display: "flex", gap: "8px" }}>
           <button 
             onClick={() => setActiveTab("general")}
-            style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "general" ? `3px solid ${primaryColor}` : "3px solid transparent", color: activeTab === "general" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "general" ? 800 : 500, cursor: "pointer", fontSize: "14px" }}
+            style={{ 
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "9px 16px", 
+              background: activeTab === "general" ? "rgba(10, 77, 92, 0.08)" : "transparent", 
+              border: activeTab === "general" ? `1.5px solid ${primaryColor}` : "1px solid transparent",
+              borderRadius: "8px",
+              color: activeTab === "general" ? primaryColor : "var(--slate-600)", 
+              fontWeight: activeTab === "general" ? 700 : 500, 
+              cursor: "pointer", 
+              fontSize: "13.5px",
+              transition: "all 0.15s ease"
+            }}
           >
-            📊 Vista General (Anual)
+            <BarChart3 size={15} />
+            <span>Vista General (Anual)</span>
           </button>
           <button 
             onClick={() => setActiveTab("diaria")}
-            style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "diaria" ? `3px solid ${primaryColor}` : "3px solid transparent", color: activeTab === "diaria" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "diaria" ? 800 : 500, cursor: "pointer", fontSize: "14px" }}
+            style={{ 
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "9px 16px", 
+              background: activeTab === "diaria" ? "rgba(10, 77, 92, 0.08)" : "transparent", 
+              border: activeTab === "diaria" ? `1.5px solid ${primaryColor}` : "1px solid transparent",
+              borderRadius: "8px",
+              color: activeTab === "diaria" ? primaryColor : "var(--slate-600)", 
+              fontWeight: activeTab === "diaria" ? 700 : 500, 
+              cursor: "pointer", 
+              fontSize: "13.5px",
+              transition: "all 0.15s ease"
+            }}
           >
-            📅 Vista Diaria (Mes)
+            <Calendar size={15} />
+            <span>Vista Diaria (Mes)</span>
           </button>
           <button 
             onClick={() => setActiveTab("compras")}
-            style={{ padding: "12px 16px", background: "none", border: "none", borderBottom: activeTab === "compras" ? `3px solid ${primaryColor}` : "3px solid transparent", color: activeTab === "compras" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "compras" ? 800 : 500, cursor: "pointer", fontSize: "14px" }}
+            style={{ 
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "9px 16px", 
+              background: activeTab === "compras" ? "rgba(10, 77, 92, 0.08)" : "transparent", 
+              border: activeTab === "compras" ? `1.5px solid ${primaryColor}` : "1px solid transparent",
+              borderRadius: "8px",
+              color: activeTab === "compras" ? primaryColor : "var(--slate-600)", 
+              fontWeight: activeTab === "compras" ? 700 : 500, 
+              cursor: "pointer", 
+              fontSize: "13.5px",
+              transition: "all 0.15s ease"
+            }}
           >
-            🛒 Análisis de Compras
+            <ShoppingCart size={15} />
+            <span>Análisis de Compras</span>
           </button>
         </div>
 
@@ -1037,22 +1108,25 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
       {activeTab === "general" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
           
-          {/* 💵 ESPACIO FINANCIERO Y CONTROL DE MÁRGENES */}
-          <div style={{ background: "#f8fafc", padding: "24px", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--slate-900)", marginBottom: "20px", display: "flex", alignItems: "center", borderBottom: "2px solid #e2e8f0", paddingBottom: "10px" }}>
-              💵 ESPACIO FINANCIERO Y CONTROL DE MÁRGENES
+          {/* CONTROL FINANCIERO Y MÁRGENES */}
+          <div style={{ background: "#ffffff", padding: "24px", borderRadius: "16px", border: "1px solid var(--slate-200)", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-800)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px", letterSpacing: "-0.01em" }}>
+              <DollarSign size={18} style={{ color: "#10b981" }} />
+              <span>Control Financiero y Márgenes</span>
               <HelpTooltip text="Indicadores contables y gráficos financieros que reflejan el rendimiento económico, costos de adquisición de dosis aplicadas, facturación al paciente e incrementos por inflación." />
             </h3>
 
             {/* KPI Cards Financieros */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "20px" }}>
               
               {/* Inversión */}
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(244, 63, 94, 0.1)", color: "#f43f5e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📉</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(244, 63, 94, 0.08)", color: "#f43f5e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <TrendingDown size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${finanzas.inversion.toLocaleString()}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Inversión (Costo de Salidas)
                     <HelpTooltip text="Costo total de adquisición de las dosis aplicadas en el período seleccionado, calculado con el costo de compra unitario específico de su respectivo lote." />
                   </div>
@@ -1060,11 +1134,13 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Ingresos Brutos */}
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.1)", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>💎</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.08)", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <DollarSign size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${finanzas.ingresos.toLocaleString()}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Ingresos Brutos
                     <HelpTooltip text="Dinero total recaudado por la aplicación de dosis al precio cobrado al paciente en el período seleccionado." />
                   </div>
@@ -1072,12 +1148,14 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Ganancias Netas y Top 5 */}
-              <div className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", gridRow: "span 2" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📈</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", gridRow: "span 2", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.08)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <TrendingUp size={20} />
+                  </div>
                   <div>
                     <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${finanzas.gananciasNetas.toLocaleString()}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                       Ganancias Netas
                       <HelpTooltip text="Utilidad neta generada en el período (Ingresos Brutos menos Inversión). No incluye pérdidas por mermas." />
                     </div>
@@ -1095,16 +1173,16 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Variación de Costos & Top Alertas */}
-              <div className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", gridRow: "span 2" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: finanzas.variacionPromedio > 0 ? "rgba(244, 63, 94, 0.1)" : "rgba(34, 197, 94, 0.1)", color: finanzas.variacionPromedio > 0 ? "#f43f5e" : "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
-                    {finanzas.variacionPromedio > 0 ? "⚠️" : "⚖️"}
+              <div className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", gridRow: "span 2", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: finanzas.variacionPromedio > 0 ? "rgba(244, 63, 94, 0.08)" : "rgba(34, 197, 94, 0.08)", color: finanzas.variacionPromedio > 0 ? "#f43f5e" : "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {finanzas.variacionPromedio > 0 ? <AlertTriangle size={20} /> : <Activity size={20} />}
                   </div>
                   <div>
                     <div style={{ fontSize: "20px", fontWeight: 800, color: finanzas.variacionPromedio > 0 ? "#e11d48" : "var(--slate-900)", lineHeight: 1 }}>
                       {finanzas.variacionPromedio > 0 ? "+" : ""}{finanzas.variacionPromedio.toFixed(1)}%
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                       Variación de Costos
                       <HelpTooltip text="Porcentaje promedio de inflación o incremento de costos en las compras de nuevos lotes respecto al lote anterior del mismo ítem." />
                     </div>
@@ -1115,7 +1193,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
                   {finanzas.topAlertas.length > 0 ? finanzas.topAlertas.map((t, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "12px" }}>
                       <span style={{ color: "var(--slate-600)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: "120px" }}>{t.nombre}</span>
-                      <span style={{ fontWeight: 700, color: t.incremento > 0 ? "#e11d48" : "#22c55e" }}>
+                      <span style={{ fontWeight: 700, color: t.incremento > 0 ? "#e11d48" : "#16a34a" }}>
                         {t.incremento > 0 ? "+" : ""}{t.incremento.toFixed(1)}%
                       </span>
                     </div>
@@ -1124,11 +1202,13 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Costo de Merma */}
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>🗑️</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(245, 158, 11, 0.08)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Trash2 size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${finanzas.costoMerma.toLocaleString()}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Costo de Merma
                     <HelpTooltip text="Valor monetario de las dosis/unidades desechadas o perdidas (vencimiento, daño) calculado a precio de costo de compra." />
                   </div>
@@ -1138,22 +1218,26 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             </div>
 
             {/* Comprobantes de Cobro */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "24px" }}>
-              <div className="card" style={{ padding: "16px 20px", background: "white", borderRadius: "12px", border: "1px solid var(--slate-200)", display: "flex", alignItems: "center", gap: "16px" }}>
-                <div style={{ fontSize: "24px", color: "#10b981" }}>💵</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "24px" }}>
+              <div className="card" style={{ padding: "16px 20px", background: "white", borderRadius: "12px", border: "1px solid var(--slate-200)", display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "rgba(16, 185, 129, 0.08)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Receipt size={18} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)" }}>{cobroGeneral.cobroFinal}</div>
-                  <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 600, display: "flex", alignItems: "center" }}>
+                  <div style={{ fontSize: "11.5px", color: "var(--slate-500)", fontWeight: 600, display: "flex", alignItems: "center", marginTop: "4px" }}>
                     DOSIS A PRECIO FINAL
                     <HelpTooltip text="Aplicaciones cobradas al paciente al precio de venta estándar (ganancia completa)." />
                   </div>
                 </div>
               </div>
-              <div className="card" style={{ padding: "16px 20px", background: "white", borderRadius: "12px", border: "1px solid var(--slate-200)", display: "flex", alignItems: "center", gap: "16px" }}>
-                <div style={{ fontSize: "24px", color: "#f59e0b" }}>🤝</div>
+              <div className="card" style={{ padding: "16px 20px", background: "white", borderRadius: "12px", border: "1px solid var(--slate-200)", display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "rgba(245, 158, 11, 0.08)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Building2 size={18} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)" }}>{cobroGeneral.cobroMayorista}</div>
-                  <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 600, display: "flex", alignItems: "center" }}>
+                  <div style={{ fontSize: "11.5px", color: "var(--slate-500)", fontWeight: 600, display: "flex", alignItems: "center", marginTop: "4px" }}>
                     DOSIS A COSTO MAYORISTA
                     <HelpTooltip text="Aplicaciones que se cobraron a precio de costo (por convenios, subsidios o programas del PAI)." />
                   </div>
@@ -1211,22 +1295,25 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             </div>
           </div>
 
-          {/* 📦 ESPACIO DE GESTIÓN DE INVENTARIO Y ROTACIÓN */}
-          <div style={{ background: "#f8fafc", padding: "24px", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--slate-900)", marginBottom: "20px", display: "flex", alignItems: "center", borderBottom: "2px solid #e2e8f0", paddingBottom: "10px" }}>
-              📦 ESPACIO DE GESTIÓN DE INVENTARIO Y ROTACIÓN
+          {/* GESTIÓN DE INVENTARIO Y ROTACIÓN */}
+          <div style={{ background: "#ffffff", padding: "24px", borderRadius: "16px", border: "1px solid var(--slate-200)", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-800)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px", letterSpacing: "-0.01em" }}>
+              <Boxes size={18} style={{ color: primaryColor }} />
+              <span>Gestión de Inventario y Rotación</span>
               <HelpTooltip text="Indicadores físicos de existencias, flujo de stock (entradas/salidas), productos críticos con bajo stock e ítems sin movimiento en el dispensario." />
             </h3>
 
             {/* KPI Cards Operativos */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "24px" }}>
               
               {/* Total Unidades Físicas */}
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.1)", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📦</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.08)", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Package size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>{kpisOperativos.totalUnidades}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Total Unidades Físicas
                     <HelpTooltip text="Suma total de todas las dosis o unidades individuales disponibles en el dispensario de todos los lotes activos." />
                   </div>
@@ -1234,11 +1321,13 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Ítems Agotados */}
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: kpisOperativos.itemsAgotados > 0 ? "rgba(239, 68, 68, 0.1)" : "rgba(34, 197, 94, 0.1)", color: kpisOperativos.itemsAgotados > 0 ? "#ef4444" : "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>{kpisOperativos.itemsAgotados > 0 ? "🛑" : "✅"}</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: kpisOperativos.itemsAgotados > 0 ? "rgba(239, 68, 68, 0.08)" : "rgba(34, 197, 94, 0.08)", color: kpisOperativos.itemsAgotados > 0 ? "#ef4444" : "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {kpisOperativos.itemsAgotados > 0 ? <XCircle size={20} /> : <CheckCircle2 size={20} />}
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: kpisOperativos.itemsAgotados > 0 ? "#ef4444" : "var(--slate-900)", lineHeight: 1 }}>{kpisOperativos.itemsAgotados}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Ítems Agotados (Stock 0)
                     <HelpTooltip text="Productos o vacunas configurados en tu inventario pero que actualmente no tienen ninguna dosis disponible." />
                   </div>
@@ -1246,12 +1335,14 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Ítems en Riesgo Crítico */}
-              <div className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", border: kpisOperativos.itemsEnRiesgo.length > 0 ? "1px solid rgba(245, 158, 11, 0.3)" : "" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: kpisOperativos.itemsEnRiesgo.length > 0 ? "rgba(245, 158, 11, 0.1)" : "rgba(34, 197, 94, 0.1)", color: kpisOperativos.itemsEnRiesgo.length > 0 ? "#f59e0b" : "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>{kpisOperativos.itemsEnRiesgo.length > 0 ? "⚠️" : "✅"}</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", borderRadius: "12px", border: kpisOperativos.itemsEnRiesgo.length > 0 ? "1px solid rgba(245, 158, 11, 0.35)" : "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: kpisOperativos.itemsEnRiesgo.length > 0 ? "rgba(245, 158, 11, 0.08)" : "rgba(34, 197, 94, 0.08)", color: kpisOperativos.itemsEnRiesgo.length > 0 ? "#d97706" : "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {kpisOperativos.itemsEnRiesgo.length > 0 ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
+                  </div>
                   <div>
                     <div style={{ fontSize: "20px", fontWeight: 800, color: kpisOperativos.itemsEnRiesgo.length > 0 ? "#d97706" : "var(--slate-900)", lineHeight: 1 }}>{kpisOperativos.itemsEnRiesgo.length}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                       Ítems en Riesgo Crítico
                       <HelpTooltip text="Productos cuyo stock disponible actual es inferior o igual a la cantidad mínima configurada de alerta." />
                     </div>
@@ -1260,18 +1351,20 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
                 {kpisOperativos.itemsEnRiesgo.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                     {kpisOperativos.itemsEnRiesgo.map((item, idx) => (
-                      <span key={idx} style={{ background: "#fef3c7", color: "#b45309", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 600 }}>{item.nombre} ({item.stock_actual})</span>
+                      <span key={idx} style={{ background: "#fef3c7", color: "#b45309", padding: "2px 8px", borderRadius: "8px", fontSize: "11px", fontWeight: 600 }}>{item.nombre} ({item.stock_actual})</span>
                     ))}
                   </div>
                 )}
               </div>
 
               {/* Ítems Inactivos */}
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(100, 116, 139, 0.1)", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>⏳</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(100, 116, 139, 0.08)", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Clock size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>{kpisOperativos.itemsInactivos}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Ítems Inactivos (30d)
                     <HelpTooltip text="Medicamentos o insumos que no han registrado ninguna salida (aplicación o uso) en los últimos 30 días." />
                   </div>
@@ -1366,32 +1459,37 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
       {activeTab === "diaria" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
           
-          {/* 💵 ESPACIO FINANCIERO Y CONTROL DE MÁRGENES (MENSUAL) */}
-          <div style={{ background: "#f8fafc", padding: "24px", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--slate-900)", marginBottom: "20px", display: "flex", alignItems: "center", borderBottom: "2px solid #e2e8f0", paddingBottom: "10px" }}>
-              💵 ESPACIO FINANCIERO Y CONTROL DE MÁRGENES (MENSUAL)
+          {/* CONTROL FINANCIERO Y MÁRGENES (MENSUAL) */}
+          <div style={{ background: "#ffffff", padding: "24px", borderRadius: "16px", border: "1px solid var(--slate-200)", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-800)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px", letterSpacing: "-0.01em" }}>
+              <DollarSign size={18} style={{ color: "#10b981" }} />
+              <span>Control Financiero y Márgenes (Mensual)</span>
               <HelpTooltip text="Indicadores contables y gráficos diarios específicos para el mes seleccionado." />
             </h3>
 
             {/* KPI Cards Financieros Diario */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "20px" }}>
               
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(244, 63, 94, 0.1)", color: "#f43f5e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📉</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(244, 63, 94, 0.08)", color: "#f43f5e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <TrendingDown size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${finanzas.inversion.toLocaleString()}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Inversión (Costo de Salidas)
                     <HelpTooltip text="Costo total de adquisición de las dosis aplicadas en el período seleccionado, calculado con el costo de compra unitario específico de su respectivo lote." />
                   </div>
                 </div>
               </div>
 
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.1)", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>💎</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.08)", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <DollarSign size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${finanzas.ingresos.toLocaleString()}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Ingresos Brutos
                     <HelpTooltip text="Dinero total recaudado por la aplicación de dosis al precio cobrado al paciente en el período seleccionado." />
                   </div>
@@ -1399,12 +1497,14 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Ganancia Neta */}
-              <div className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", gridRow: "span 2" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📈</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", gridRow: "span 2", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.08)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <TrendingUp size={20} />
+                  </div>
                   <div>
                     <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${finanzas.gananciasNetas.toLocaleString()}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                       Ganancias Netas
                       <HelpTooltip text="Utilidad neta generada en el período (Ingresos Brutos menos Inversión). No incluye pérdidas por mermas." />
                     </div>
@@ -1422,16 +1522,16 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Inflacion / Incremento */}
-              <div className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", gridRow: "span 2" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: finanzas.variacionPromedio > 0 ? "rgba(244, 63, 94, 0.1)" : "rgba(34, 197, 94, 0.1)", color: finanzas.variacionPromedio > 0 ? "#f43f5e" : "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
-                    {finanzas.variacionPromedio > 0 ? "⚠️" : "⚖️"}
+              <div className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", gridRow: "span 2", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: finanzas.variacionPromedio > 0 ? "rgba(244, 63, 94, 0.08)" : "rgba(34, 197, 94, 0.08)", color: finanzas.variacionPromedio > 0 ? "#f43f5e" : "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {finanzas.variacionPromedio > 0 ? <AlertTriangle size={20} /> : <Activity size={20} />}
                   </div>
                   <div>
                     <div style={{ fontSize: "20px", fontWeight: 800, color: finanzas.variacionPromedio > 0 ? "#e11d48" : "var(--slate-900)", lineHeight: 1 }}>
                       {finanzas.variacionPromedio > 0 ? "+" : ""}{finanzas.variacionPromedio.toFixed(1)}%
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                       Variación de Costos (Mes)
                       <HelpTooltip text="Porcentaje promedio de inflación o incremento de costos en las compras de nuevos lotes respecto al lote anterior del mismo ítem." />
                     </div>
@@ -1442,7 +1542,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
                   {finanzas.topAlertas.length > 0 ? finanzas.topAlertas.map((t, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "12px" }}>
                       <span style={{ color: "var(--slate-600)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: "120px" }}>{t.nombre}</span>
-                      <span style={{ fontWeight: 700, color: t.incremento > 0 ? "#e11d48" : "#22c55e" }}>
+                      <span style={{ fontWeight: 700, color: t.incremento > 0 ? "#e11d48" : "#16a34a" }}>
                         {t.incremento > 0 ? "+" : ""}{t.incremento.toFixed(1)}%
                       </span>
                     </div>
@@ -1451,11 +1551,13 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
               </div>
 
               {/* Costo Merma */}
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>🗑️</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(245, 158, 11, 0.08)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Trash2 size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${finanzas.costoMerma.toLocaleString()}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Costo de Merma
                     <HelpTooltip text="Valor monetario de las dosis/unidades desechadas o perdidas (vencimiento, daño) calculado a precio de costo de compra." />
                   </div>
@@ -1465,22 +1567,26 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             </div>
 
             {/* Cobros Diario */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "24px" }}>
-              <div className="card" style={{ padding: "16px 20px", background: "white", borderRadius: "12px", border: "1px solid var(--slate-200)", display: "flex", alignItems: "center", gap: "16px" }}>
-                <div style={{ fontSize: "24px", color: "#10b981" }}>💵</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "24px" }}>
+              <div className="card" style={{ padding: "16px 20px", background: "white", borderRadius: "12px", border: "1px solid var(--slate-200)", display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "rgba(16, 185, 129, 0.08)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Receipt size={18} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)" }}>{resumenDiario.cobroFinal}</div>
-                  <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 600, display: "flex", alignItems: "center" }}>
+                  <div style={{ fontSize: "11.5px", color: "var(--slate-500)", fontWeight: 600, display: "flex", alignItems: "center", marginTop: "4px" }}>
                     DOSIS A PRECIO FINAL
                     <HelpTooltip text="Aplicaciones cobradas al paciente al precio de venta estándar (ganancia completa)." />
                   </div>
                 </div>
               </div>
-              <div className="card" style={{ padding: "16px 20px", background: "white", borderRadius: "12px", border: "1px solid var(--slate-200)", display: "flex", alignItems: "center", gap: "16px" }}>
-                <div style={{ fontSize: "24px", color: "#f59e0b" }}>🤝</div>
+              <div className="card" style={{ padding: "16px 20px", background: "white", borderRadius: "12px", border: "1px solid var(--slate-200)", display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "rgba(245, 158, 11, 0.08)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Building2 size={18} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)" }}>{resumenDiario.cobroMayorista}</div>
-                  <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 600, display: "flex", alignItems: "center" }}>
+                  <div style={{ fontSize: "11.5px", color: "var(--slate-500)", fontWeight: 600, display: "flex", alignItems: "center", marginTop: "4px" }}>
                     DOSIS A COSTO MAYORISTA
                     <HelpTooltip text="Aplicaciones que se cobraron a precio de costo (por convenios, subsidios o programas del PAI)." />
                   </div>
@@ -1538,41 +1644,48 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             </div>
           </div>
 
-          {/* 📦 ESPACIO DE GESTIÓN DE INVENTARIO Y ROTACIÓN (MENSUAL) */}
-          <div style={{ background: "#f8fafc", padding: "24px", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: 800, color: "var(--slate-900)", marginBottom: "20px", display: "flex", alignItems: "center", borderBottom: "2px solid #e2e8f0", paddingBottom: "10px" }}>
-              📦 ESPACIO DE GESTIÓN DE INVENTARIO Y ROTACIÓN (MENSUAL)
+          {/* GESTIÓN DE INVENTARIO Y ROTACIÓN (MENSUAL) */}
+          <div style={{ background: "#ffffff", padding: "24px", borderRadius: "16px", border: "1px solid var(--slate-200)", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-800)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px", letterSpacing: "-0.01em" }}>
+              <Boxes size={18} style={{ color: primaryColor }} />
+              <span>Gestión de Inventario y Rotación (Mensual)</span>
               <HelpTooltip text="Flujos físicos diarios de existencias, productos aplicados y su rotación correspondiente al mes actual." />
             </h3>
 
             {/* KPI Cards Operativos */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.1)", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📦</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "24px" }}>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(14, 165, 233, 0.08)", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Package size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>{kpisOperativos.totalUnidades}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Total Unidades Físicas
                     <HelpTooltip text="Suma total de todas las dosis o unidades individuales disponibles en el dispensario de todos los lotes activos." />
                   </div>
                 </div>
               </div>
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: kpisOperativos.itemsAgotados > 0 ? "rgba(239, 68, 68, 0.1)" : "rgba(34, 197, 94, 0.1)", color: kpisOperativos.itemsAgotados > 0 ? "#ef4444" : "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>{kpisOperativos.itemsAgotados > 0 ? "🛑" : "✅"}</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: kpisOperativos.itemsAgotados > 0 ? "rgba(239, 68, 68, 0.08)" : "rgba(34, 197, 94, 0.08)", color: kpisOperativos.itemsAgotados > 0 ? "#ef4444" : "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {kpisOperativos.itemsAgotados > 0 ? <XCircle size={20} /> : <CheckCircle2 size={20} />}
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: kpisOperativos.itemsAgotados > 0 ? "#ef4444" : "var(--slate-900)", lineHeight: 1 }}>{kpisOperativos.itemsAgotados}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Ítems Agotados (Stock 0)
                     <HelpTooltip text="Productos o vacunas configurados en tu inventario pero que actualmente no tienen ninguna dosis disponible." />
                   </div>
                 </div>
               </div>
-              <div className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", border: kpisOperativos.itemsEnRiesgo.length > 0 ? "1px solid rgba(245, 158, 11, 0.3)" : "" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: kpisOperativos.itemsEnRiesgo.length > 0 ? "rgba(245, 158, 11, 0.1)" : "rgba(34, 197, 94, 0.1)", color: kpisOperativos.itemsEnRiesgo.length > 0 ? "#f59e0b" : "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>{kpisOperativos.itemsEnRiesgo.length > 0 ? "⚠️" : "✅"}</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px", position: "relative", borderRadius: "12px", border: kpisOperativos.itemsEnRiesgo.length > 0 ? "1px solid rgba(245, 158, 11, 0.35)" : "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: kpisOperativos.itemsEnRiesgo.length > 0 ? "rgba(245, 158, 11, 0.08)" : "rgba(34, 197, 94, 0.08)", color: kpisOperativos.itemsEnRiesgo.length > 0 ? "#d97706" : "#16a34a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {kpisOperativos.itemsEnRiesgo.length > 0 ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
+                  </div>
                   <div>
                     <div style={{ fontSize: "20px", fontWeight: 800, color: kpisOperativos.itemsEnRiesgo.length > 0 ? "#d97706" : "var(--slate-900)", lineHeight: 1 }}>{kpisOperativos.itemsEnRiesgo.length}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                       Ítems en Riesgo Crítico
                       <HelpTooltip text="Productos cuyo stock disponible actual es inferior o igual a la cantidad mínima configurada de alerta." />
                     </div>
@@ -1581,16 +1694,18 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
                 {kpisOperativos.itemsEnRiesgo.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                     {kpisOperativos.itemsEnRiesgo.map((item, idx) => (
-                      <span key={idx} style={{ background: "#fef3c7", color: "#b45309", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 600 }}>{item.nombre} ({item.stock_actual})</span>
+                      <span key={idx} style={{ background: "#fef3c7", color: "#b45309", padding: "2px 8px", borderRadius: "8px", fontSize: "11px", fontWeight: 600 }}>{item.nombre} ({item.stock_actual})</span>
                     ))}
                   </div>
                 )}
               </div>
-              <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(100, 116, 139, 0.1)", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>⏳</div>
+              <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", position: "relative", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(100, 116, 139, 0.08)", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Clock size={20} />
+                </div>
                 <div>
                   <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>{kpisOperativos.itemsInactivos}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     Ítems Inactivos (30d)
                     <HelpTooltip text="Medicamentos o insumos que no han registrado ninguna salida (aplicación o uso) en los últimos 30 días." />
                   </div>
@@ -1698,9 +1813,10 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* Tarjeta de Filtros en Cascada */}
-          <div className="card" style={{ padding: "20px", background: "white", border: "1px solid var(--slate-200)", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
-            <h4 style={{ margin: 0, fontSize: "14px", color: "var(--slate-800)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              🔍 Filtros de Abastecimiento (Año: {selectedYear})
+          <div className="card" style={{ padding: "20px", background: "white", border: "1px solid var(--slate-200)", borderRadius: "14px", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <h4 style={{ margin: 0, fontSize: "13.5px", color: "var(--slate-800)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Filter size={16} style={{ color: primaryColor }} />
+              <span>Filtros de Abastecimiento (Año: {selectedYear})</span>
             </h4>
             
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
@@ -1712,7 +1828,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
                   value={selectedMonthCompras}
                   onChange={(e) => setSelectedMonthCompras(e.target.value)}
                   className="form-select"
-                  style={{ padding: "8px 12px", background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)" }}
+                  style={{ padding: "8px 12px", background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)", fontSize: "13px" }}
                 >
                   <option value="all">Todos los Meses</option>
                   <option value="01">Enero</option>
@@ -1740,7 +1856,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
                     setSelectedItem("all");
                   }}
                   className="form-select"
-                  style={{ padding: "8px 12px", background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)" }}
+                  style={{ padding: "8px 12px", background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)", fontSize: "13px" }}
                 >
                   <option value="all">Todos los Laboratorios</option>
                   {availableLabs.map(l => <option key={l} value={l}>{l}</option>)}
@@ -1754,7 +1870,7 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
                   value={selectedItem}
                   onChange={(e) => setSelectedItem(e.target.value)}
                   className="form-select"
-                  style={{ padding: "8px 12px", background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)" }}
+                  style={{ padding: "8px 12px", background: "white", borderRadius: "8px", border: "1px solid var(--slate-200)", fontSize: "13px" }}
                 >
                   <option value="all">Todos los Productos ({availableItemsForTab.length})</option>
                   {availableItemsForTab.map(i => <option key={i.id} value={i.id}>{i.nombre} {i.laboratorio ? `(${i.laboratorio})` : ""}</option>)}
@@ -1765,26 +1881,30 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
           </div>
 
           {/* Tarjetas de KPIs Financieros de Compras */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
             
             {/* Inversión en Compras */}
-            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(244, 63, 94, 0.1)", color: "#f43f5e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>🛍️</div>
+            <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(244, 63, 94, 0.08)", color: "#f43f5e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <ShoppingBag size={20} />
+              </div>
               <div>
                 <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${inversionCompras.toLocaleString()}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600 }}>
-                  Inversión en Compras
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600 }}>
+                  Inversión Compras
                   <HelpTooltip text="Dinero total pagado por la adquisición de lotes en el año y filtros seleccionados." />
                 </div>
               </div>
             </div>
 
             {/* Volumen Adquirido */}
-            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(59, 130, 246, 0.1)", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📦</div>
+            <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(59, 130, 246, 0.08)", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <PackageCheck size={20} />
+              </div>
               <div>
                 <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>{volumenAdquirido.toLocaleString()}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600 }}>
                   Volumen Adquirido
                   <HelpTooltip text="Cantidad total de dosis o unidades compradas (lotes ingresados)." />
                 </div>
@@ -1792,23 +1912,27 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             </div>
 
             {/* Costo Unitario Promedio */}
-            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>🏷️</div>
+            <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(245, 158, 11, 0.08)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Tag size={20} />
+              </div>
               <div>
                 <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${costoCompraPromedio.toLocaleString()}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600 }}>
-                  Costo de Compra Prom.
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600 }}>
+                  Costo Compra Prom.
                   <HelpTooltip text="Costo unitario promedio ponderado de compra del lote en el período." />
                 </div>
               </div>
             </div>
 
             {/* Precio Venta Promedio */}
-            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>💎</div>
+            <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.08)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <DollarSign size={20} />
+              </div>
               <div>
                 <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${precioVentaPromedio.toLocaleString()}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600 }}>
                   Precio Final Venta
                   <HelpTooltip text="Precio promedio actual de venta al paciente para los ítems seleccionados." />
                 </div>
@@ -1816,11 +1940,13 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             </div>
 
             {/* Utilidad en Dinero */}
-            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>💵</div>
+            <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(16, 185, 129, 0.08)", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Coins size={20} />
+              </div>
               <div>
                 <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>${utilidadDinero.toLocaleString()}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600 }}>
                   Utilidad en Dinero
                   <HelpTooltip text="Utilidad bruta potencial del volumen comprado calculada como: Sumatoria de (Cantidad Comprada * (Precio Venta Paciente - Costo Compra Unitario))." />
                 </div>
@@ -1828,13 +1954,15 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             </div>
 
             {/* Margen Promedio */}
-            <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: margenUnitarioVal > 0 ? "rgba(139, 92, 246, 0.1)" : "rgba(239, 68, 68, 0.1)", color: margenUnitarioVal > 0 ? "#8b5cf6" : "#ef4444", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📈</div>
+            <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: "14px", borderRadius: "12px", border: "1px solid var(--slate-200)", background: "#ffffff" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: margenUnitarioVal > 0 ? "rgba(139, 92, 246, 0.08)" : "rgba(239, 68, 68, 0.08)", color: margenUnitarioVal > 0 ? "#8b5cf6" : "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <TrendingUp size={20} />
+              </div>
               <div>
                 <div style={{ fontSize: "20px", fontWeight: 800, color: margenUnitarioVal > 0 ? "#8b5cf6" : "#ef4444", lineHeight: 1 }}>
                   {margenPorcentajeVal.toFixed(1)}%
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--slate-500)", marginTop: "5px", fontWeight: 600 }}>
                   Margen Comercial Prom.
                   <HelpTooltip text="Porcentaje de ganancia comercial potencial calculado como: (Precio Venta Promedio - Costo Compra Promedio) / Precio Venta Promedio." />
                 </div>
@@ -1846,8 +1974,9 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
           {/* Gráfico de Tendencias (Cantidad vs Costo Promedio) */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }}>
             <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
-              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center" }}>
-                📈 Tendencia de Compras y Costo de Adquisición ({selectedMonthCompras === "all" ? `Año ${selectedYear}` : `Mes ${selectedMonthCompras}/${selectedYear}`})
+              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <TrendingUp size={16} style={{ color: "#3b82f6" }} />
+                <span>Tendencia de Compras y Costo de Adquisición ({selectedMonthCompras === "all" ? `Año ${selectedYear}` : `Mes ${selectedMonthCompras}/${selectedYear}`})</span>
                 <HelpTooltip text="Analiza el volumen de compras realizadas y las variaciones en el costo unitario de adquisición promedio ponderado a lo largo del tiempo." />
               </h4>
               <div style={{ height: "300px", width: "100%" }}>
@@ -1881,8 +2010,9 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
             
             {/* Concentración de compras por Laboratorio */}
             <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)", display: "flex", flexDirection: "column" }}>
-              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center" }}>
-                Concentración de Compras por Laboratorio ($ Adquisición)
+              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Building2 size={16} style={{ color: primaryColor }} />
+                <span>Concentración de Compras por Laboratorio ($ Adquisición)</span>
                 <HelpTooltip text="Porcentaje del presupuesto de compras invertido en cada laboratorio/proveedor fabricante." />
               </h4>
               <div style={{ height: "250px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
@@ -1910,8 +2040,9 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
 
             {/* Estructura de Margen: Costo vs Venta */}
             <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
-              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center" }}>
-                Estructura de Margen: Costo de Compra vs Precio de Venta
+              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Scale size={16} style={{ color: primaryColor }} />
+                <span>Estructura de Margen: Costo de Compra vs Precio de Venta</span>
                 <HelpTooltip text="Compara directamente el costo unitario de adquisición promedio ponderado contra el precio de venta final configurado para cada producto." />
               </h4>
               <div style={{ height: "250px", width: "100%" }}>
@@ -1938,24 +2069,27 @@ export default function DashboardCharts({ inventario, categorias, movimientos, l
           {/* Tabla de Detalle de Compras por Lote (Con exportación) */}
           <div className="card" style={{ padding: "24px", background: "white", borderRadius: "16px", border: "1px solid var(--slate-200)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
-              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", margin: 0, display: "flex", alignItems: "center" }}>
-                📋 Tabla de Compras y Detalle de Insumos por Lote
+              <h4 style={{ fontSize: "15px", fontWeight: 700, color: "var(--slate-700)", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                <FileText size={16} style={{ color: primaryColor }} />
+                <span>Detalle de Compras e Insumos por Lote</span>
                 <HelpTooltip text="Muestra cada lote comprado en el periodo seleccionado con su respectiva fecha, número de lote, cantidad, costo, valor total pagado, margen, existencias y valorización." />
               </h4>
               <div style={{ display: "flex", gap: "10px" }}>
                 <button
                   onClick={exportToCSV}
                   className="btn btn-outline"
-                  style={{ padding: "6px 12px", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", background: "white", borderColor: "var(--slate-200)", color: "var(--slate-700)", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}
+                  style={{ padding: "7px 14px", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", background: "white", borderColor: "var(--slate-200)", color: "var(--slate-700)", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}
                 >
-                  📥 Excel / Sheets (CSV)
+                  <Download size={14} />
+                  <span>Exportar CSV</span>
                 </button>
                 <button
                   onClick={printPDF}
                   className="btn btn-outline"
-                  style={{ padding: "6px 12px", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", background: "white", borderColor: "var(--slate-200)", color: "var(--slate-700)", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}
+                  style={{ padding: "7px 14px", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", background: "white", borderColor: "var(--slate-200)", color: "var(--slate-700)", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}
                 >
-                  📄 Imprimir / PDF
+                  <Printer size={14} />
+                  <span>Imprimir / PDF</span>
                 </button>
               </div>
             </div>

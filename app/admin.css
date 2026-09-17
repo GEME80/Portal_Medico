@@ -549,6 +549,16 @@ dialog .btn-outline:hover,
   transform: translateY(-1px);
 }
 
+.admin-main .card {
+  border-radius: 12px;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.admin-main .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.06);
+}
+
 dialog {
   border: none;
   border-radius: 16px;

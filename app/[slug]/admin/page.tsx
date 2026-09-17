@@ -6,7 +6,10 @@ import {
   CalendarDays, 
   Users, 
   FileSpreadsheet, 
-  ShieldCheck 
+  ShieldCheck,
+  Package,
+  AlertTriangle,
+  CheckCircle2
 } from "lucide-react";
 
 interface Props {
@@ -68,17 +71,27 @@ export default async function TenantAdminDashboard({ params }: Props) {
 
   const db = createAdminClient();
 
-  // Fetch all items, categories, movements and KPI counts concurrently in a single batch
+  // Calculate 90-day threshold for lotes expiration
+  const noventaDias = new Date();
+  noventaDias.setDate(noventaDias.getDate() + 90);
+
+  // Fetch all counts concurrently using ultra-lightweight head: true requests alongside data
   const [
+    { count: totalPacientes },
+    { count: totalCitas },
     { count: totalInventario },
     { count: stockBajo },
+    { count: lotesPorVencer },
     { data: inventarioData, error: invErr },
     { data: categoriasData },
     { data: movimientosData },
     { data: lotesData }
   ] = await Promise.all([
+    db.from("pacientes").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id),
+    db.from("citas_medicas").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id),
     db.from("inventario_medico").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id),
     db.from("inventario_medico").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id).lte("stock_actual", 5),
+    db.from("lotes_inventario").select("*", { count: "exact", head: true }).eq("tenant_id", tenant.id).lte("fecha_vencimiento", noventaDias.toISOString()).gt("cantidad", 0),
     db.from("inventario_medico").select("*").eq("tenant_id", tenant.id),
     db.from("categorias_inventario").select("*").eq("tenant_id", tenant.id),
     db.from("movimientos_inventario").select("*").eq("tenant_id", tenant.id),
@@ -94,115 +107,6 @@ export default async function TenantAdminDashboard({ params }: Props) {
   const safeMovimientos = movimientosData || [];
   const safeInventario = inventarioData || [];
   const safeLotes = lotesData || [];
-    
-  // --- KPI Calculations ---
-  const parseCategoryName = (nombre: string): string => {
-    try {
-      const trimmed = nombre.trim();
-      if (trimmed && trimmed.startsWith("{") && trimmed.endsWith("}")) {
-        const parsed = JSON.parse(trimmed);
-        return parsed.n || nombre;
-      }
-    } catch (e) {
-      // Ignore
-    }
-    return nombre || "";
-  };
-  
-  // 1. Capital Invertido y Desglose
-  let capitalInvertido = 0;
-  const capitalPorCategoria: Record<string, {nombre: string, total: number}> = {};
-  safeCategorias.forEach((c: any) => capitalPorCategoria[c.id] = { nombre: parseCategoryName(c.nombre), total: 0 });
-
-  // 4. Ítems en Riesgo Crítico
-  const itemsEnRiesgo: any[] = [];
-
-  // 3. Top Margen de Contribución
-  const margenItems: any[] = [];
-
-  safeInventario.forEach(item => {
-    // Capital
-    const valorItem = (item.stock_actual * (item.valor_mayorista || 0));
-    capitalInvertido += valorItem;
-    if (item.categoria_id && capitalPorCategoria[item.categoria_id]) {
-      capitalPorCategoria[item.categoria_id].total += valorItem;
-    }
-
-    // Riesgo
-    if (item.stock_actual <= item.stock_minimo) {
-      itemsEnRiesgo.push(item);
-    }
-
-    // Margen
-    const margen = (item.precio_venta || 0) - (item.valor_mayorista || 0);
-    margenItems.push({ nombre: item.nombre, margen });
-  });
-
-  const capitalDesglose = Object.values(capitalPorCategoria)
-    .filter(c => c.total > 0)
-    .map(c => `${c.nombre}: ${Math.round((c.total / capitalInvertido) * 100)}%`)
-    .join(" | ");
-
-  const topMargen = margenItems.sort((a, b) => b.margen - a.margen).slice(0, 3);
-
-  // 2. Costo de Merma
-  let costoMerma = 0;
-  
-  // 5. Ítems Inactivos (30 días)
-  // 6. Flujo Mensual
-  let entradasAnio = 0;
-  let salidasAnio = 0;
-  
-  const treintaDiasAtras = new Date();
-  treintaDiasAtras.setDate(treintaDiasAtras.getDate() - 30);
-  
-  const inicioAnio = new Date();
-  inicioAnio.setMonth(0, 1);
-  inicioAnio.setHours(0, 0, 0, 0);
-
-  const itemsConSalidaReciente = new Set();
-  
-  const categoriasMap: Record<string, string> = {};
-  safeCategorias.forEach(c => {
-    categoriasMap[c.id] = parseCategoryName(c.nombre);
-  });
-
-  // Iterar movimientos de salida para varios cálculos
-  safeMovimientos.forEach(m => {
-    const fechaMov = new Date(m.fecha);
-    const item = safeInventario.find(i => i.id === m.item_id);
-    const costoUnitario = item?.valor_mayorista || 0;
-
-    // Mermas
-    if (m.tipo_movimiento === "SALIDA" && m.motivo && m.motivo.startsWith("MERMA")) {
-        costoMerma += (m.cantidad * costoUnitario);
-    }
-
-    // Inactivos
-    if (m.tipo_movimiento === "SALIDA" && fechaMov >= treintaDiasAtras && (!m.motivo || !m.motivo.startsWith("MERMA"))) {
-        itemsConSalidaReciente.add(m.item_id);
-    }
-
-    // Flujo Mensual
-    if (fechaMov >= inicioAnio) {
-        if (m.tipo_movimiento === "ENTRADA") entradasAnio += m.cantidad;
-        if (m.tipo_movimiento === "SALIDA" && (!m.motivo || !m.motivo.startsWith("MERMA"))) salidasAnio += m.cantidad;
-    }
-  });
-
-  const itemsInactivos = safeInventario.filter(i => !itemsConSalidaReciente.has(i.id)).length;
-  
-  const totalUnidadesInventario = safeInventario.reduce((acc, v) => acc + (v.stock_actual || 0), 0);
-  const itemsAgotados = safeInventario.filter(v => v.stock_actual === 0).length;
-  // Lotes por vencer (90 días)
-  const noventaDias = new Date();
-  noventaDias.setDate(noventaDias.getDate() + 90);
-  const { count: lotesVencer } = await db
-    .from("lotes_inventario")
-    .select("*", { count: "exact", head: true })
-    .eq("tenant_id", tenant.id)
-    .lte("fecha_vencimiento", noventaDias.toISOString())
-    .gt("cantidad", 0);
 
   return (
     <>
@@ -247,6 +151,154 @@ export default async function TenantAdminDashboard({ params }: Props) {
               <span>Reportes RIPS</span>
             </Link>
           </div>
+        </div>
+
+        {/* ── TIRA DE MÉTRICAS CLÍNICAS EJECUTIVAS ─────────────────── */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+          gap: "14px",
+          marginBottom: "24px"
+        }}>
+          {/* Pacientes Registrados */}
+          <Link href={`/${slug}/admin/pacientes`} style={{ textDecoration: "none" }}>
+            <div className="card" style={{
+              padding: "16px 18px",
+              background: "#ffffff",
+              border: "1px solid var(--slate-200)",
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease"
+            }}>
+              <div style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                background: "rgba(10, 77, 92, 0.08)",
+                color: primaryColor,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <Users size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>
+                  {totalPacientes || 0}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 600, marginTop: "4px" }}>
+                  Pacientes Registrados
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Citas Agendadas */}
+          <Link href={`/${slug}/admin/citas`} style={{ textDecoration: "none" }}>
+            <div className="card" style={{
+              padding: "16px 18px",
+              background: "#ffffff",
+              border: "1px solid var(--slate-200)",
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease"
+            }}>
+              <div style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                background: "rgba(0, 212, 170, 0.12)",
+                color: "#059669",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <CalendarDays size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>
+                  {totalCitas || 0}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 600, marginTop: "4px" }}>
+                  Citas Agendadas
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Biológicos e Insumos */}
+          <Link href={`/${slug}/admin/inventario`} style={{ textDecoration: "none" }}>
+            <div className="card" style={{
+              padding: "16px 18px",
+              background: "#ffffff",
+              border: "1px solid var(--slate-200)",
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease"
+            }}>
+              <div style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                background: "rgba(14, 165, 233, 0.08)",
+                color: "#0284c7",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <Package size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--slate-900)", lineHeight: 1 }}>
+                  {totalInventario || 0}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 600, marginTop: "4px" }}>
+                  {inventoryName}
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Alertas de Stock y Vencimiento */}
+          <Link href={`/${slug}/admin/inventario`} style={{ textDecoration: "none" }}>
+            <div className="card" style={{
+              padding: "16px 18px",
+              background: "#ffffff",
+              border: (stockBajo || 0) > 0 || (lotesPorVencer || 0) > 0 ? "1px solid rgba(245, 158, 11, 0.35)" : "1px solid var(--slate-200)",
+              borderRadius: "12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease"
+            }}>
+              <div style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                background: (stockBajo || 0) > 0 || (lotesPorVencer || 0) > 0 ? "rgba(245, 158, 11, 0.1)" : "rgba(16, 185, 129, 0.08)",
+                color: (stockBajo || 0) > 0 || (lotesPorVencer || 0) > 0 ? "#d97706" : "#10b981",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                {(stockBajo || 0) > 0 || (lotesPorVencer || 0) > 0 ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
+              </div>
+              <div>
+                <div style={{ fontSize: "20px", fontWeight: 800, color: (stockBajo || 0) > 0 ? "#d97706" : "var(--slate-900)", lineHeight: 1 }}>
+                  {(stockBajo || 0) + (lotesPorVencer || 0)}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--slate-500)", fontWeight: 600, marginTop: "4px" }}>
+                  {(stockBajo || 0) > 0 || (lotesPorVencer || 0) > 0 ? "Alertas de Stock / Lote" : "Inventario al Día"}
+                </div>
+              </div>
+            </div>
+          </Link>
         </div>
 
         <DashboardCharts 
