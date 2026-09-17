@@ -241,32 +241,40 @@ export async function eliminarAplicacionVacuna(
 export async function getCarneDigitalPublico(slug: string, token: string) {
   try {
     const adminSupabase = createAdminClient();
+    const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
+    const canonicalSlug = cleanSlug === 'dr-carlos-torres' ? 'dr-torres' : cleanSlug;
 
     // 1. Resolver tenant
     const { data: tenant, error: tErr } = await adminSupabase
       .from('tenants')
-      .select('id, nombre, slug, telefono, email, direccion')
-      .eq('slug', slug)
-      .single();
+      .select('id, nombre, slug')
+      .or(`slug.eq.${canonicalSlug},slug.eq.${cleanSlug}`)
+      .maybeSingle();
 
-    if (tErr || !tenant) return null;
+    if (tErr || !tenant) {
+      console.error('Tenant no encontrado para carné:', slug, tErr);
+      return null;
+    }
 
     // 2. Resolver configuración visual del tenant
     const { data: config } = await adminSupabase
       .from('configuracion_portal')
-      .select('nombre_doctor, especialidad, registro_medico, logo_url, color_primario, color_acento, telefono, direccion')
+      .select('nombre_doctor, titulo_doctor, especialidad, logo_url, color_primario, color_acento, telefono, direccion')
       .eq('tenant_id', tenant.id)
-      .single();
+      .maybeSingle();
 
     // 3. Resolver paciente por token_acceso
     const { data: paciente, error: pErr } = await adminSupabase
       .from('pacientes')
-      .select('id, nombres, apellidos, documento, tipo_documento, fecha_nacimiento, genero, eps, tipo_sangre, token_acceso')
+      .select('id, nombres, apellidos, documento, tipo_documento, fecha_nacimiento, genero, eps, token_acceso')
       .eq('token_acceso', token)
       .eq('tenant_id', tenant.id)
-      .single();
+      .maybeSingle();
 
-    if (pErr || !paciente) return null;
+    if (pErr || !paciente) {
+      console.error('Paciente no encontrado para carné:', token, pErr);
+      return null;
+    }
 
     // 4. Obtener vacunas aplicadas
     const { data: vacunas } = await adminSupabase

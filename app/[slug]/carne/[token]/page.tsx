@@ -133,9 +133,9 @@ export default async function CarneVacunalPublicPage({ params }: PageProps) {
                 <p className="text-teal-100 text-sm sm:text-base font-medium">
                   {config?.nombre_doctor ? `${config.nombre_doctor} • ` : ""}{config?.especialidad || tenant.nombre}
                 </p>
-                {config?.registro_medico && (
+                {config?.titulo_doctor && (
                   <p className="text-xs text-teal-200/80 mt-1 font-mono">
-                    Registro Médico / ReTHUS: {config.registro_medico}
+                    {config.titulo_doctor}
                   </p>
                 )}
               </div>
@@ -201,11 +201,6 @@ export default async function CarneVacunalPublicPage({ params }: PageProps) {
                 <span className="text-base font-bold text-slate-800 block">
                   {paciente.eps || "Particular"}
                 </span>
-                {paciente.tipo_sangre && (
-                  <span className="text-xs font-bold text-rose-600">
-                    Tipo: {paciente.tipo_sangre}
-                  </span>
-                )}
               </div>
             </div>
 
@@ -359,7 +354,7 @@ export default async function CarneVacunalPublicPage({ params }: PageProps) {
                     {config?.especialidad || "Especialista en Vacunación"}
                   </p>
                   <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                    ReTHUS / Licencia: {config?.registro_medico || "Oficial"}
+                    {config?.titulo_doctor || "Profesional Médico Certificado"}
                   </p>
                   <p className="text-[10px] text-emerald-600 font-bold mt-1">
                     ✓ Firma y Aval Médico Digital
