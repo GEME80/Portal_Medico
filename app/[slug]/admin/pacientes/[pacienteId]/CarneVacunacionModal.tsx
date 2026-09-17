@@ -18,7 +18,8 @@ import {
   Info,
   Zap,
   Filter,
-  CheckCircle2
+  CheckCircle2,
+  MessageCircle
 } from "lucide-react";
 import { 
   AplicacionVacuna, 
@@ -155,7 +156,7 @@ export default function CarneVacunacionModal({
     const cleanPhone = phone.replace(/[^0-9]/g, "");
     
     const message = encodeURIComponent(
-      `Hola, adjuntamos el Carné de Vacunación Digital actualizado de *${paciente.nombres} ${paciente.apellidos}*:\n\n🔗 ${url}\n\nPuede consultarlo, guardarlo o imprimirlo en cualquier momento.`
+      `Hola, le compartimos el Carné Oficial de Vacunación Digital de *${paciente.nombres} ${paciente.apellidos}* emitido por el consultorio del *Dr. Carlos Torres Martínez*:\n\n🔗 ${url}\n\nPuede consultarlo, guardarlo o descargarlo en PDF en 1 sola hoja en cualquier momento.`
     );
     
     const waUrl = cleanPhone 
@@ -418,7 +419,7 @@ export default function CarneVacunacionModal({
                 boxShadow: "0 2px 6px rgba(37, 211, 102, 0.3)"
               }}
             >
-              <Share2 size={14} /> WhatsApp
+              <MessageCircle size={14} /> Enviar a WhatsApp
             </button>
 
             <button

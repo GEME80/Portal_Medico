@@ -6,10 +6,9 @@ import {
   Printer, 
   Share2, 
   Check, 
-  MessageCircle, 
   Copy, 
-  CheckCircle2,
-  ShieldCheck
+  ShieldCheck,
+  Download
 } from "lucide-react";
 import { 
   ESQUEMA_MATRIZ_CANONICO, 
@@ -90,7 +89,7 @@ function getCategoriaPalette(catId: string) {
 /**
  * Trazo vectorial caligráfico auténtico de la firma del Dr. Carlos Torres
  */
-function DoctorSignatureSvg({ width = 140, height = 34, color = "#0A4D5C" }: { width?: number; height?: number; color?: string }) {
+function DoctorSignatureSvg({ width = 135, height = 32, color = "#0A4D5C" }: { width?: number; height?: number; color?: string }) {
   return (
     <svg viewBox="0 0 200 55" width={width} height={height} style={{ display: "block", margin: "0 auto" }}>
       <path
@@ -178,23 +177,26 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
     }
   };
 
-  const handleCopyLink = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2500);
-    }
-  };
-
-  const handleWhatsApp = () => {
+  const handleShare = async () => {
     if (typeof window !== "undefined") {
       const url = window.location.href;
       const pacienteNombre = (paciente.nombres + " " + (paciente.apellidos || "")).trim();
-      const text = encodeURIComponent(
-        "Hola, aquí puedes consultar y descargar el Carné Oficial de Vacunación de " + 
-        pacienteNombre + " (" + (doctorNombre || "Dr. Carlos Torres") + "): " + url
-      );
-      window.open("https://api.whatsapp.com/send?text=" + text, "_blank");
+      const title = "Carné de Vacunación - " + pacienteNombre;
+      const text = "Carné Oficial de Inmunización de " + pacienteNombre + " (" + doctorNombre + "):";
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, text, url });
+          return;
+        } catch (err) {
+          if ((err as Error).name === "AbortError") return;
+        }
+      }
+
+      // Fallback a copiar enlace al portapapeles
+      navigator.clipboard.writeText(url);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
     }
   };
 
@@ -207,15 +209,106 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
   }, []);
 
   return (
-    <div style={{
+    <div className="carne-page-wrapper" style={{
       minHeight: "100vh",
-      background: "#e2e8f0",
+      background: "#f1f5f9",
       padding: "0 0 40px",
       fontFamily: "'Outfit', 'Inter', system-ui, -apple-system, sans-serif",
       color: "#1e293b"
     }}>
-      {/* ESTILOS DE IMPRESIÓN RIGUROSOS PARA 1 SOLA HOJA */}
+      {/* ESTILOS DE RESPONSIVIDAD Y PRECISIÓN MILIMÉTRICA DE IMPRESIÓN */}
       <style dangerouslySetInnerHTML={{__html: `
+        /* --- ESTILOS EN PANTALLA --- */
+        @media screen {
+          .mobile-swipe-hint {
+            display: none;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #0A4D5C;
+            background: #e0f2f5;
+            padding: 5px 10px;
+            border-radius: 6px;
+            margin: 6px 0 8px;
+            border: 1px dashed #99f6e4;
+          }
+          .table-scroll-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+          .carne-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+          }
+        }
+
+        /* --- RESPONSIVIDAD MÓVIL (< 768px) --- */
+        @media screen and (max-width: 768px) {
+          .carne-page-wrapper {
+            padding: 0 0 25px !important;
+          }
+          .carne-sheet {
+            margin: 10px 8px 0 !important;
+            padding: 12px 10px !important;
+            border-radius: 10px !important;
+          }
+          .top-action-bar-inner {
+            padding: 8px 12px !important;
+          }
+          .top-doctor-title {
+            font-size: 13.5px !important;
+          }
+          .top-doctor-sub {
+            font-size: 10.5px !important;
+          }
+          .action-btn-text {
+            font-size: 12px !important;
+            padding: 7px 12px !important;
+          }
+          .patient-data-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 6px !important;
+          }
+          .mobile-swipe-hint {
+            display: block !important;
+          }
+          .carne-table {
+            min-width: 680px !important;
+          }
+          .carne-footer {
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+            gap: 12px !important;
+          }
+          .footer-qr-block {
+            justify-content: center !important;
+          }
+          .footer-seal-block {
+            width: 100% !important;
+            max-width: 220px !important;
+          }
+        }
+
+        @media screen and (max-width: 480px) {
+          .patient-data-grid {
+            grid-template-columns: 1fr !important;
+            gap: 4px !important;
+          }
+          .patient-sub-strip {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 3px !important;
+          }
+          .header-badge-title {
+            font-size: 7.5px !important;
+            padding: 2px 6px !important;
+          }
+        }
+
+        /* --- IMPRESIÓN RIGUROSA: EXACTAMENTE 1 SOLA HOJA --- */
         @media print {
           @page {
             size: letter portrait;
@@ -235,7 +328,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
           .no-print {
             display: none !important;
           }
-          .carne-container {
+          .carne-sheet {
             box-shadow: none !important;
             border: none !important;
             margin: 0 !important;
@@ -249,6 +342,30 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
             overflow: hidden !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+          }
+          .table-scroll-container {
+            overflow: visible !important;
+            width: 100% !important;
+            margin: 0 !important;
+          }
+          .carne-table {
+            min-width: 0 !important;
+            width: 100% !important;
+            table-layout: fixed !important;
+          }
+          .patient-data-grid {
+            grid-template-columns: 1.6fr 1.1fr 1.3fr 1fr !important;
+          }
+          .patient-sub-strip {
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+          }
+          .carne-footer {
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            text-align: left !important;
           }
           table {
             border-collapse: collapse !important;
@@ -267,7 +384,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
       `}} />
 
       {/* ============================================================ */}
-      {/* BARRA SUPERIOR FIJA DE ACCIÓN MÉDICA (SOLO PANTALLA)         */}
+      {/* BARRA SUPERIOR FIJA: LIMPIA, AUTORITATIVA Y SIN RUIDO       */}
       {/* ============================================================ */}
       <div className="no-print" style={{
         position: "sticky",
@@ -278,7 +395,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
         borderBottom: "1px solid #cbd5e1",
         boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)"
       }}>
-        <div style={{
+        <div className="top-action-bar-inner" style={{
           maxWidth: "960px",
           margin: "0 auto",
           padding: "10px 16px",
@@ -289,44 +406,23 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
           gap: "10px"
         }}>
           <div>
-            <h2 style={{ fontSize: "15px", fontWeight: 800, color: "#0f172a", margin: 0, lineHeight: 1.2 }}>
+            <h2 className="top-doctor-title" style={{ fontSize: "15px", fontWeight: 800, color: "#0f172a", margin: 0, lineHeight: 1.2 }}>
               {doctorNombre}
             </h2>
-            <p style={{ fontSize: "11.5px", color: "#64748b", margin: 0 }}>
-              {doctorEspecialidad} • {registroMedico}
+            <p className="top-doctor-sub" style={{ fontSize: "11.5px", color: "#64748b", margin: 0 }}>
+              {doctorEspecialidad} • Documento Clínico Oficial
             </p>
           </div>
 
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <button
-              onClick={handleWhatsApp}
-              style={{
-                background: "#25D366",
-                color: "white",
-                border: "none",
-                padding: "8px 14px",
-                borderRadius: "8px",
-                fontSize: "12.5px",
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                boxShadow: "0 2px 6px rgba(37, 211, 102, 0.25)"
-              }}
-              title="Compartir carné por WhatsApp"
-            >
-              <MessageCircle size={15} />
-              WhatsApp
-            </button>
-
-            <button
-              onClick={handleCopyLink}
+              onClick={handleShare}
+              className="action-btn-text"
               style={{
                 background: "#ffffff",
                 color: "#0A4D5C",
                 border: "1px solid #cbd5e1",
-                padding: "8px 12px",
+                padding: "8px 14px",
                 borderRadius: "8px",
                 fontSize: "12.5px",
                 fontWeight: 700,
@@ -335,14 +431,15 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
                 alignItems: "center",
                 gap: "5px"
               }}
-              title="Copiar enlace del carné"
+              title="Compartir o copiar enlace del carné"
             >
-              {copiado ? <Check size={15} color="#059669" /> : <Copy size={15} />}
-              {copiado ? "¡Copiado!" : "Copiar Enlace"}
+              {copiado ? <Check size={15} color="#059669" /> : <Share2 size={15} />}
+              {copiado ? "¡Enlace Copiado!" : "Compartir"}
             </button>
 
             <button
               onClick={handlePrint}
+              className="action-btn-text"
               style={{
                 background: primaryColor,
                 color: "white",
@@ -357,23 +454,23 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
                 gap: "6px",
                 boxShadow: "0 4px 12px rgba(10, 77, 92, 0.25)"
               }}
-              title="Imprimir o guardar en PDF en 1 hoja"
+              title="Descargar o imprimir carné oficial en 1 sola hoja"
             >
               <Printer size={15} />
-              Imprimir / PDF (1 Hoja)
+              Descargar / Imprimir PDF
             </button>
           </div>
         </div>
       </div>
 
       {/* ============================================================ */}
-      {/* CONTENEDOR DE LA HOJA ÚNICA OFICIAL DEL CARNÉ               */}
+      {/* HOJA OFICIAL DEL CARNÉ (RESPONSIVE EN MÓVIL Y 1 HOJA EN PDF) */}
       {/* ============================================================ */}
-      <div className="carne-container" style={{
+      <div className="carne-sheet" style={{
         maxWidth: "960px",
-        margin: "20px auto 0",
+        margin: "18px auto 0",
         background: "#ffffff",
-        borderRadius: "10px",
+        borderRadius: "12px",
         boxShadow: "0 8px 24px rgba(0, 0, 0, 0.08)",
         border: "1px solid #cbd5e1",
         padding: "16px 20px",
@@ -387,7 +484,9 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
             alignItems: "flex-end",
             borderBottom: "2px solid #0A4D5C",
             paddingBottom: "4px",
-            marginBottom: "4px"
+            marginBottom: "4px",
+            flexWrap: "wrap",
+            gap: "6px"
           }}>
             <div>
               <div style={{
@@ -406,7 +505,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
             </div>
 
             <div style={{ textAlign: "right" }}>
-              <span style={{
+              <span className="header-badge-title" style={{
                 background: "#0A4D5C",
                 color: "#ffffff",
                 fontSize: "8.5px",
@@ -422,7 +521,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
             </div>
           </div>
 
-          {/* TIRA DE DATOS DEMOGRÁFICOS DEL PACIENTE (COMPACTA) */}
+          {/* TIRA DE DATOS DEMOGRÁFICOS DEL PACIENTE */}
           <div style={{
             border: "1px solid #cbd5e1",
             borderRadius: "4px",
@@ -430,7 +529,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
             padding: "4px 8px",
             marginBottom: "5px"
           }}>
-            <div style={{
+            <div className="patient-data-grid" style={{
               display: "grid",
               gridTemplateColumns: "1.6fr 1.1fr 1.3fr 1fr",
               gap: "6px",
@@ -455,7 +554,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
               </div>
             </div>
 
-            <div style={{
+            <div className="patient-sub-strip" style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -466,7 +565,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
               color: "#64748b"
             }}>
               <span>
-                <strong style={{ color: "#065f46" }}>● Estado:</strong> {totalDosisAplicadas} {totalDosisAplicadas === 1 ? "dosis aplicada" : "dosis aplicadas"} registradas
+                <strong style={{ color: "#065f46" }}>● Estado:</strong> {totalDosisAplicadas} {totalDosisAplicadas === 1 ? "dosis registrada" : "dosis registradas"}
               </span>
               <span>
                 <strong>Fecha Expedición:</strong> {fechaExpedicion}
@@ -478,12 +577,14 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
           </div>
         </div>
 
+        {/* INDICADOR AMIGABLE PARA MÓVIL */}
+        <div className="mobile-swipe-hint no-print">
+          ↔ Desliza horizontalmente para ver las 7 columnas completas (Lote, Firma, etc.)
+        </div>
+
         {/* 2. TABLA CANÓNICA DE 7 COLUMNAS DEL DR. CARLOS TORRES */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          <table style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            tableLayout: "fixed",
+        <div className="table-scroll-container" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <table className="carne-table" style={{
             fontSize: "8.5px",
             lineHeight: 1.15
           }}>
@@ -684,7 +785,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
         </div>
 
         {/* 3. SELLO Y FIRMA DE AUTENTICACIÓN MÉDICA AL PIE */}
-        <div style={{
+        <div className="carne-footer" style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -694,19 +795,19 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
           borderTop: "1px solid #cbd5e1"
         }}>
           {/* QR de Verificación Instantánea */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: "155px" }}>
+          <div className="footer-qr-block" style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: "155px" }}>
             {qrDataUrl ? (
               <img
                 src={qrDataUrl}
                 alt="QR Verificación"
-                style={{ width: "54px", height: "54px", display: "block", borderRadius: "3px", border: "0.5pt solid #94a3b8" }}
+                style={{ width: "52px", height: "52px", display: "block", borderRadius: "3px", border: "0.5pt solid #94a3b8" }}
               />
             ) : (
-              <div style={{ width: "54px", height: "54px", background: "#f1f5f9", borderRadius: "3px", border: "0.5pt solid #94a3b8" }} />
+              <div style={{ width: "52px", height: "52px", background: "#f1f5f9", borderRadius: "3px", border: "0.5pt solid #94a3b8" }} />
             )}
-            <div style={{ fontSize: "6.5px", color: "#475569", lineHeight: 1.15 }}>
+            <div style={{ fontSize: "6.5px", color: "#475569", lineHeight: 1.15, textAlign: "left" }}>
               <strong style={{ color: "#0A4D5C", display: "block", fontSize: "7.5px" }}>VERIFICACIÓN CLÍNICA</strong>
-              Escanee con su celular para validar autenticidad en el servidor médico oficial.
+              Escanee con su celular para validar autenticidad en el servidor oficial.
             </div>
           </div>
 
@@ -722,7 +823,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
           </div>
 
           {/* Sello y Firma Autógrafa del Dr. Carlos Torres */}
-          <div style={{
+          <div className="footer-seal-block" style={{
             border: "1.5px solid #0A4D5C",
             borderRadius: "5px",
             padding: "2px 8px",
@@ -750,7 +851,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
               FIRMA Y SELLO MÉDICO AUTÉNTICO
             </span>
             
-            <DoctorSignatureSvg width={130} height={30} color="#0A4D5C" />
+            <DoctorSignatureSvg width={130} height={28} color="#0A4D5C" />
             
             <strong style={{ fontSize: "8px", color: "#0f172a", lineHeight: 1.1, marginTop: "1px", display: "block" }}>
               {doctorNombre}
