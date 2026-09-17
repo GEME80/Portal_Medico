@@ -1,7 +1,20 @@
 import { notFound } from "next/navigation";
 import { getCarneDigitalPublico } from "@/lib/actions/vacunas-actions";
 import CarnePrintButton from "@/components/CarnePrintButton";
-import { ShieldCheck, Syringe, Calendar, User, FileText, CheckCircle2 } from "lucide-react";
+import { 
+  ESQUEMA_MATRIZ_CANONICO, 
+  matchAplicacionFila, 
+  getVacunasOtras 
+} from "@/lib/vacunas/constants";
+import { 
+  ShieldCheck, 
+  Syringe, 
+  User, 
+  CheckCircle2, 
+  Check, 
+  Sparkles, 
+  AlertCircle 
+} from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string; token: string }> | { slug: string; token: string };
@@ -29,16 +42,12 @@ function calcularEdadDetallada(fechaNacimiento: string) {
   return `${anos} años, ${meses} meses`;
 }
 
-function formatearFecha(fechaStr: string) {
+function formatearFechaCorta(fechaStr: string) {
   if (!fechaStr) return "--";
   try {
     const parts = fechaStr.split("-");
     if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const day = parseInt(parts[2], 10);
-      const d = new Date(year, month, day);
-      return d.toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" });
+      return `${parts[2]} / ${parts[1]} / ${parts[0]}`;
     }
     return fechaStr;
   } catch (e) {
@@ -55,18 +64,25 @@ export default async function CarneVacunalPublicPage({ params }: PageProps) {
 
   const { tenant, config, paciente, vacunas } = data;
   const primaryColor = config?.color_primario || "#0A4D5C";
-  const accentColor = config?.color_acento || "#00D4AA";
 
+  // Emparejamiento de vacunas con la matriz canónica
+  const claimedIds = new Set<string>();
   const totalDosis = vacunas.length;
-  const ultimaVacuna = vacunas.length > 0 ? vacunas[vacunas.length - 1] : null;
+  const vacunasOtras = getVacunasOtras(vacunas, claimedIds);
 
   return (
     <>
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
+          @page {
+            size: portrait;
+            margin: 8mm 10mm;
+          }
           body {
             background: white !important;
             padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .print-hidden {
             display: none !important;
@@ -76,25 +92,26 @@ export default async function CarneVacunalPublicPage({ params }: PageProps) {
             border: none !important;
             max-width: 100% !important;
             padding: 0 !important;
-          }
-          .carne-card {
-            break-inside: avoid !important;
-            border: 1px solid #cbd5e1 !important;
-            box-shadow: none !important;
+            margin: 0 !important;
           }
           .carne-header {
             background: #0A4D5C !important;
             color: white !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+          }
+          table {
+            page-break-inside: auto;
+          }
+          tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
           }
         }
       `}} />
 
-      <div className="min-h-screen bg-slate-100 flex flex-col items-center py-10 px-4" style={{ fontFamily: "'Outfit', sans-serif" }}>
+      <div className="min-h-screen bg-slate-100 flex flex-col items-center py-8 px-3 sm:px-6" style={{ fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif" }}>
         
-        {/* TOP BAR / LOGO */}
-        <div className="w-full max-w-4xl mb-6 flex justify-between items-center print-hidden">
+        {/* TOP BAR CON ACCIONES */}
+        <div className="w-full max-w-5xl mb-4 flex justify-between items-center print-hidden">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-teal-800 text-white flex items-center justify-center font-extrabold text-xl shadow-md">
               <Syringe size={22} className="text-emerald-300" />
@@ -104,7 +121,7 @@ export default async function CarneVacunalPublicPage({ params }: PageProps) {
                 {config?.nombre_doctor || tenant.nombre}
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                {config?.especialidad || "Pediatría y Vacunación"}
+                {config?.especialidad || "Pediatría y Puericultura • Esquema Oficial de Inmunización"}
               </p>
             </div>
           </div>
@@ -112,271 +129,299 @@ export default async function CarneVacunalPublicPage({ params }: PageProps) {
           <CarnePrintButton />
         </div>
 
-        {/* MAIN DOCUMENT CARD */}
-        <div className="w-full max-w-4xl bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200 carne-container">
+        {/* CONTENEDOR PRINCIPAL TIPO TARJETA CLÍNICA */}
+        <div className="w-full max-w-5xl bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-200 carne-container">
           
-          {/* HEADER INSTITUCIONAL */}
+          {/* ENCABEZADO INSTITUCIONAL */}
           <div
-            className="carne-header p-8 sm:p-10 text-white relative overflow-hidden"
+            className="carne-header p-6 sm:p-8 text-white relative overflow-hidden"
             style={{
               background: `linear-gradient(135deg, ${primaryColor} 0%, #062b33 100%)`
             }}
           >
             <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-bold mb-3 border border-emerald-400/30">
-                  <ShieldCheck size={14} /> Documento Oficial de Inmunización
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-bold mb-2.5 border border-emerald-400/30">
+                  <ShieldCheck size={14} /> Documento Clínico Oficial de Inmunización
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">
-                  Carné de Vacunación Digital
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-1">
+                  Carné de Vacunación Pediátrica
                 </h1>
-                <p className="text-teal-100 text-sm sm:text-base font-medium">
-                  {config?.nombre_doctor ? `${config.nombre_doctor} • ` : ""}{config?.especialidad || tenant.nombre}
+                <p className="text-teal-100 text-sm font-medium">
+                  {config?.nombre_doctor || "Dr. Carlos Torres"} • {config?.especialidad || "Pediatra • Infectólogo Pediatra"}
                 </p>
                 {config?.titulo_doctor && (
-                  <p className="text-xs text-teal-200/80 mt-1 font-mono">
+                  <p className="text-xs text-teal-200/80 mt-0.5 font-mono">
                     {config.titulo_doctor}
                   </p>
                 )}
               </div>
 
-              <div className="text-left sm:text-right bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15">
-                <p className="text-xs uppercase tracking-wider text-teal-200 font-bold mb-1">
-                  Código Único Digital
+              {/* CÓDIGO Y VALIDACIÓN */}
+              <div className="text-left sm:text-right bg-white/10 backdrop-blur-md p-3.5 rounded-xl border border-white/15">
+                <p className="text-[11px] uppercase tracking-wider text-teal-200 font-bold mb-0.5">
+                  Certificado Único Digital
                 </p>
-                <p className="font-mono text-xs text-white break-all max-w-[200px]">
+                <p className="font-mono text-xs text-white break-all max-w-[210px] font-semibold">
                   {paciente.token_acceso}
                 </p>
-                <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-300 font-semibold">
-                  <CheckCircle2 size={14} /> Verificado en Línea
+                <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-emerald-300 font-semibold">
+                  <CheckCircle2 size={13} /> Verificado en Línea
                 </div>
               </div>
             </div>
           </div>
 
           {/* DATOS DEL PACIENTE */}
-          <div className="p-8 border-b border-slate-100 bg-slate-50/50">
-            <div className="flex items-center gap-3 mb-6">
-              <User size={20} className="text-teal-700" />
-              <h2 className="text-lg font-extrabold text-slate-800">
-                Información del Paciente
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+          <div className="p-6 bg-slate-50/80 border-b border-slate-200">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="col-span-2 sm:col-span-1">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Paciente
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                  Nombre del Paciente
                 </span>
-                <span className="text-base font-extrabold text-slate-800 block">
+                <span className="text-base font-extrabold text-slate-900 block leading-tight">
                   {paciente.nombres} {paciente.apellidos}
                 </span>
               </div>
 
               <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
                   Identificación
                 </span>
-                <span className="text-base font-bold text-slate-800 block">
+                <span className="text-sm font-bold text-slate-800 block">
                   {paciente.tipo_documento} {paciente.documento}
                 </span>
               </div>
 
               <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Nacimiento / Edad
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                  Fecha Nacimiento / Edad
                 </span>
-                <span className="text-base font-bold text-slate-800 block">
-                  {paciente.fecha_nacimiento}
+                <span className="text-sm font-bold text-slate-800 block">
+                  {paciente.fecha_nacimiento || "No registrada"}
                 </span>
-                <span className="text-xs text-slate-500 font-semibold">
+                <span className="text-xs text-slate-500 font-medium">
                   ({calcularEdadDetallada(paciente.fecha_nacimiento)})
                 </span>
               </div>
 
               <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
                   EPS / Aseguradora
                 </span>
-                <span className="text-base font-bold text-slate-800 block">
+                <span className="text-sm font-bold text-slate-800 block">
                   {paciente.eps || "Particular"}
                 </span>
-              </div>
-            </div>
-
-            {/* KPI STATS BAR */}
-            <div className="mt-6 pt-6 border-t border-slate-200/60 grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
-                <span className="text-xs font-bold text-slate-400 uppercase">Total Dosis Aplicadas</span>
-                <p className="text-2xl font-black text-teal-800 m-0">{totalDosis}</p>
-              </div>
-
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
-                <span className="text-xs font-bold text-slate-400 uppercase">Última Vacunación</span>
-                <p className="text-sm font-extrabold text-slate-800 m-0 truncate">
-                  {ultimaVacuna ? formatearFecha(ultimaVacuna.fecha_aplicacion) : "Sin registros"}
-                </p>
-                {ultimaVacuna && (
-                  <p className="text-xs text-slate-500 truncate">{ultimaVacuna.nombre_vacuna}</p>
-                )}
-              </div>
-
-              <div className="col-span-2 sm:col-span-1 bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                  ✓
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-slate-400 uppercase">Estado del Carné</span>
-                  <p className="text-sm font-extrabold text-emerald-700 m-0">Vigente y Verificado</p>
-                </div>
+                <span className="text-[11px] font-semibold text-teal-700 block">
+                  {totalDosis} {totalDosis === 1 ? "vacuna registrada" : "vacunas registradas"}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* HISTORIAL / TARJETAS DE VACUNACIÓN */}
-          <div className="p-8 sm:p-10">
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                <Syringe size={20} className="text-teal-700" />
-                <h2 className="text-xl font-extrabold text-slate-800">
-                  Esquema de Vacunación Administrado
-                </h2>
-              </div>
-              <span className="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">
-                {vacunas.length} {vacunas.length === 1 ? "registro" : "registros"}
-              </span>
-            </div>
+          {/* TABLA MATRIZ EXACTA DE 7 COLUMNAS */}
+          <div className="p-4 sm:p-6 overflow-x-auto">
+            <table className="w-full border-collapse text-left text-xs min-w-[760px] border border-slate-300">
+              <thead>
+                <tr className="bg-[#0A4D5C] text-white">
+                  <th className="py-2.5 px-3 font-extrabold uppercase tracking-wider text-[11px] border border-slate-400/60 w-[22%]">
+                    ME PROTEGE DE
+                  </th>
+                  <th className="py-2.5 px-2.5 font-extrabold uppercase tracking-wider text-[11px] border border-slate-400/60 w-[15%] text-center">
+                    EDAD
+                  </th>
+                  <th className="py-2.5 px-2 font-extrabold uppercase tracking-wider text-[11px] border border-slate-400/60 w-[10%] text-center">
+                    DOSIS
+                  </th>
+                  <th className="py-2.5 px-2.5 font-extrabold uppercase tracking-wider text-[11px] border border-slate-400/60 w-[14%] text-center">
+                    FECHA DE APLICACIÓN
+                  </th>
+                  <th className="py-2.5 px-3 font-extrabold uppercase tracking-wider text-[11px] border border-slate-400/60 w-[15%]">
+                    NOMBRE
+                  </th>
+                  <th className="py-2.5 px-2 font-extrabold uppercase tracking-wider text-[11px] border border-slate-400/60 w-[12%] text-center">
+                    NÚMERO DE LOTE
+                  </th>
+                  <th className="py-2.5 px-2.5 font-extrabold uppercase tracking-wider text-[11px] border border-slate-400/60 w-[12%] text-center">
+                    FIRMA DEL VACUNADOR
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {ESQUEMA_MATRIZ_CANONICO.map((cat) => {
+                  return cat.filas.map((fila, rowIndex) => {
+                    const app = matchAplicacionFila(vacunas, fila, claimedIds);
+                    const isApplied = !!app;
 
-            {vacunas.length === 0 ? (
-              <div className="text-center py-14 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                <Syringe size={40} className="text-slate-300 mx-auto mb-3" />
-                <p className="text-base font-bold text-slate-600 mb-1">
-                  Aún no se han registrado vacunas en este carné digital.
-                </p>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  El médico o equipo asistencial ingresará las dosis aplicadas en las consultas de seguimiento.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {vacunas.map((vac, idx) => (
-                  <div
-                    key={vac.id || idx}
-                    className="carne-card bg-slate-50/70 border border-slate-200 rounded-2xl p-5 relative overflow-hidden transition-all hover:shadow-md hover:bg-white"
-                  >
-                    {/* Badge Dosis y Origen */}
-                    <div className="flex justify-between items-start mb-3">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-teal-800 text-white">
-                        {vac.dosis}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        {vac.origen === "institucional" ? "🏥 Aplicada en Consultorio" : "📋 Antecedente Externo"}
-                      </span>
-                    </div>
+                    return (
+                      <tr 
+                        key={fila.id}
+                        className={isApplied ? "bg-emerald-50/25 hover:bg-emerald-50/40" : "hover:bg-slate-50/60"}
+                      >
+                        {/* COLUMNA 1: ME PROTEGE DE (ROWSPAN) */}
+                        {rowIndex === 0 && (
+                          <td
+                            rowSpan={cat.filas.length}
+                            className={`p-3 font-black align-middle border border-slate-300 ${cat.badgeBg} ${cat.badgeText} text-xs tracking-tight uppercase leading-snug`}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span>{cat.titulo}</span>
+                            </div>
+                          </td>
+                        )}
 
-                    {/* Nombre Biológico */}
-                    <h3 className="text-base font-extrabold text-slate-900 mb-1">
-                      {vac.nombre_vacuna}
-                    </h3>
+                        {/* COLUMNA 2: EDAD */}
+                        <td className="p-2 border border-slate-300 text-center font-medium text-slate-700 text-[11.5px]">
+                          {fila.edad}
+                        </td>
 
-                    {vac.enfermedad_prevenida && (
-                      <p className="text-xs text-slate-500 mb-3 leading-relaxed">
-                        Previene: <span className="font-semibold text-slate-700">{vac.enfermedad_prevenida}</span>
-                      </p>
-                    )}
+                        {/* COLUMNA 3: DOSIS */}
+                        <td className="p-2 border border-slate-300 text-center font-black text-slate-900 text-xs">
+                          {fila.dosis}
+                        </td>
 
-                    {/* Detalle Técnico */}
-                    <div className="bg-white rounded-xl p-3 border border-slate-100 text-xs text-slate-600 space-y-1.5">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400 font-medium">Fecha:</span>
-                        <strong className="text-slate-800 font-bold">{formatearFecha(vac.fecha_aplicacion)}</strong>
-                      </div>
+                        {/* COLUMNA 4: FECHA DE APLICACIÓN */}
+                        <td className="p-2 border border-slate-300 text-center font-bold text-[11.5px]">
+                          {isApplied ? (
+                            <span className="text-slate-900 font-extrabold">
+                              {formatearFechaCorta(app.fecha_aplicacion)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 font-mono text-xs">-- / -- / ----</span>
+                          )}
+                        </td>
 
-                      {vac.numero_lote && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-400 font-medium">Lote:</span>
-                          <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-[11px] font-semibold text-slate-800">
-                            {vac.numero_lote}
-                          </span>
-                        </div>
+                        {/* COLUMNA 5: NOMBRE */}
+                        <td className="p-2 border border-slate-300 text-[11.5px]">
+                          {isApplied ? (
+                            <span className="font-extrabold text-teal-950 block leading-tight">
+                              {app.nombre_vacuna}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px] block">
+                              ({fila.biologicoSugerido})
+                            </span>
+                          )}
+                        </td>
+
+                        {/* COLUMNA 6: NÚMERO DE LOTE */}
+                        <td className="p-2 border border-slate-300 text-center">
+                          {isApplied ? (
+                            <span className="font-mono bg-slate-100 text-slate-800 text-[11px] font-bold px-2 py-0.5 rounded border border-slate-200 inline-block">
+                              {app.numero_lote || "S/L"}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 font-mono text-xs">--</span>
+                          )}
+                        </td>
+
+                        {/* COLUMNA 7: FIRMA DEL VACUNADOR */}
+                        <td className="p-2 border border-slate-300 text-center text-[11px]">
+                          {isApplied ? (
+                            <div className="inline-flex items-center gap-1 text-emerald-800 font-bold bg-emerald-100/60 px-2 py-0.5 rounded-full text-[10.5px]">
+                              <Check size={12} className="text-emerald-700" />
+                              <span>{app.profesional_nombre || config?.nombre_doctor || "Dr. Carlos Torres"}</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-300 text-xs">--</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  });
+                })}
+
+                {/* FILAS DE "OTRAS VACUNAS" (Dengue, Covid, Meningo B, etc.) */}
+                {vacunasOtras.length > 0 ? (
+                  vacunasOtras.map((otra, idx) => (
+                    <tr key={otra.id || idx} className="bg-emerald-50/25">
+                      {idx === 0 && (
+                        <td
+                          rowSpan={vacunasOtras.length}
+                          className="p-3 font-black align-middle border border-slate-300 bg-slate-100 text-slate-900 text-xs tracking-tight uppercase leading-snug"
+                        >
+                          OTRAS
+                        </td>
                       )}
-
-                      {vac.laboratorio && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-400 font-medium">Laboratorio:</span>
-                          <span className="font-semibold text-slate-700">{vac.laboratorio}</span>
+                      <td className="p-2 border border-slate-300 text-center font-medium text-slate-700 text-[11.5px]">
+                        {otra.edad_aplicacion || "--"}
+                      </td>
+                      <td className="p-2 border border-slate-300 text-center font-black text-slate-900 text-xs">
+                        {otra.dosis || "Única"}
+                      </td>
+                      <td className="p-2 border border-slate-300 text-center font-bold text-[11.5px] text-slate-900">
+                        {formatearFechaCorta(otra.fecha_aplicacion)}
+                      </td>
+                      <td className="p-2 border border-slate-300 text-[11.5px] font-extrabold text-teal-950">
+                        {otra.nombre_vacuna}
+                      </td>
+                      <td className="p-2 border border-slate-300 text-center">
+                        <span className="font-mono bg-slate-100 text-slate-800 text-[11px] font-bold px-2 py-0.5 rounded border border-slate-200 inline-block">
+                          {otra.numero_lote || "S/L"}
+                        </span>
+                      </td>
+                      <td className="p-2 border border-slate-300 text-center text-[11px]">
+                        <div className="inline-flex items-center gap-1 text-emerald-800 font-bold bg-emerald-100/60 px-2 py-0.5 rounded-full text-[10.5px]">
+                          <Check size={12} className="text-emerald-700" />
+                          <span>{otra.profesional_nombre || config?.nombre_doctor || "Dr. Carlos Torres"}</span>
                         </div>
-                      )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="p-3 font-black align-middle border border-slate-300 bg-slate-100 text-slate-700 text-xs tracking-tight uppercase">
+                      OTRAS
+                    </td>
+                    <td className="p-2 border border-slate-300 text-center text-slate-400 text-xs">--</td>
+                    <td className="p-2 border border-slate-300 text-center text-slate-400 text-xs">--</td>
+                    <td className="p-2 border border-slate-300 text-center text-slate-300 font-mono text-xs">-- / -- / ----</td>
+                    <td className="p-2 border border-slate-300 text-slate-400 italic text-[11px]">(Dengue / Otras)</td>
+                    <td className="p-2 border border-slate-300 text-center text-slate-300 font-mono text-xs">--</td>
+                    <td className="p-2 border border-slate-300 text-center text-slate-300 text-xs">--</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                      {vac.via_administracion && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-400 font-medium">Vía:</span>
-                          <span className="text-slate-700">{vac.via_administracion} {vac.sitio_aplicacion ? `(${vac.sitio_aplicacion})` : ""}</span>
-                        </div>
-                      )}
-
-                      {vac.edad_aplicacion && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-400 font-medium">Edad al aplicar:</span>
-                          <span className="text-slate-700">{vac.edad_aplicacion}</span>
-                        </div>
-                      )}
-
-                      {vac.profesional_nombre && (
-                        <div className="flex justify-between border-t border-slate-100 pt-1.5 mt-1.5">
-                          <span className="text-slate-400 font-medium">Profesional:</span>
-                          <span className="font-semibold text-teal-800">{vac.profesional_nombre}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {vac.observaciones && (
-                      <p className="mt-2.5 text-[11px] text-slate-400 italic">
-                        Nota: {vac.observaciones}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* SELLO Y FIRMA MÉDICA DIGITAL */}
-            <div className="mt-12 pt-8 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
+          {/* SELLO Y FIRMA MÉDICA DIGITAL */}
+          <div className="p-6 bg-slate-50 border-t border-slate-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 flex-shrink-0">
-                  <ShieldCheck size={36} />
+                <div className="w-14 h-14 rounded-2xl bg-teal-800 text-white flex items-center justify-center font-bold text-2xl shadow-sm flex-shrink-0">
+                  <ShieldCheck size={32} className="text-emerald-300" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-extrabold text-slate-900 leading-tight">
+                  <h4 className="text-sm font-black text-slate-900 leading-tight">
                     {config?.nombre_doctor || tenant.nombre}
                   </h4>
-                  <p className="text-xs text-slate-500 font-medium">
-                    {config?.especialidad || "Especialista en Vacunación"}
+                  <p className="text-xs text-slate-600 font-medium">
+                    {config?.especialidad || "Pediatra • Infectólogo Pediatra"}
                   </p>
                   <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                    {config?.titulo_doctor || "Profesional Médico Certificado"}
+                    {config?.titulo_doctor || "Médico Certificado • Carné de Inmunización"}
                   </p>
-                  <p className="text-[10px] text-emerald-600 font-bold mt-1">
-                    ✓ Firma y Aval Médico Digital
+                  <p className="text-[11px] text-emerald-700 font-bold mt-1 inline-flex items-center gap-1">
+                    <CheckCircle2 size={13} /> Firma y Registro Sanitario Válido
                   </p>
                 </div>
               </div>
 
-              <div className="text-left sm:text-right text-xs text-slate-400 space-y-1">
-                <p>Generado a través de <strong>HubMed Health Cloud</strong></p>
-                <p>Válido como constancia de esquema de inmunización infantil y de adultos.</p>
-                <p className="font-mono text-[10px] text-slate-400">
-                  Hash de Seguridad: {paciente.token_acceso?.slice(0, 18)}...
+              <div className="text-left sm:text-right text-xs text-slate-500 space-y-1">
+                <p>Emitido electrónicamente conforme a los estándares de <strong>HubMed Health Cloud</strong>.</p>
+                <p>Válido como constancia legal de esquema de vacunación ante instituciones educativas y de salud.</p>
+                <p className="font-mono text-[10.5px] text-slate-400">
+                  Hash de Verificación: {paciente.token_acceso}
                 </p>
               </div>
             </div>
-
           </div>
 
           {/* FOOTER ACTIONS */}
-          <div className="bg-slate-50 p-6 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-slate-200 print-hidden">
+          <div className="bg-slate-100 p-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-slate-200 print-hidden">
             <span className="text-xs text-slate-500 text-center sm:text-left">
-              Para validar este carné, comparta el enlace o escanee el código oficial provisto por el consultorio.
+              Para validar o verificar la autenticidad de este carné, escanee el código QR o consulte el enlace oficial del consultorio.
             </span>
             <CarnePrintButton />
           </div>
@@ -384,11 +429,12 @@ export default async function CarneVacunalPublicPage({ params }: PageProps) {
         </div>
 
         {/* DISCLAIMER */}
-        <p className="mt-8 text-xs text-slate-400 text-center max-w-lg print-hidden">
-          Este carné digital es un documento clínico institucional emitido bajo estándares sanitarios de interoperabilidad. Conserva validez legal ante instituciones educativas y de salud.
+        <p className="mt-6 text-xs text-slate-400 text-center max-w-xl print-hidden">
+          Este carné digital es un documento clínico oficial con trazabilidad de lotes biológicos y profesionales autorizados.
         </p>
 
       </div>
     </>
   );
 }
+

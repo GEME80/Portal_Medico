@@ -198,6 +198,170 @@ export async function registrarAplicacionVacuna(
   }
 }
 
+export interface CombinadaInput {
+  paciente_id: string;
+  tipo_combinada: 'HEXAVALENTE' | 'TETRAXIM';
+  dosis_numero: '1' | '2' | '3' | 'ref1' | 'ref2';
+  nombre_comercial?: string;
+  fecha_aplicacion: string;
+  numero_lote?: string;
+  laboratorio?: string;
+  profesional_nombre?: string;
+  origen?: 'institucional' | 'externo';
+  vacuna_id?: string | null;
+  descontar_stock?: boolean;
+  observaciones?: string;
+}
+
+/**
+ * Registrar una vacuna combinada (ej. Hexavalente o Tetraxim)
+ * Poblando automáticamente las filas correspondientes en la matriz
+ */
+export async function registrarVacunaCombinada(
+  input: CombinadaInput,
+  tenantSlug?: string
+): Promise<{ success: boolean; count?: number; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const adminSupabase = createAdminClient();
+
+    // 1. Validar paciente y obtener tenant_id
+    const { data: paciente, error: pacErr } = await supabase
+      .from('pacientes')
+      .select('id, tenant_id, nombres, apellidos')
+      .eq('id', input.paciente_id)
+      .single();
+
+    if (pacErr || !paciente) throw new Error('Paciente no encontrado.');
+
+    const tenantId = paciente.tenant_id;
+    const commercialName = input.nombre_comercial?.trim() || (input.tipo_combinada === 'HEXAVALENTE' ? 'Hexaxim' : 'Tetraxim');
+
+    let rowsToInsert: any[] = [];
+
+    if (input.tipo_combinada === 'HEXAVALENTE') {
+      const dosisMap: Record<string, string> = { '1': '1ª', '2': '2ª', '3': '3ª' };
+      const edadMap: Record<string, string> = { '1': '2º Mes', '2': '4º Mes', '3': '6º Mes' };
+      const dLabel = dosisMap[input.dosis_numero] || '1ª';
+      const eLabel = edadMap[input.dosis_numero] || '2º Mes';
+
+      // Polio, Hep B, Hib, DTP
+      rowsToInsert = [
+        {
+          nombre_vacuna: `${commercialName} (Polio)`,
+          enfermedad_prevenida: 'POLIO I.M.',
+          dosis: dLabel,
+          edad_aplicacion: eLabel,
+        },
+        {
+          nombre_vacuna: `${commercialName} (Hepatitis B)`,
+          enfermedad_prevenida: 'HEPATITIS B',
+          dosis: input.dosis_numero === '1' ? '2ª' : input.dosis_numero === '2' ? '2ª' : '3ª',
+          edad_aplicacion: eLabel,
+        },
+        {
+          nombre_vacuna: `${commercialName} (Hib)`,
+          enfermedad_prevenida: 'HAEMOPHILUS INFLUENZAE TIPO B (Hib)',
+          dosis: dLabel,
+          edad_aplicacion: eLabel,
+        },
+        {
+          nombre_vacuna: `${commercialName} (DTP)`,
+          enfermedad_prevenida: 'DIFTERIA - TOS FERINA - TETANO (DTP)',
+          dosis: dLabel,
+          edad_aplicacion: eLabel,
+        },
+      ];
+    } else if (input.tipo_combinada === 'TETRAXIM') {
+      const isRef2 = input.dosis_numero === 'ref2';
+      const dLabel = isRef2 ? '2º Refuerzo' : '1er Refuerzo';
+      const eLabel = isRef2 ? '5 Años' : '1 Año después de la 3ª dosis';
+
+      // Polio, DTP
+      rowsToInsert = [
+        {
+          nombre_vacuna: `${commercialName} (Polio)`,
+          enfermedad_prevenida: 'POLIO I.M.',
+          dosis: dLabel,
+          edad_aplicacion: eLabel,
+        },
+        {
+          nombre_vacuna: `${commercialName} (DTP)`,
+          enfermedad_prevenida: 'DIFTERIA - TOS FERINA - TETANO (DTP)',
+          dosis: dLabel,
+          edad_aplicacion: eLabel,
+        },
+      ];
+    }
+
+    const payloads = rowsToInsert.map(row => ({
+      tenant_id: tenantId,
+      paciente_id: input.paciente_id,
+      vacuna_id: input.vacuna_id || null,
+      nombre_vacuna: row.nombre_vacuna,
+      enfermedad_prevenida: row.enfermedad_prevenida,
+      dosis: row.dosis,
+      edad_aplicacion: row.edad_aplicacion,
+      fecha_aplicacion: input.fecha_aplicacion,
+      numero_lote: input.numero_lote?.trim() || '',
+      laboratorio: input.laboratorio?.trim() || '',
+      via_administracion: 'Intramuscular',
+      sitio_aplicacion: 'Vasto externo muslo',
+      profesional_nombre: input.profesional_nombre?.trim() || '',
+      origen: input.origen || (input.vacuna_id ? 'institucional' : 'externo'),
+      observaciones: input.observaciones ? `${input.observaciones} (Combinada ${input.tipo_combinada})` : `Vacuna combinada ${input.tipo_combinada}`,
+    }));
+
+    const { error: insertErr } = await supabase
+      .from('aplicaciones_vacunas')
+      .insert(payloads);
+
+    if (insertErr) throw insertErr;
+
+    // Descontar stock una sola vez
+    if (input.descontar_stock && input.vacuna_id) {
+      try {
+        const { data: item } = await adminSupabase
+          .from('inventario_medico')
+          .select('id, stock_actual, nombre')
+          .eq('id', input.vacuna_id)
+          .single();
+
+        if (item) {
+          const nuevoStock = Math.max(0, (item.stock_actual || 0) - 1);
+          await adminSupabase
+            .from('inventario_medico')
+            .update({ stock_actual: nuevoStock })
+            .eq('id', input.vacuna_id);
+
+          await adminSupabase.from('movimientos_inventario').insert([{
+            tenant_id: tenantId,
+            item_id: input.vacuna_id,
+            tipo_movimiento: 'SALIDA',
+            cantidad: 1,
+            motivo: `Aplicación combinada ${input.tipo_combinada} a paciente: ${paciente.nombres} ${paciente.apellidos}`,
+            notas: `Lote: ${input.numero_lote || 'N/A'}`,
+            fecha: input.fecha_aplicacion
+          }]);
+        }
+      } catch (stockErr) {
+        console.error('Advertencia descuento inventario combinada:', stockErr);
+      }
+    }
+
+    if (tenantSlug) {
+      revalidatePath(`/${tenantSlug}/admin/pacientes/${input.paciente_id}`);
+      revalidatePath(`/${tenantSlug}/admin/inventario`);
+    }
+
+    return { success: true, count: payloads.length };
+  } catch (err: any) {
+    console.error('Error registrando vacuna combinada:', err);
+    return { success: false, error: err.message || 'Error al registrar vacuna combinada.' };
+  }
+}
+
+
 /**
  * Eliminar una aplicación de vacuna (por error de digitación)
  */

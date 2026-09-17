@@ -15,16 +15,26 @@ import {
   Package,
   Layers,
   Sparkles,
-  Info
+  Info,
+  Zap,
+  Filter,
+  CheckCircle2
 } from "lucide-react";
 import { 
   AplicacionVacuna, 
   getVacunasPaciente, 
   getInventarioVacunasTenant, 
   registrarAplicacionVacuna, 
-  eliminarAplicacionVacuna 
+  eliminarAplicacionVacuna,
+  registrarVacunaCombinada
 } from "@/lib/actions/vacunas-actions";
-import { PLANTILLAS_VACUNAS } from "@/lib/vacunas/constants";
+import { 
+  PLANTILLAS_VACUNAS, 
+  ESQUEMA_MATRIZ_CANONICO, 
+  matchAplicacionFila, 
+  getVacunasOtras, 
+  FilaEsquema 
+} from "@/lib/vacunas/constants";
 
 interface CarneVacunacionModalProps {
   isOpen: boolean;
@@ -35,6 +45,19 @@ interface CarneVacunacionModalProps {
   currentUserRole: string;
 }
 
+function formatearFechaCorta(fechaStr: string) {
+  if (!fechaStr) return "--";
+  try {
+    const parts = fechaStr.split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return fechaStr;
+  } catch (e) {
+    return fechaStr;
+  }
+}
+
 export default function CarneVacunacionModal({
   isOpen,
   onClose,
@@ -43,13 +66,14 @@ export default function CarneVacunacionModal({
   tenantId,
   currentUserRole
 }: CarneVacunacionModalProps) {
-  const [activeTab, setActiveTab] = useState<"tarjetas" | "nueva">("tarjetas");
+  const [activeTab, setActiveTab] = useState<"matriz" | "combinada" | "nueva" | "tarjetas">("matriz");
+  const [filtroMatriz, setFiltroMatriz] = useState<"todos" | "aplicadas" | "pendientes">("todos");
   const [vacunas, setVacunas] = useState<AplicacionVacuna[]>([]);
   const [loading, setLoading] = useState(true);
   const [inventario, setInventario] = useState<any[]>([]);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Form State
+  // Form State Individual
   const [selectedInventarioId, setSelectedInventarioId] = useState<string>("");
   const [descontarStock, setDescontarStock] = useState<boolean>(true);
   const [nombreVacuna, setNombreVacuna] = useState("");
@@ -61,7 +85,7 @@ export default function CarneVacunacionModal({
   const [laboratorio, setLaboratorio] = useState("");
   const [viaAdmin, setViaAdmin] = useState("Intramuscular");
   const [sitioAplicacion, setSitioAplicacion] = useState("Deltoides derecho");
-  const [profesionalNombre, setProfesionalNombre] = useState("");
+  const [profesionalNombre, setProfesionalNombre] = useState("Dr. Carlos Torres");
   const [origen, setOrigen] = useState<"institucional" | "externo">("institucional");
   const [observaciones, setObservaciones] = useState("");
   const [proximaCita, setProximaCita] = useState("");
@@ -69,6 +93,18 @@ export default function CarneVacunacionModal({
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Form State Vacuna Combinada (Hexavalente / Tetraxim)
+  const [tipoCombinada, setTipoCombinada] = useState<"HEXAVALENTE" | "TETRAXIM">("HEXAVALENTE");
+  const [dosisCombinada, setDosisCombinada] = useState<"1" | "2" | "3" | "ref1" | "ref2">("1");
+  const [nombreComercialCombinada, setNombreComercialCombinada] = useState("Hexaxim");
+  const [loteCombinada, setLoteCombinada] = useState("");
+  const [laboratorioCombinada, setLaboratorioCombinada] = useState("Sanofi Pasteur");
+  const [fechaCombinada, setFechaCombinada] = useState(new Date().toISOString().split("T")[0]);
+  const [profesionalCombinada, setProfesionalCombinada] = useState("Dr. Carlos Torres");
+  const [selectedInvCombinadaId, setSelectedInvCombinadaId] = useState<string>("");
+  const [descontarStockCombinada, setDescontarStockCombinada] = useState(true);
+  const [savingCombinada, setSavingCombinada] = useState(false);
 
   const isRecepcion = currentUserRole === "recepcion";
 
@@ -174,6 +210,64 @@ export default function CarneVacunacionModal({
     setErrorMsg("");
   };
 
+  const handleOpenRegistroFila = (fila: FilaEsquema) => {
+    setSelectedInventarioId("");
+    setNombreVacuna(fila.biologicoSugerido);
+    setEnfermedadPrevenida(fila.enfermedadPrevenida);
+    setDosis(fila.dosis);
+    setEdadAplicacion(fila.edad);
+    setNumeroLote("");
+    setLaboratorio("");
+    setFechaAplicacion(new Date().toISOString().split("T")[0]);
+    setErrorMsg("");
+    setActiveTab("nueva");
+  };
+
+  const handleSelectInvCombinada = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const invId = e.target.value;
+    setSelectedInvCombinadaId(invId);
+    if (!invId) return;
+    const item = inventario.find(i => i.id === invId);
+    if (item) {
+      setNombreComercialCombinada(item.nombre);
+      setLaboratorioCombinada(item.laboratorio || "");
+      setLoteCombinada(item.lote_activo || "");
+      setDescontarStockCombinada(true);
+    }
+  };
+
+  const handleSubmitCombinada = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingCombinada(true);
+    setErrorMsg("");
+
+    const res = await registrarVacunaCombinada({
+      paciente_id: paciente.id,
+      tipo_combinada: tipoCombinada,
+      dosis_numero: dosisCombinada,
+      nombre_comercial: nombreComercialCombinada,
+      fecha_aplicacion: fechaCombinada,
+      numero_lote: loteCombinada,
+      laboratorio: laboratorioCombinada,
+      profesional_nombre: profesionalCombinada,
+      origen: "institucional",
+      vacuna_id: selectedInvCombinadaId || null,
+      descontar_stock: descontarStockCombinada && !!selectedInvCombinadaId,
+      observaciones: `Esquema de aplicación combinada ${tipoCombinada}`
+    }, tenantSlug);
+
+    setSavingCombinada(false);
+
+    if (res.success) {
+      setSuccessMsg(`¡${tipoCombinada} registrada exitosamente! Se actualizaron las dosis en el carné.`);
+      setTimeout(() => setSuccessMsg(""), 3500);
+      setActiveTab("matriz");
+      loadData();
+    } else {
+      setErrorMsg(res.error || "No se pudo registrar la vacuna combinada.");
+    }
+  };
+
   const handleSubmitNuevaVacuna = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombreVacuna.trim()) {
@@ -209,7 +303,7 @@ export default function CarneVacunacionModal({
       setSuccessMsg("¡Vacuna registrada con éxito en el Carné Digital!");
       setTimeout(() => setSuccessMsg(""), 3000);
       resetForm();
-      setActiveTab("tarjetas");
+      setActiveTab("matriz");
       loadData();
     } else {
       setErrorMsg(res.error || "No se pudo registrar la vacuna.");
@@ -248,7 +342,7 @@ export default function CarneVacunacionModal({
       <div style={{
         background: "white",
         width: "100%",
-        maxWidth: "960px",
+        maxWidth: "1160px",
         maxHeight: "92vh",
         borderRadius: "20px",
         boxShadow: "0 25px 50px -12px rgba(0,0,0,0.3)",
@@ -260,7 +354,7 @@ export default function CarneVacunacionModal({
         
         {/* ── HEADER ── */}
         <div style={{
-          padding: "24px 32px",
+          padding: "20px 28px",
           background: "linear-gradient(135deg, #0A4D5C 0%, #083c48 100%)",
           color: "white",
           display: "flex",
@@ -271,8 +365,8 @@ export default function CarneVacunacionModal({
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             <div style={{
-              width: "46px",
-              height: "46px",
+              width: "44px",
+              height: "44px",
               borderRadius: "12px",
               background: "rgba(0, 212, 170, 0.2)",
               color: "#00D4AA",
@@ -280,12 +374,12 @@ export default function CarneVacunacionModal({
               alignItems: "center",
               justifyContent: "center"
             }}>
-              <Syringe size={26} />
+              <Syringe size={24} />
             </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, letterSpacing: "-0.02em" }}>
-                  Carné de Vacunación Digital
+                <h2 style={{ margin: 0, fontSize: "19px", fontWeight: 800, letterSpacing: "-0.02em" }}>
+                  Carné de Vacunación Pediátrica
                 </h2>
                 <span style={{
                   background: "rgba(0, 212, 170, 0.15)",
@@ -295,11 +389,11 @@ export default function CarneVacunacionModal({
                   fontSize: "11px",
                   fontWeight: 700
                 }}>
-                  Oficial
+                  Matriz Oficial
                 </span>
               </div>
-              <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>
-                Paciente: <strong>{paciente.nombres} {paciente.apellidos}</strong> • {paciente.tipo_documento} {paciente.documento}
+              <p style={{ margin: "3px 0 0 0", fontSize: "13px", color: "rgba(255,255,255,0.85)" }}>
+                Paciente: <strong>{paciente.nombres} {paciente.apellidos}</strong> • {paciente.tipo_documento} {paciente.documento} • ({vacunas.length} vacunas aplicadas)
               </p>
             </div>
           </div>
@@ -313,18 +407,18 @@ export default function CarneVacunacionModal({
                 background: "#25D366",
                 color: "white",
                 border: "none",
-                padding: "8px 14px",
-                borderRadius: "10px",
+                padding: "7px 12px",
+                borderRadius: "9px",
                 fontSize: "12px",
                 fontWeight: 700,
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
-                boxShadow: "0 2px 8px rgba(37, 211, 102, 0.3)"
+                gap: "5px",
+                boxShadow: "0 2px 6px rgba(37, 211, 102, 0.3)"
               }}
             >
-              <Share2 size={15} /> WhatsApp
+              <Share2 size={14} /> WhatsApp
             </button>
 
             <button
@@ -334,18 +428,18 @@ export default function CarneVacunacionModal({
                 background: copiedLink ? "#10b981" : "rgba(255,255,255,0.15)",
                 color: "white",
                 border: "none",
-                padding: "8px 14px",
-                borderRadius: "10px",
+                padding: "7px 12px",
+                borderRadius: "9px",
                 fontSize: "12px",
                 fontWeight: 600,
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "5px",
                 transition: "all 0.2s"
               }}
             >
-              {copiedLink ? <Check size={15} /> : <ExternalLink size={15} />}
+              {copiedLink ? <Check size={14} /> : <ExternalLink size={14} />}
               {copiedLink ? "¡Copiado!" : "Copiar Enlace"}
             </button>
 
@@ -358,13 +452,13 @@ export default function CarneVacunacionModal({
                 background: "rgba(255,255,255,0.15)",
                 color: "white",
                 textDecoration: "none",
-                padding: "8px 14px",
-                borderRadius: "10px",
+                padding: "7px 12px",
+                borderRadius: "9px",
                 fontSize: "12px",
                 fontWeight: 600,
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px"
+                gap: "5px"
               }}
             >
               Ver Carné ↗
@@ -376,90 +470,133 @@ export default function CarneVacunacionModal({
                 background: "rgba(255,255,255,0.1)",
                 border: "none",
                 color: "white",
-                width: "36px",
-                height: "36px",
-                borderRadius: "10px",
+                width: "34px",
+                height: "34px",
+                borderRadius: "9px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                marginLeft: "8px"
+                marginLeft: "4px"
               }}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
 
         {/* ── TABS BAR ── */}
         <div style={{
-          padding: "12px 32px",
+          padding: "10px 28px",
           background: "#f8fafc",
           borderBottom: "1px solid #e2e8f0",
           display: "flex",
-          gap: "12px"
+          gap: "8px",
+          overflowX: "auto"
         }}>
           <button
-            onClick={() => setActiveTab("tarjetas")}
+            onClick={() => setActiveTab("matriz")}
             style={{
-              padding: "8px 18px",
-              borderRadius: "10px",
+              padding: "7px 16px",
+              borderRadius: "9px",
               border: "none",
               fontSize: "13px",
               fontWeight: 700,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: "8px",
-              background: activeTab === "tarjetas" ? "white" : "transparent",
-              color: activeTab === "tarjetas" ? "#0A4D5C" : "#64748b",
-              boxShadow: activeTab === "tarjetas" ? "0 2px 8px rgba(0,0,0,0.06)" : "none"
+              gap: "7px",
+              background: activeTab === "matriz" ? "white" : "transparent",
+              color: activeTab === "matriz" ? "#0A4D5C" : "#64748b",
+              boxShadow: activeTab === "matriz" ? "0 2px 8px rgba(0,0,0,0.06)" : "none"
             }}
           >
-            <Layers size={16} />
-            Tarjetas Aplicadas ({vacunas.length})
+            <ShieldCheck size={16} />
+            Matriz Carné Oficial (7 Col)
           </button>
 
           <button
-            onClick={() => setActiveTab("nueva")}
+            onClick={() => setActiveTab("combinada")}
             style={{
-              padding: "8px 18px",
-              borderRadius: "10px",
+              padding: "7px 16px",
+              borderRadius: "9px",
               border: "none",
               fontSize: "13px",
               fontWeight: 700,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "7px",
+              background: activeTab === "combinada" ? "#0A4D5C" : "transparent",
+              color: activeTab === "combinada" ? "white" : "#64748b",
+              boxShadow: activeTab === "combinada" ? "0 2px 8px rgba(10, 77, 92, 0.2)" : "none"
+            }}
+          >
+            <Zap size={15} color={activeTab === "combinada" ? "#00D4AA" : "#eab308"} />
+            ⚡ Registrar Combinada (Hexa / Tetra)
+          </button>
+
+          <button
+            onClick={() => { resetForm(); setActiveTab("nueva"); }}
+            style={{
+              padding: "7px 16px",
+              borderRadius: "9px",
+              border: "none",
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
               background: activeTab === "nueva" ? "#00D4AA" : "transparent",
               color: activeTab === "nueva" ? "#0f172a" : "#64748b",
               boxShadow: activeTab === "nueva" ? "0 2px 8px rgba(0, 212, 170, 0.25)" : "none"
             }}
           >
             <Plus size={16} />
-            + Registrar Vacuna
+            + Registrar Individual
+          </button>
+
+          <button
+            onClick={() => setActiveTab("tarjetas")}
+            style={{
+              padding: "7px 16px",
+              borderRadius: "9px",
+              border: "none",
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              background: activeTab === "tarjetas" ? "white" : "transparent",
+              color: activeTab === "tarjetas" ? "#0A4D5C" : "#64748b",
+              boxShadow: activeTab === "tarjetas" ? "0 2px 8px rgba(0,0,0,0.06)" : "none"
+            }}
+          >
+            <Layers size={16} />
+            Tarjetas ({vacunas.length})
           </button>
         </div>
 
         {/* ── CONTENT BODY ── */}
-        <div style={{ padding: "28px 32px", overflowY: "auto", flex: 1, background: "#ffffff" }}>
+        <div style={{ padding: "20px 28px", overflowY: "auto", flex: 1, background: "#ffffff" }}>
           
           {successMsg && (
             <div style={{
               background: "#ecfdf5",
               border: "1px solid #10b981",
               color: "#065f46",
-              padding: "12px 18px",
-              borderRadius: "12px",
-              marginBottom: "20px",
+              padding: "10px 16px",
+              borderRadius: "10px",
+              marginBottom: "16px",
               display: "flex",
               alignItems: "center",
-              gap: "10px",
-              fontSize: "14px",
+              gap: "8px",
+              fontSize: "13px",
               fontWeight: 600
             }}>
-              <Check size={18} /> {successMsg}
+              <Check size={16} /> {successMsg}
             </div>
           )}
 
@@ -468,19 +605,579 @@ export default function CarneVacunacionModal({
               background: "#fff1f2",
               border: "1px solid #f43f5e",
               color: "#9f1239",
-              padding: "12px 18px",
-              borderRadius: "12px",
-              marginBottom: "20px",
+              padding: "10px 16px",
+              borderRadius: "10px",
+              marginBottom: "16px",
               display: "flex",
               alignItems: "center",
-              gap: "10px",
-              fontSize: "14px"
+              gap: "8px",
+              fontSize: "13px"
             }}>
-              <AlertCircle size={18} /> {errorMsg}
+              <AlertCircle size={16} /> {errorMsg}
             </div>
           )}
 
-          {/* TAB 1: TARJETAS DE VACUNACIÓN APLICADAS */}
+          {/* TAB 1: MATRIZ OFICIAL (7 COLUMNAS) */}
+          {activeTab === "matriz" && (
+            <div>
+              {loading ? (
+                <div style={{ textAlign: "center", padding: "50px 0", color: "#64748b" }}>
+                  <Syringe size={32} style={{ animation: "bounce 1s infinite", margin: "0 auto 12px", color: "#00D4AA" }} />
+                  <p>Cargando esquema vacunal...</p>
+                </div>
+              ) : (
+                (() => {
+                  const claimedIds = new Set<string>();
+                  const vacunasOtras = getVacunasOtras(vacunas, claimedIds);
+
+                  return (
+                    <div>
+                      {/* Top Action Bar / Filtros */}
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "14px",
+                        flexWrap: "wrap",
+                        gap: "10px"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b", marginRight: "4px" }}>
+                            Filtrar:
+                          </span>
+                          {(["todos", "aplicadas", "pendientes"] as const).map((f) => (
+                            <button
+                              key={f}
+                              onClick={() => setFiltroMatriz(f)}
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: "6px",
+                                border: "1px solid",
+                                borderColor: filtroMatriz === f ? "#0A4D5C" : "#cbd5e1",
+                                background: filtroMatriz === f ? "#0A4D5C" : "white",
+                                color: filtroMatriz === f ? "white" : "#475569",
+                                fontSize: "11.5px",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                                textTransform: "capitalize"
+                              }}
+                            >
+                              {f === "todos" ? "Todas las dosis" : f === "aplicadas" ? `Solo Aplicadas (${vacunas.length})` : "Solo Pendientes"}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                          <button
+                            onClick={() => setActiveTab("combinada")}
+                            style={{
+                              background: "#0A4D5C",
+                              color: "white",
+                              border: "none",
+                              padding: "6px 14px",
+                              borderRadius: "8px",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px"
+                            }}
+                          >
+                            <Zap size={14} color="#00D4AA" /> Registrar Hexavalente / Tetraxim
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 7-COLUMN TABLE */}
+                      <div style={{ overflowX: "auto", border: "1px solid #cbd5e1", borderRadius: "10px" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "12px" }}>
+                          <thead>
+                            <tr style={{ background: "#0A4D5C", color: "white" }}>
+                              <th style={{ padding: "10px", fontWeight: 800, fontSize: "11px", textTransform: "uppercase", border: "1px solid #475569", width: "22%" }}>
+                                ME PROTEGE DE
+                              </th>
+                              <th style={{ padding: "10px 8px", fontWeight: 800, fontSize: "11px", textTransform: "uppercase", border: "1px solid #475569", width: "14%", textAlign: "center" }}>
+                                EDAD
+                              </th>
+                              <th style={{ padding: "10px 8px", fontWeight: 800, fontSize: "11px", textTransform: "uppercase", border: "1px solid #475569", width: "10%", textAlign: "center" }}>
+                                DOSIS
+                              </th>
+                              <th style={{ padding: "10px 8px", fontWeight: 800, fontSize: "11px", textTransform: "uppercase", border: "1px solid #475569", width: "13%", textAlign: "center" }}>
+                                FECHA DE APLICACIÓN
+                              </th>
+                              <th style={{ padding: "10px", fontWeight: 800, fontSize: "11px", textTransform: "uppercase", border: "1px solid #475569", width: "15%" }}>
+                                NOMBRE
+                              </th>
+                              <th style={{ padding: "10px 8px", fontWeight: 800, fontSize: "11px", textTransform: "uppercase", border: "1px solid #475569", width: "12%", textAlign: "center" }}>
+                                NÚMERO DE LOTE
+                              </th>
+                              <th style={{ padding: "10px 8px", fontWeight: 800, fontSize: "11px", textTransform: "uppercase", border: "1px solid #475569", width: "14%", textAlign: "center" }}>
+                                FIRMA DEL VACUNADOR
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {ESQUEMA_MATRIZ_CANONICO.map((cat) => {
+                              // Pre-calculate applied status for filter
+                              const rowMatches = cat.filas.map(f => ({
+                                fila: f,
+                                app: matchAplicacionFila(vacunas, f, claimedIds)
+                              }));
+
+                              const filteredRows = rowMatches.filter(({ app }) => {
+                                if (filtroMatriz === "aplicadas") return !!app;
+                                if (filtroMatriz === "pendientes") return !app;
+                                return true;
+                              });
+
+                              if (filteredRows.length === 0) return null;
+
+                              return filteredRows.map(({ fila, app }, rIndex) => {
+                                const isApplied = !!app;
+
+                                return (
+                                  <tr 
+                                    key={fila.id} 
+                                    style={{
+                                      background: isApplied ? "rgba(236, 253, 245, 0.4)" : "white",
+                                      borderBottom: "1px solid #e2e8f0"
+                                    }}
+                                  >
+                                    {/* COLUMNA 1: ME PROTEGE DE */}
+                                    {rIndex === 0 && (
+                                      <td
+                                        rowSpan={filteredRows.length}
+                                        style={{
+                                          padding: "10px",
+                                          fontWeight: 800,
+                                          verticalAlign: "middle",
+                                          border: "1px solid #cbd5e1",
+                                          fontSize: "11.5px",
+                                          lineHeight: 1.3
+                                        }}
+                                        className={`${cat.badgeBg} ${cat.badgeText}`}
+                                      >
+                                        {cat.titulo}
+                                      </td>
+                                    )}
+
+                                    {/* COLUMNA 2: EDAD */}
+                                    <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center", color: "#334155", fontWeight: 600, fontSize: "11.5px" }}>
+                                      {fila.edad}
+                                    </td>
+
+                                    {/* COLUMNA 3: DOSIS */}
+                                    <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center", fontWeight: 800, color: "#0f172a" }}>
+                                      {fila.dosis}
+                                    </td>
+
+                                    {/* COLUMNA 4: FECHA DE APLICACIÓN */}
+                                    <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center", fontWeight: 700 }}>
+                                      {isApplied ? (
+                                        <span style={{ color: "#0f172a" }}>
+                                          {formatearFechaCorta(app.fecha_aplicacion)}
+                                        </span>
+                                      ) : (
+                                        <span style={{ color: "#cbd5e1", fontFamily: "monospace" }}>--/--/----</span>
+                                      )}
+                                    </td>
+
+                                    {/* COLUMNA 5: NOMBRE */}
+                                    <td style={{ padding: "8px 10px", border: "1px solid #cbd5e1" }}>
+                                      {isApplied ? (
+                                        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                                          <Check size={14} color="#10b981" />
+                                          <strong style={{ color: "#0f172a" }}>{app.nombre_vacuna}</strong>
+                                        </div>
+                                      ) : (
+                                        <span style={{ color: "#94a3b8", fontStyle: "italic", fontSize: "11px" }}>
+                                          ({fila.biologicoSugerido})
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    {/* COLUMNA 6: NÚMERO DE LOTE */}
+                                    <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center" }}>
+                                      {isApplied ? (
+                                        <span style={{
+                                          fontFamily: "monospace",
+                                          background: "#f1f5f9",
+                                          padding: "2px 6px",
+                                          borderRadius: "4px",
+                                          fontSize: "11px",
+                                          fontWeight: 700,
+                                          color: "#1e293b",
+                                          border: "1px solid #e2e8f0"
+                                        }}>
+                                          {app.numero_lote || "S/L"}
+                                        </span>
+                                      ) : (
+                                        <span style={{ color: "#cbd5e1", fontFamily: "monospace" }}>--</span>
+                                      )}
+                                    </td>
+
+                                    {/* COLUMNA 7: FIRMA DEL VACUNADOR / ACCIÓN */}
+                                    <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center" }}>
+                                      {isApplied ? (
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px" }}>
+                                          <span style={{
+                                            fontSize: "11px",
+                                            fontWeight: 700,
+                                            color: "#065f46",
+                                            background: "#d1fae5",
+                                            padding: "2px 6px",
+                                            borderRadius: "6px"
+                                          }}>
+                                            {app.profesional_nombre || "Dr. Carlos Torres"}
+                                          </span>
+                                          <button
+                                            onClick={() => handleDeleteVacuna(app.id)}
+                                            disabled={deletingId === app.id}
+                                            title="Eliminar registro"
+                                            style={{
+                                              background: "transparent",
+                                              border: "none",
+                                              color: "#ef4444",
+                                              cursor: "pointer",
+                                              padding: "3px"
+                                            }}
+                                          >
+                                            <Trash2 size={13} />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleOpenRegistroFila(fila)}
+                                          style={{
+                                            background: "#00D4AA",
+                                            color: "#0f172a",
+                                            border: "none",
+                                            padding: "4px 10px",
+                                            borderRadius: "6px",
+                                            fontSize: "11px",
+                                            fontWeight: 700,
+                                            cursor: "pointer",
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "4px",
+                                            boxShadow: "0 1px 4px rgba(0, 212, 170, 0.25)"
+                                          }}
+                                        >
+                                          <Plus size={12} /> Registrar
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              });
+                            })}
+
+                            {/* OTRAS VACUNAS */}
+                            {vacunasOtras.length > 0 && (
+                              vacunasOtras.map((otra, idx) => (
+                                <tr key={otra.id || idx} style={{ background: "rgba(236, 253, 245, 0.4)", borderBottom: "1px solid #e2e8f0" }}>
+                                  {idx === 0 && (
+                                    <td
+                                      rowSpan={vacunasOtras.length}
+                                      style={{ padding: "10px", fontWeight: 800, verticalAlign: "middle", border: "1px solid #cbd5e1", fontSize: "11.5px", background: "#f1f5f9", color: "#334155" }}
+                                    >
+                                      OTRAS
+                                    </td>
+                                  )}
+                                  <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center", color: "#334155", fontWeight: 600, fontSize: "11.5px" }}>
+                                    {otra.edad_aplicacion || "--"}
+                                  </td>
+                                  <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center", fontWeight: 800, color: "#0f172a" }}>
+                                    {otra.dosis || "Única"}
+                                  </td>
+                                  <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center", fontWeight: 700, color: "#0f172a" }}>
+                                    {formatearFechaCorta(otra.fecha_aplicacion)}
+                                  </td>
+                                  <td style={{ padding: "8px 10px", border: "1px solid #cbd5e1" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                                      <Check size={14} color="#10b981" />
+                                      <strong style={{ color: "#0f172a" }}>{otra.nombre_vacuna}</strong>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center" }}>
+                                    <span style={{ fontFamily: "monospace", background: "#f1f5f9", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: 700, color: "#1e293b", border: "1px solid #e2e8f0" }}>
+                                      {otra.numero_lote || "S/L"}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "8px", border: "1px solid #cbd5e1", textAlign: "center" }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px" }}>
+                                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "2px 6px", borderRadius: "6px" }}>
+                                        {otra.profesional_nombre || "Dr. Carlos Torres"}
+                                      </span>
+                                      <button
+                                        onClick={() => handleDeleteVacuna(otra.id)}
+                                        disabled={deletingId === otra.id}
+                                        style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", padding: "3px" }}
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: VACUNA COMBINADA (HEXAVALENTE / TETRAXIM) */}
+          {activeTab === "combinada" && (
+            <form onSubmit={handleSubmitCombinada} style={{ display: "flex", flexDirection: "column", gap: "18px", maxWidth: "700px", margin: "0 auto" }}>
+              <div style={{
+                background: "linear-gradient(135deg, #0A4D5C 0%, #0d3842 100%)",
+                color: "white",
+                padding: "16px 20px",
+                borderRadius: "14px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px"
+              }}>
+                <Zap size={28} color="#00D4AA" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800 }}>
+                    Registro Rápido de Vacuna Combinada
+                  </h3>
+                  <p style={{ margin: "3px 0 0 0", fontSize: "12px", color: "rgba(255,255,255,0.8)" }}>
+                    Aplica y completa simultáneamente Polio, Hepatitis B, Hib y DTP con 1 sola jeringa y lote.
+                  </p>
+                </div>
+              </div>
+
+              {/* Selector de Tipo de Combinada */}
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "#475569", display: "block", marginBottom: "6px" }}>
+                  Biológico Combinado *
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTipoCombinada("HEXAVALENTE");
+                      setNombreComercialCombinada("Hexaxim");
+                      setDosisCombinada("1");
+                    }}
+                    style={{
+                      padding: "12px",
+                      borderRadius: "10px",
+                      border: "2px solid",
+                      borderColor: tipoCombinada === "HEXAVALENTE" ? "#0A4D5C" : "#cbd5e1",
+                      background: tipoCombinada === "HEXAVALENTE" ? "#f0fdfa" : "white",
+                      textAlign: "left",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <strong style={{ fontSize: "13px", color: "#0f172a", display: "block" }}>
+                      💉 Hexavalente Acelular
+                    </strong>
+                    <span style={{ fontSize: "11px", color: "#64748b" }}>
+                      Hexaxim / Infanrix • Cubre Polio, Hep B, Hib, DTP
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTipoCombinada("TETRAXIM");
+                      setNombreComercialCombinada("Tetraxim");
+                      setDosisCombinada("ref1");
+                    }}
+                    style={{
+                      padding: "12px",
+                      borderRadius: "10px",
+                      border: "2px solid",
+                      borderColor: tipoCombinada === "TETRAXIM" ? "#0A4D5C" : "#cbd5e1",
+                      background: tipoCombinada === "TETRAXIM" ? "#f0fdfa" : "white",
+                      textAlign: "left",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <strong style={{ fontSize: "13px", color: "#0f172a", display: "block" }}>
+                      💉 Tetraxim (Refuerzo)
+                    </strong>
+                    <span style={{ fontSize: "11px", color: "#64748b" }}>
+                      DTP + Polio • 1er Refuerzo (18m) o 2º Refuerzo (5a)
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Selector de Dosis / Edad */}
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "#475569", display: "block", marginBottom: "6px" }}>
+                  Dosis y Momento de Aplicación *
+                </label>
+                {tipoCombinada === "HEXAVALENTE" ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                    {[
+                      { id: "1", label: "1ª Dosis (2º Mes)" },
+                      { id: "2", label: "2ª Dosis (4º Mes)" },
+                      { id: "3", label: "3ª Dosis (6º Mes)" }
+                    ].map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => setDosisCombinada(d.id as any)}
+                        style={{
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid",
+                          borderColor: dosisCombinada === d.id ? "#00D4AA" : "#cbd5e1",
+                          background: dosisCombinada === d.id ? "#0A4D5C" : "white",
+                          color: dosisCombinada === d.id ? "white" : "#334155",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    {[
+                      { id: "ref1", label: "1er Refuerzo (1 Año post 3ª / 18m)" },
+                      { id: "ref2", label: "2º Refuerzo (5 Años)" }
+                    ].map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => setDosisCombinada(d.id as any)}
+                        style={{
+                          padding: "10px",
+                          borderRadius: "8px",
+                          border: "1px solid",
+                          borderColor: dosisCombinada === d.id ? "#00D4AA" : "#cbd5e1",
+                          background: dosisCombinada === d.id ? "#0A4D5C" : "white",
+                          color: dosisCombinada === d.id ? "white" : "#334155",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Inventario Consultorio */}
+              {inventario.length > 0 && (
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "12px 16px", borderRadius: "10px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#166534", display: "block", marginBottom: "4px" }}>
+                    Vincular a Ítem de Inventario (Descuenta 1 ampolla):
+                  </label>
+                  <select
+                    value={selectedInvCombinadaId}
+                    onChange={handleSelectInvCombinada}
+                    style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #86efac", fontSize: "12.5px" }}
+                  >
+                    <option value="">-- Seleccione del inventario (Opcional) --</option>
+                    {inventario.map(inv => (
+                      <option key={inv.id} value={inv.id}>
+                        {inv.nombre} (Stock: {inv.stock_actual}) {inv.lote_activo ? `[Lote: ${inv.lote_activo}]` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Fila: Nombre Comercial, Lote, Fecha */}
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#475569", display: "block", marginBottom: "4px" }}>
+                    Nombre Comercial *
+                  </label>
+                  <input
+                    required
+                    value={nombreComercialCombinada}
+                    onChange={(e) => setNombreComercialCombinada(e.target.value)}
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#475569", display: "block", marginBottom: "4px" }}>
+                    Número de Lote *
+                  </label>
+                  <input
+                    required
+                    placeholder="Ej. A21CP633A"
+                    value={loteCombinada}
+                    onChange={(e) => setLoteCombinada(e.target.value)}
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#475569", display: "block", marginBottom: "4px" }}>
+                    Fecha de Aplicación *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={fechaCombinada}
+                    onChange={(e) => setFechaCombinada(e.target.value)}
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
+                  />
+                </div>
+              </div>
+
+              {/* Fila: Profesional / Vacunador */}
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "#475569", display: "block", marginBottom: "4px" }}>
+                  Profesional / Firma Vacunador
+                </label>
+                <input
+                  value={profesionalCombinada}
+                  onChange={(e) => setProfesionalCombinada(e.target.value)}
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
+                />
+              </div>
+
+              {/* Botones de acción */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("matriz")}
+                  style={{ padding: "9px 18px", borderRadius: "8px", border: "1px solid #cbd5e1", background: "white", fontWeight: 600, cursor: "pointer", color: "#475569" }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingCombinada}
+                  style={{
+                    padding: "9px 24px",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "#00D4AA",
+                    color: "#0f172a",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(0, 212, 170, 0.3)"
+                  }}
+                >
+                  {savingCombinada ? "Guardando Combinada..." : "⚡ Guardar Vacuna Combinada"}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* TAB 4: TARJETAS DE VACUNACIÓN APLICADAS (VISTA ALTERNATIVA) */}
           {activeTab === "tarjetas" && (
             <div>
               {loading ? (
