@@ -30,8 +30,426 @@ import {
   CheckCircle2, 
   XCircle, 
   FileText,
-  Layers
+  Layers,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
+
+interface CatalogPreset {
+  id: string;
+  nombre: string;
+  grupo: "Vacunas y Biológicos" | "Insumos y Dispositivos";
+  tipo: "v" | "i";
+  unidadMedida: string;
+  esRefrigerado: boolean;
+  temperatura: string;
+  ubicacion: string;
+  stockMinimo: number;
+  valorMayorista: string;
+  precioVenta: string;
+  enfermedad?: string;
+  viaAdmin?: string;
+  esquemaDosis?: string;
+}
+
+const CATALOGO_PRESETS: CatalogPreset[] = [
+  // ── VACUNAS PEDIÁTRICAS & ADULTOS ────────────────────────
+  {
+    id: "hexavalente",
+    nombre: "Vacuna Hexavalente Acelular (DTaP-IPV-HB-Hib)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 8,
+    valorMayorista: "185000",
+    precioVenta: "245000",
+    enfermedad: "Difteria, Tétanos, Tosferina, Polio, Hib, Hepatitis B",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "2, 4 y 6 meses"
+  },
+  {
+    id: "neumococo_13",
+    nombre: "Vacuna Neumococo Conjugada 13-Valente (Prevenar 13)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 6,
+    valorMayorista: "175000",
+    precioVenta: "235000",
+    enfermedad: "Neumonía, Meningitis, Bacteriemia y Otitis por S. pneumoniae",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "2, 4 y 12 meses"
+  },
+  {
+    id: "neumococo_15",
+    nombre: "Vacuna Neumococo 15-Valente (Vaxneuvance)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 5,
+    valorMayorista: "195000",
+    precioVenta: "255000",
+    enfermedad: "Enfermedad invasiva por Neumococo",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "2, 4 y 12 meses"
+  },
+  {
+    id: "rotavirus",
+    nombre: "Vacuna Rotavirus Monovalente / Pentavalente (Rotarix)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 5,
+    valorMayorista: "95000",
+    precioVenta: "140000",
+    enfermedad: "Gastroenteritis aguda severa por Rotavirus",
+    viaAdmin: "Oral",
+    esquemaDosis: "2 y 4 meses"
+  },
+  {
+    id: "influenza_tetra",
+    nombre: "Vacuna Influenza Tetravalente Estacional",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 10,
+    valorMayorista: "60000",
+    precioVenta: "85000",
+    enfermedad: "Influenza cepas A (H1N1, H3N2) y cepas B",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "Anual para todas las edades"
+  },
+  {
+    id: "meningococo_acwy",
+    nombre: "Vacuna Meningococo Conjugada ACWY (Menveo / Menactra)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 4,
+    valorMayorista: "210000",
+    precioVenta: "285000",
+    enfermedad: "Enfermedad meningocócica invasiva serogrupos A, C, W, Y",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "A partir de los 2 meses o dosis según edad"
+  },
+  {
+    id: "meningococo_b",
+    nombre: "Vacuna Meningococo B Recombinante (Bexsero)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 4,
+    valorMayorista: "320000",
+    precioVenta: "410000",
+    enfermedad: "Meningitis y sepsis por Neisseria meningitidis serogrupo B",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "Esquema de 2 a 3 dosis según edad"
+  },
+  {
+    id: "varicela",
+    nombre: "Vacuna Varicela Virus Vivo Atenuado (Varivax)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 5,
+    valorMayorista: "115000",
+    precioVenta: "165000",
+    enfermedad: "Infección por Virus Varicela-Zóster",
+    viaAdmin: "Subcutánea",
+    esquemaDosis: "12 meses y refuerzo a los 5 años"
+  },
+  {
+    id: "hepatitis_a",
+    nombre: "Vacuna Hepatitis A Pediátrica (Havrix / Avaxim)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 5,
+    valorMayorista: "90000",
+    precioVenta: "135000",
+    enfermedad: "Hepatitis viral tipo A",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "12 meses (dosis única o refuerzo)"
+  },
+  {
+    id: "triple_viral_srp",
+    nombre: "Vacuna Triple Viral SRP (Priorix / MMR)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 5,
+    valorMayorista: "65000",
+    precioVenta: "95000",
+    enfermedad: "Sarampión, Rubéola y Paperas (Parotiditis)",
+    viaAdmin: "Subcutánea",
+    esquemaDosis: "12 meses y 5 años"
+  },
+  {
+    id: "fiebre_amarilla",
+    nombre: "Vacuna Fiebre Amarilla Atenuada (Stamaril)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 4,
+    valorMayorista: "75000",
+    precioVenta: "110000",
+    enfermedad: "Fiebre Amarilla",
+    viaAdmin: "Subcutánea",
+    esquemaDosis: "12 meses (dosis única)"
+  },
+  {
+    id: "vph_9",
+    nombre: "Vacuna Virus del Papiloma Humano 9-Valente (Gardasil 9)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 6,
+    valorMayorista: "280000",
+    precioVenta: "360000",
+    enfermedad: "Cáncer de cuello uterino, vulva, vagina, ano y verrugas genitales",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "Desde los 9 años"
+  },
+  {
+    id: "shingrix",
+    nombre: "Vacuna Herpes Zóster Recombinante (Shingrix)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 4,
+    valorMayorista: "390000",
+    precioVenta: "490000",
+    enfermedad: "Herpes Zóster y neuralgia posherpética",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "Adultos >= 50 años (2 dosis con intervalo de 2 a 6 meses)"
+  },
+  {
+    id: "covid19_arnm",
+    nombre: "Vacuna COVID-19 ARNm Actualizada (Spikevax / Comirnaty)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 6,
+    valorMayorista: "95000",
+    precioVenta: "145000",
+    enfermedad: "Infección severa por SARS-CoV-2",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "Dosis anual de actualización"
+  },
+  {
+    id: "bcg",
+    nombre: "Vacuna BCG (Tuberculosis)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 5,
+    valorMayorista: "35000",
+    precioVenta: "55000",
+    enfermedad: "Formas graves de Tuberculosis infantil",
+    viaAdmin: "Intradérmica",
+    esquemaDosis: "Recién nacidos"
+  },
+  {
+    id: "hepb_ped",
+    nombre: "Vacuna Hepatitis B Pediátrica Monovalente",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 5,
+    valorMayorista: "30000",
+    precioVenta: "48000",
+    enfermedad: "Hepatitis B",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "Primeras 12 horas de vida"
+  },
+  {
+    id: "dtp_acelular",
+    nombre: "Vacuna DTaP / Tdap Acelular (Boostrix / Adacel)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 5,
+    valorMayorista: "85000",
+    precioVenta: "125000",
+    enfermedad: "Difteria, Tétanos y Tosferina acelular",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "Gestantes semana 26+ y refuerzo escolar"
+  },
+  {
+    id: "polio_ipv",
+    nombre: "Vacuna Polio Inactivada Inyectable (IPV)",
+    grupo: "Vacunas y Biológicos",
+    tipo: "v",
+    unidadMedida: "Dosis",
+    esRefrigerado: true,
+    temperatura: "2-8°C",
+    ubicacion: "Nevera #1",
+    stockMinimo: 5,
+    valorMayorista: "65000",
+    precioVenta: "95000",
+    enfermedad: "Poliomielitis",
+    viaAdmin: "Intramuscular",
+    esquemaDosis: "2, 4, 6 y 18 meses"
+  },
+
+  // ── INSUMOS Y DISPOSITIVOS MÉDICOS ───────────────────────
+  {
+    id: "jeringa_23g",
+    nombre: "Jeringa Desechable 23G x 1\" con aguja",
+    grupo: "Insumos y Dispositivos",
+    tipo: "i",
+    unidadMedida: "Jeringa",
+    esRefrigerado: false,
+    temperatura: "Ambiente",
+    ubicacion: "Estante Insumos A",
+    stockMinimo: 50,
+    valorMayorista: "800",
+    precioVenta: "2500"
+  },
+  {
+    id: "jeringa_1ml",
+    nombre: "Jeringa Tuberculina 1ml 25G x 5/8\"",
+    grupo: "Insumos y Dispositivos",
+    tipo: "i",
+    unidadMedida: "Jeringa",
+    esRefrigerado: false,
+    temperatura: "Ambiente",
+    ubicacion: "Estante Insumos A",
+    stockMinimo: 50,
+    valorMayorista: "900",
+    precioVenta: "2800"
+  },
+  {
+    id: "solucion_salina_500",
+    nombre: "Solución Salina Normal 0.9% (Frasco 500ml)",
+    grupo: "Insumos y Dispositivos",
+    tipo: "i",
+    unidadMedida: "Frasco",
+    esRefrigerado: false,
+    temperatura: "Ambiente",
+    ubicacion: "Estante Insumos B",
+    stockMinimo: 10,
+    valorMayorista: "6500",
+    precioVenta: "15000"
+  },
+  {
+    id: "alcohol_antiseptico",
+    nombre: "Alcohol Antiséptico 70% (Frasco 1000ml)",
+    grupo: "Insumos y Dispositivos",
+    tipo: "i",
+    unidadMedida: "Frasco",
+    esRefrigerado: false,
+    temperatura: "Ambiente",
+    ubicacion: "Estante Insumos B",
+    stockMinimo: 5,
+    valorMayorista: "12000",
+    precioVenta: "22000"
+  },
+  {
+    id: "algodon_quirurgico",
+    nombre: "Torundas de Algodón Quirúrgico (Bolsa x 500)",
+    grupo: "Insumos y Dispositivos",
+    tipo: "i",
+    unidadMedida: "Unidad",
+    esRefrigerado: false,
+    temperatura: "Ambiente",
+    ubicacion: "Estante Insumos C",
+    stockMinimo: 4,
+    valorMayorista: "8500",
+    precioVenta: "16000"
+  },
+  {
+    id: "curitas_pediatricas",
+    nombre: "Curitas Adhesivas Pediátricas (Caja x 100)",
+    grupo: "Insumos y Dispositivos",
+    tipo: "i",
+    unidadMedida: "Caja",
+    esRefrigerado: false,
+    temperatura: "Ambiente",
+    ubicacion: "Estante Insumos C",
+    stockMinimo: 5,
+    valorMayorista: "14000",
+    precioVenta: "26000"
+  },
+  {
+    id: "guantes_nitrilo_m",
+    nombre: "Guantes de Nitrilo Talla M (Caja x 100)",
+    grupo: "Insumos y Dispositivos",
+    tipo: "i",
+    unidadMedida: "Caja",
+    esRefrigerado: false,
+    temperatura: "Ambiente",
+    ubicacion: "Estante Insumos D",
+    stockMinimo: 6,
+    valorMayorista: "28000",
+    precioVenta: "45000"
+  },
+  {
+    id: "guardian_cortopunzante",
+    nombre: "Guardián Cortopunzante 2.8 Litros (Rojo Biológico)",
+    grupo: "Insumos y Dispositivos",
+    tipo: "i",
+    unidadMedida: "Unidad",
+    esRefrigerado: false,
+    temperatura: "Ambiente",
+    ubicacion: "Área de Procedimientos",
+    stockMinimo: 3,
+    valorMayorista: "18000",
+    precioVenta: "32000"
+  }
+];
 
 type EstadoStock = "ok" | "low" | "critical";
 type TipoMovimiento = "ENTRADA" | "SALIDA";
@@ -171,6 +589,15 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("all");
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>("all");
 
+  // Kardex Pagination & Server-Side State
+  const [totalMovementsCount, setTotalMovementsCount] = useState(0);
+  const [monthMovementsCount, setMonthMovementsCount] = useState(0);
+  const [movimientosList, setMovimientosList] = useState<any[]>([]);
+  const [movLoading, setMovLoading] = useState(false);
+  const [movPage, setMovPage] = useState(1);
+  const [movTipoFilter, setMovTipoFilter] = useState<"TODOS" | "ENTRADA" | "SALIDA">("TODOS");
+  const movPageSize = 25;
+
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -216,24 +643,62 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
   }, []);
 
+  const loadMovements = useCallback(async (tId: string, page: number, tipo: "TODOS" | "ENTRADA" | "SALIDA") => {
+    if (!tId) return;
+    setMovLoading(true);
+    try {
+      let query = supabase
+        .from("movimientos_inventario")
+        .select("id, tipo_movimiento, cantidad, motivo, fecha, notas, item_id, valor_unitario_cobrado", { count: "exact" })
+        .eq("tenant_id", tId)
+        .order("fecha", { ascending: false });
+
+      if (tipo !== "TODOS") {
+        query = query.eq("tipo_movimiento", tipo);
+      }
+
+      const from = (page - 1) * movPageSize;
+      const to = from + movPageSize - 1;
+      const { data, count, error } = await query.range(from, to);
+      if (error) throw error;
+
+      setMovimientosList(data || []);
+      if (count !== null) setTotalMovementsCount(count);
+    } catch (err: any) {
+      console.error("Error cargando kardex de movimientos:", err);
+      addToast("Error al cargar movimientos: " + err.message, "error");
+    } finally {
+      setMovLoading(false);
+    }
+  }, [supabase, addToast]);
+
   const loadData = async (tId: string) => {
     try {
-      const [vacsRes, catRes] = await Promise.all([
+      const currentMonthStr = today().substring(0, 7);
+      const [vacsRes, catRes, lotesRes, totalMovsRes, monthMovsRes] = await Promise.all([
         supabase.from("inventario_medico").select("*, categoria_id").eq("tenant_id", tId).order("nombre"),
-        supabase.from("categorias_inventario").select("*").eq("tenant_id", tId).order("nombre")
+        supabase.from("categorias_inventario").select("*").eq("tenant_id", tId).order("nombre"),
+        supabase.from("lotes_inventario").select("*").eq("tenant_id", tId).order("fecha_registro", { ascending: false }),
+        supabase.from("movimientos_inventario").select("id", { count: "exact", head: true }).eq("tenant_id", tId),
+        supabase.from("movimientos_inventario").select("id", { count: "exact", head: true }).eq("tenant_id", tId).gte("fecha", `${currentMonthStr}-01`).lte("fecha", `${currentMonthStr}-31`)
       ]);
 
       const vacs = vacsRes.data;
       if (vacsRes.error) throw vacsRes.error;
       
       setCategorias(catRes.data || []);
+      setTotalMovementsCount(totalMovsRes.count || 0);
+      setMonthMovementsCount(monthMovsRes.count || 0);
 
-      const enrichedVacs = await Promise.all((vacs || []).map(async (v) => {
-        const [lotsRes, movsRes] = await Promise.all([
-          supabase.from("lotes_inventario").select("*").eq("item_id", v.id).order("fecha_registro", { ascending: false }),
-          supabase.from("movimientos_inventario").select("*").eq("item_id", v.id).order("fecha", { ascending: false })
-        ]);
+      // Group lotes by item_id (O(1) lookup en memoria)
+      const lotesByItem: Record<string, any[]> = {};
+      (lotesRes.data || []).forEach(l => {
+        if (!lotesByItem[l.item_id]) lotesByItem[l.item_id] = [];
+        lotesByItem[l.item_id].push(l);
+      });
 
+      const enrichedVacs = (vacs || []).map((v) => {
+        const itemLotes = lotesByItem[v.id] || [];
         const tempStr = v.temperatura || "2-8°C";
         const isRefrig = Boolean(v.es_refrigerado) || tempStr.includes("2-8") || tempStr.includes("Refrigeración") || tempStr.includes("Congelación");
 
@@ -254,7 +719,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           unidadMedida: v.unidad_medida || "Dosis",
           descripcion: v.descripcion || "",
           loteActivo: v.lote_activo || "—",
-          lotes: (lotsRes.data || []).map(l => ({
+          lotes: itemLotes.map(l => ({
             id: l.id,
             numero: l.numero_lote,
             cantidad: l.cantidad,
@@ -265,17 +730,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             factura: l.numero_factura || "",
             fechaRegistro: l.fecha_registro || ""
           })),
-          movimientos: (movsRes.data || []).map(m => ({
-            id: m.id,
-            tipo: m.tipo_movimiento as "ENTRADA" | "SALIDA",
-            cantidad: m.cantidad,
-            motivo: m.motivo || "",
-            fecha: m.fecha || "",
-            notas: m.notas || "",
-            valorUnitarioCobrado: m.valor_unitario_cobrado
-          }))
+          movimientos: []
         };
-      }));
+      });
 
       setVacunas(enrichedVacs);
     } catch (err: any) {
@@ -315,6 +772,12 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       await loadData(tenant.id);
     });
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "movimientos" && tenantId) {
+      loadMovements(tenantId, movPage, movTipoFilter);
+    }
+  }, [activeTab, tenantId, movPage, movTipoFilter, loadMovements]);
 
   // ── CATEGORY FORM ──────────────────────────────────────────────────
   const [catForm, setCatForm] = useState({
@@ -381,6 +844,47 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     ubicacion: "Nevera #1", unidadMedida: "Dosis"
   });
 
+  const applyPreset = (presetId: string) => {
+    const preset = CATALOGO_PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+
+    let targetCatId = "";
+    if (preset.tipo === "v") {
+      const match = categorias.find(c => {
+        const pc = parseCategory(c);
+        return pc.tipo === "v" || pc.nombre.toLowerCase().includes("vacun") || pc.nombre.toLowerCase().includes("biológ");
+      });
+      if (match) targetCatId = match.id;
+    } else {
+      const match = categorias.find(c => {
+        const pc = parseCategory(c);
+        return pc.tipo === "i" || pc.nombre.toLowerCase().includes("insum") || pc.nombre.toLowerCase().includes("medicam");
+      });
+      if (match) targetCatId = match.id;
+    }
+    if (!targetCatId && categorias.length > 0) {
+      targetCatId = categorias[0].id;
+    }
+
+    setNewForm(prev => ({
+      ...prev,
+      categoria_id: targetCatId || prev.categoria_id,
+      nombre: preset.nombre,
+      unidadMedida: preset.unidadMedida,
+      esRefrigerado: preset.esRefrigerado,
+      temperatura: preset.temperatura,
+      ubicacion: preset.ubicacion,
+      stockMinimo: String(preset.stockMinimo),
+      valorMayorista: preset.valorMayorista,
+      precioVenta: preset.precioVenta,
+      enfermedad: preset.enfermedad || "",
+      viaAdmin: preset.viaAdmin || "Intramuscular",
+      esquemaDosis: preset.esquemaDosis || ""
+    }));
+
+    addToast(`Plantilla cargada: "${preset.nombre}"`);
+  };
+
   const openNewItemForCategory = (categoryId: string) => {
     setNewForm(prev => ({ ...prev, categoria_id: categoryId }));
     setActiveTab("catalogo");
@@ -392,6 +896,15 @@ export default function TenantAdminVacunasPage({ params }: Props) {
   const handleNewFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const target = e.target;
     const value = target.type === "checkbox" ? (target as HTMLInputElement).checked : target.value;
+
+    if (target.name === "nombre" && typeof value === "string") {
+      const matchPreset = CATALOGO_PRESETS.find(p => p.nombre.toLowerCase() === value.toLowerCase().trim());
+      if (matchPreset) {
+        applyPreset(matchPreset.id);
+        return;
+      }
+    }
+
     setNewForm(prev => ({ ...prev, [target.name]: value }));
   };
 
@@ -433,6 +946,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       });
       addToast(`Ítem "${newForm.nombre}" registrado correctamente.`);
       await loadData(tenantId);
+      if (activeTab === "movimientos") {
+        await loadMovements(tenantId, movPage, movTipoFilter);
+      }
     } catch (err: any) {
       console.error(err);
       addToast("Error al guardar ítem: " + err.message, "error");
@@ -507,6 +1023,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       setLoteForm({ numero: "", cantidad: "", fechaFabricacion: "", fechaVencimiento: "", proveedor: "", precioCompra: "", factura: "" });
       addToast(`Lote registrado. Stock actualizado.`);
       await loadData(tenantId);
+      if (activeTab === "movimientos") {
+        await loadMovements(tenantId, movPage, movTipoFilter);
+      }
     } catch (err: any) {
       console.error(err);
       addToast("Error al agregar lote: " + err.message, "error");
@@ -583,6 +1102,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
         addToast(`Salida de "${selectedVacuna?.nombre}" registrada correctamente.`);
       }
       await loadData(tenantId);
+      if (activeTab === "movimientos") {
+        await loadMovements(tenantId, movPage, movTipoFilter);
+      }
     } catch (err: any) {
       console.error(err);
       addToast("Error al aplicar consumo: " + err.message, "error");
@@ -619,6 +1141,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       mermaRef.current?.close();
       addToast(`Merma registrada correctamente (${mermaCantidad} unidades).`);
       await loadData(tenantId);
+      if (activeTab === "movimientos") {
+        await loadMovements(tenantId, movPage, movTipoFilter);
+      }
     } catch (err: any) {
       console.error(err);
       addToast("Error al registrar merma: " + err.message, "error");
@@ -656,15 +1181,6 @@ export default function TenantAdminVacunasPage({ params }: Props) {
     return a.nombre.localeCompare(b.nombre);
   });
 
-  // ── ALL MOVEMENTS FOR HISTORY TAB ─────────────────────────────────
-  const allMovements = vacunas.flatMap(v => 
-    v.movimientos.map(m => ({
-      ...m,
-      itemNombre: v.nombre,
-      categoriaId: v.categoria_id
-    }))
-  ).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-
   // ── DERIVED KPIs ──────────────────────────────────────────────────
   const totalItemsCount = vacunas.length;
   const totalValuation  = vacunas.reduce((sum, v) => sum + (v.stockActual * (parseFloat(v.valorMayorista || "0") || 0)), 0);
@@ -679,8 +1195,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
   const coldChainCount  = vacunas.filter(v => v.esRefrigerado).length;
   
-  const currentMonthStr = today().substring(0, 7);
-  const monthMovements  = allMovements.filter(m => m.fecha.startsWith(currentMonthStr)).length;
+  const monthMovements  = monthMovementsCount;
 
   if (loading) {
     return (
@@ -737,7 +1252,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             <button
               id="btn-nueva-vacuna"
               className="btn btn-primary"
-              style={{ padding: "8px 18px", fontSize: "13px", background: primaryColor, display: "inline-flex", alignItems: "center", gap: "6px" }}
+              style={{ padding: "8px 18px", fontSize: "13px", background: primaryColor, display: "inline-flex", alignItems: "center", gap: "6px", borderRadius: "8px" }}
               onClick={() => newVacunaRef.current?.showModal()}
             >
               <Plus size={15} /> Registrar Nuevo Ítem
@@ -746,7 +1261,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           {activeTab === "categorias" && (
             <button
               className="btn btn-primary"
-              style={{ padding: "8px 18px", fontSize: "13px", background: primaryColor, display: "inline-flex", alignItems: "center", gap: "6px" }}
+              style={{ padding: "8px 18px", fontSize: "13px", background: primaryColor, display: "inline-flex", alignItems: "center", gap: "6px", borderRadius: "8px" }}
               onClick={openNewCategoria}
             >
               <Plus size={15} /> Nueva Categoría
@@ -1113,7 +1628,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             background: activeTab === "movimientos" ? "rgba(10, 77, 92, 0.1)" : "#f1f5f9",
             color: activeTab === "movimientos" ? primaryColor : "#64748b"
           }}>
-            {allMovements.length}
+            {totalMovementsCount}
           </span>
         </button>
       </div>
@@ -1157,7 +1672,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   type="button"
                   onClick={() => setQuickFilter("all")}
                   style={{
-                    padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
+                    padding: "5px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
                     background: quickFilter === "all" ? primaryColor : "#ffffff",
                     color: quickFilter === "all" ? "#ffffff" : "#475569",
                     borderColor: quickFilter === "all" ? primaryColor : "#cbd5e1"
@@ -1169,7 +1684,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   type="button"
                   onClick={() => setQuickFilter("critical")}
                   style={{
-                    padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
+                    padding: "5px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
                     display: "inline-flex", alignItems: "center", gap: "6px",
                     background: quickFilter === "critical" ? "#ef4444" : "#ffffff",
                     color: quickFilter === "critical" ? "#ffffff" : "#dc2626",
@@ -1183,7 +1698,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   type="button"
                   onClick={() => setQuickFilter("expiring")}
                   style={{
-                    padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
+                    padding: "5px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
                     display: "inline-flex", alignItems: "center", gap: "6px",
                     background: quickFilter === "expiring" ? "#f59e0b" : "#ffffff",
                     color: quickFilter === "expiring" ? "#ffffff" : "#d97706",
@@ -1197,7 +1712,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   type="button"
                   onClick={() => setQuickFilter("refrigerated")}
                   style={{
-                    padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
+                    padding: "5px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
                     display: "inline-flex", alignItems: "center", gap: "6px",
                     background: quickFilter === "refrigerated" ? "#0891b2" : "#ffffff",
                     color: quickFilter === "refrigerated" ? "#ffffff" : "#0891b2",
@@ -1224,7 +1739,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button
                     className="btn btn-outline"
-                    style={{ padding: "5px 12px", fontSize: "12px", borderColor: primaryColor, color: primaryColor, background: "white", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                    style={{ padding: "5px 12px", fontSize: "12px", borderColor: primaryColor, color: primaryColor, background: "white", display: "inline-flex", alignItems: "center", gap: "6px", borderRadius: "8px" }}
                     onClick={() => {
                       const selectedItems = vacunas.filter(v => selectedIds.includes(v.id));
                       const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
@@ -1247,7 +1762,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   </button>
                   <button
                     className="btn btn-outline"
-                    style={{ padding: "5px 12px", fontSize: "12px", borderColor: "#cbd5e1", color: "#64748b", background: "white" }}
+                    style={{ padding: "5px 12px", fontSize: "12px", borderColor: "#cbd5e1", color: "#64748b", background: "white", borderRadius: "8px" }}
                     onClick={() => setSelectedIds([])}
                   >
                     Desmarcar Todos
@@ -1548,7 +2063,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                           style={{ 
                             background: "#f8fafc", 
                             border: "1px solid #e2e8f0", 
-                            borderRadius: "6px", 
+                            borderRadius: "8px", 
                             cursor: "pointer", 
                             padding: "5px 7px",
                             display: "flex",
@@ -1566,7 +2081,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                     </div>
                     <button 
                       className="btn btn-outline" 
-                      style={{ width: "100%", justifyContent: "center", fontSize: "12px", padding: "6px 10px", display: "inline-flex", alignItems: "center", gap: "6px", borderColor: "#cbd5e1" }} 
+                      style={{ width: "100%", justifyContent: "center", fontSize: "12px", padding: "6px 10px", display: "inline-flex", alignItems: "center", gap: "6px", borderColor: "#cbd5e1", borderRadius: "8px" }} 
                       onClick={() => openNewItemForCategory(c.id)}
                     >
                       <Plus size={13} /> Añadir Ítem
@@ -1578,65 +2093,216 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           </div>
         )}
 
-        {/* ── HISTORIAL MOVIMIENTOS TAB ────────────────────────────── */}
+        {/* ── HISTORIAL MOVIMIENTOS TAB (KARDEX PAGINADO SERVER-SIDE) ─ */}
         {activeTab === "movimientos" && (
           <div className="card" style={{ padding: "18px 20px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-              <FileText size={18} color={primaryColor} />
-              <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", margin: 0 }}>Kardex de Movimientos de Inventario</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <FileText size={18} color={primaryColor} />
+                <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", margin: 0 }}>Kardex de Movimientos de Inventario</h2>
+                <span style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: "10px",
+                  background: "rgba(10, 77, 92, 0.08)",
+                  color: primaryColor
+                }}>
+                  {totalMovementsCount} registrados
+                </span>
+              </div>
+
+              {/* Filtros de Tipo de Movimiento */}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <button
+                  type="button"
+                  onClick={() => { setMovTipoFilter("TODOS"); setMovPage(1); }}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: "1px solid",
+                    background: movTipoFilter === "TODOS" ? primaryColor : "#ffffff",
+                    color: movTipoFilter === "TODOS" ? "#ffffff" : "#475569",
+                    borderColor: movTipoFilter === "TODOS" ? primaryColor : "#cbd5e1",
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  Todos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMovTipoFilter("ENTRADA"); setMovPage(1); }}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: "1px solid",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    background: movTipoFilter === "ENTRADA" ? "#059669" : "#ffffff",
+                    color: movTipoFilter === "ENTRADA" ? "#ffffff" : "#059669",
+                    borderColor: movTipoFilter === "ENTRADA" ? "#059669" : "#a7f3d0",
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  <ArrowDownLeft size={12} /> Entradas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMovTipoFilter("SALIDA"); setMovPage(1); }}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: "1px solid",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    background: movTipoFilter === "SALIDA" ? "#dc2626" : "#ffffff",
+                    color: movTipoFilter === "SALIDA" ? "#ffffff" : "#dc2626",
+                    borderColor: movTipoFilter === "SALIDA" ? "#dc2626" : "#fca5a5",
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  <ArrowUpRight size={12} /> Salidas
+                </button>
+              </div>
             </div>
-            {allMovements.length === 0 ? (
+
+            {movLoading ? (
+              <div style={{ textAlign: "center", padding: "40px", color: "var(--slate-500)", fontSize: "13px" }}>
+                Cargando movimientos...
+              </div>
+            ) : movimientosList.length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px", color: "var(--slate-500)" }}>
-                No hay movimientos registrados en el sistema.
+                No hay movimientos registrados para este filtro.
               </div>
             ) : (
-              <div className="inv-table-wrap">
-                <table className="inv-table">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Tipo</th>
-                      <th>Ítem / Insumo</th>
-                      <th>Cantidad</th>
-                      <th>Motivo</th>
-                      <th>Notas / Paciente</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allMovements.map(m => (
-                      <tr key={m.id}>
-                        <td style={{ fontSize: "12px", color: "var(--slate-600)" }}>{m.fecha}</td>
-                        <td>
-                          <span style={{
-                            padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700,
-                            background: m.tipo === "ENTRADA" ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
-                            color: m.tipo === "ENTRADA" ? "#059669" : "#dc2626",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px"
-                          }}>
-                            {m.tipo === "ENTRADA" ? (
-                              <>
-                                <ArrowDownLeft size={12} /> ENTRADA
-                              </>
-                            ) : (
-                              <>
-                                <ArrowUpRight size={12} /> SALIDA
-                              </>
-                            )}
-                          </span>
-                        </td>
-                        <td style={{ fontWeight: 700 }}>{m.itemNombre}</td>
-                        <td style={{ fontWeight: 700, color: m.tipo === "ENTRADA" ? "#059669" : "#dc2626" }}>
-                          {m.tipo === "ENTRADA" ? `+${m.cantidad}` : `-${m.cantidad}`}
-                        </td>
-                        <td style={{ fontSize: "13px" }}>{m.motivo}</td>
-                        <td style={{ fontSize: "12px", color: "var(--slate-600)" }}>{m.notas || "—"}</td>
+              <>
+                <div className="inv-table-wrap">
+                  <table className="inv-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Ítem / Insumo</th>
+                        <th>Cantidad</th>
+                        <th>Motivo</th>
+                        <th>Notas / Paciente</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {movimientosList.map(m => {
+                        const itemObj = vacunas.find(v => v.id === m.item_id);
+                        const itemNombre = itemObj ? itemObj.nombre : (m.item_id ? `Ítem (${m.item_id.substring(0, 8)})` : "Ítem clínico");
+                        return (
+                          <tr key={m.id}>
+                            <td style={{ fontSize: "12px", color: "var(--slate-600)" }}>{m.fecha}</td>
+                            <td>
+                              <span style={{
+                                padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700,
+                                background: m.tipo_movimiento === "ENTRADA" ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
+                                color: m.tipo_movimiento === "ENTRADA" ? "#059669" : "#dc2626",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px"
+                              }}>
+                                {m.tipo_movimiento === "ENTRADA" ? (
+                                  <>
+                                    <ArrowDownLeft size={12} /> ENTRADA
+                                  </>
+                                ) : (
+                                  <>
+                                    <ArrowUpRight size={12} /> SALIDA
+                                  </>
+                                )}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: 700 }}>{itemNombre}</td>
+                            <td style={{ fontWeight: 700, color: m.tipo_movimiento === "ENTRADA" ? "#059669" : "#dc2626" }}>
+                              {m.tipo_movimiento === "ENTRADA" ? `+${m.cantidad}` : `-${m.cantidad}`}
+                            </td>
+                            <td style={{ fontSize: "13px" }}>{m.motivo}</td>
+                            <td style={{ fontSize: "12px", color: "var(--slate-600)" }}>{m.notas || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* PAGINACIÓN SERVER-SIDE */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginTop: "16px",
+                  paddingTop: "14px",
+                  borderTop: "1px solid #f1f5f9",
+                  flexWrap: "wrap",
+                  gap: "12px"
+                }}>
+                  <span style={{ fontSize: "12px", color: "var(--slate-600)" }}>
+                    Mostrando <strong>{totalMovementsCount === 0 ? 0 : (movPage - 1) * movPageSize + 1}</strong> a <strong>{Math.min(movPage * movPageSize, totalMovementsCount)}</strong> de <strong>{totalMovementsCount}</strong> movimientos
+                  </span>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <button
+                      type="button"
+                      disabled={movPage <= 1}
+                      onClick={() => setMovPage(prev => Math.max(1, prev - 1))}
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: movPage <= 1 ? "#f8fafc" : "#ffffff",
+                        color: movPage <= 1 ? "#94a3b8" : "#334155",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: movPage <= 1 ? "not-allowed" : "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}
+                    >
+                      <ChevronLeft size={14} /> Anterior
+                    </button>
+                    
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: primaryColor, padding: "0 4px" }}>
+                      Pág. {movPage} de {Math.max(1, Math.ceil(totalMovementsCount / movPageSize))}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={movPage >= Math.ceil(totalMovementsCount / movPageSize)}
+                      onClick={() => setMovPage(prev => prev + 1)}
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: movPage >= Math.ceil(totalMovementsCount / movPageSize) ? "#f8fafc" : "#ffffff",
+                        color: movPage >= Math.ceil(totalMovementsCount / movPageSize) ? "#94a3b8" : "#334155",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: movPage >= Math.ceil(totalMovementsCount / movPageSize) ? "not-allowed" : "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}
+                    >
+                      Siguiente <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -1658,6 +2324,45 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
         <form onSubmit={handleNuevaVacuna}>
           <div className="modal-body">
+            {/* PLANTILLAS INTELIGENTES */}
+            <div style={{
+              background: "rgba(10, 77, 92, 0.04)",
+              border: "1px solid rgba(10, 77, 92, 0.18)",
+              borderRadius: "10px",
+              padding: "12px 14px",
+              marginBottom: "16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px"
+            }}>
+              <label style={{ fontSize: "11px", fontWeight: 800, color: primaryColor, textTransform: "uppercase", display: "flex", alignItems: "center", gap: "6px", letterSpacing: "0.5px" }}>
+                <Sparkles size={14} color={accentColor} /> Cargar desde Plantilla / Catálogo Frecuente:
+              </label>
+              <select
+                className="form-select"
+                onChange={(e) => {
+                  if (e.target.value) {
+                    applyPreset(e.target.value);
+                    e.target.value = "";
+                  }
+                }}
+                defaultValue=""
+                style={{ fontSize: "12px", padding: "8px 12px", borderColor: "rgba(10, 77, 92, 0.25)", background: "#ffffff", fontWeight: 600, color: "#0f172a", borderRadius: "8px" }}
+              >
+                <option value="" disabled>-- Selecciona un biológico o insumo para auto-completar datos --</option>
+                <optgroup label="💉 Vacunas y Biológicos Frecuentes">
+                  {CATALOGO_PRESETS.filter(p => p.grupo === "Vacunas y Biológicos").map(p => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="🩺 Insumos y Dispositivos Médicos">
+                  {CATALOGO_PRESETS.filter(p => p.grupo === "Insumos y Dispositivos").map(p => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+
             <div className="form-grid">
               <div className="form-group full-width">
                 <label className="form-label">Categoría <span className="required-mark">*</span></label>
@@ -1672,7 +2377,21 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
               <div className="form-group">
                 <label className="form-label">Nombre del Producto / Insumo <span className="required-mark">*</span></label>
-                <input name="nombre" type="text" className="form-input" value={newForm.nombre} onChange={handleNewFormChange} required placeholder="ej: Vacuna Influenza, Amoxicilina 500mg..." />
+                <input 
+                  name="nombre" 
+                  type="text" 
+                  className="form-input" 
+                  value={newForm.nombre} 
+                  onChange={handleNewFormChange} 
+                  required 
+                  placeholder="ej: Vacuna Influenza, Amoxicilina 500mg..." 
+                  list="preset-items-datalist"
+                />
+                <datalist id="preset-items-datalist">
+                  {CATALOGO_PRESETS.map(p => (
+                    <option key={p.id} value={p.nombre} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="form-group">
@@ -1907,6 +2626,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           ) : (
             <div style={{ textAlign: "center", padding: "20px", color: "var(--slate-500)" }}>Sin lotes activos</div>
           )}
+        </div>
+        <div className="modal-footer">
+          <button type="button" className="btn btn-outline" onClick={() => comprasHistoricasRef.current?.close()}>Cerrar</button>
         </div>
       </dialog>
 
