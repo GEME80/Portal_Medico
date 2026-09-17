@@ -181,8 +181,8 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
     if (typeof window !== "undefined") {
       const url = window.location.href;
       const pacienteNombre = (paciente.nombres + " " + (paciente.apellidos || "")).trim();
-      const title = "Carné de Vacunación - " + pacienteNombre;
-      const text = "Carné Oficial de Inmunización de " + pacienteNombre + " (" + doctorNombre + "):";
+      const title = "Carnét de Vacunación - " + pacienteNombre;
+      const text = "Carnét Oficial de Inmunización de " + pacienteNombre + " (" + doctorNombre + "):";
 
       if (navigator.share) {
         try {
@@ -516,7 +516,7 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
                 textTransform: "uppercase",
                 display: "inline-block"
               }}>
-                CARNÉ OFICIAL DE INMUNIZACIÓN PEDIÁTRICA
+                CARNÉT OFICIAL DE INMUNIZACIÓN PEDIÁTRICA
               </span>
             </div>
           </div>
