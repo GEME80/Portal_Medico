@@ -190,15 +190,57 @@ export default function CarneVacunacionModal({
     // Normalizador de texto para emparejamiento clínico
     const norm = (str?: string) => (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-    // Búsqueda inteligente usando matchKeywords de la fila contra el inventario biológico
-    const invMatch = inventario.find(i => {
+    // Palabras clave primarias estrictas por categoría (Tier 1: Biológico Específico)
+    const CATEGORIA_PRIMARY_KEYWORDS: Record<string, string[]> = {
+      polio: ["polio", "ipv", "opv", "poliomielitis", "imovax"],
+      hepb: ["hepatitis b", "hepb", "hep b", "engerix"],
+      bcg: ["bcg", "tuberculosis"],
+      pentavalente: ["pentavalente", "penta", "dpt-hb-hib", "quintuple"],
+      rota: ["rotavirus", "rotateq", "rotarix"],
+      rotavirus: ["rotavirus", "rotateq", "rotarix"],
+      neumo: ["neumococo", "pcv", "pcb", "pcv13", "pcb13", "prevenar", "synflorix", "vaxneuvance"],
+      neumococo: ["neumococo", "pcv", "pcb", "pcv13", "pcb13", "prevenar", "synflorix", "vaxneuvance"],
+      influ: ["influenza", "fluarix", "vaxigrip", "fluzone", "gripe"],
+      influenza: ["influenza", "fluarix", "vaxigrip", "fluzone", "gripe"],
+      srp: ["srp", "mmr", "sarampion", "priorix", "triple viral"],
+      fa: ["fiebre amarilla", "stamaril", "amarilica"],
+      fiebre_amarilla: ["fiebre amarilla", "stamaril", "amarilica"],
+      hepa: ["hepatitis a", "hepa", "hep a", "avaxim", "havrix"],
+      vari: ["varicela", "varilrix", "varivax"],
+      varicela: ["varicela", "varilrix", "varivax"],
+      dtp: ["dtp", "dtpa", "dpt", "triple bacteriana", "boostrix"],
+      vph: ["vph", "hpv", "gardasil", "cervarix"],
+      meningo: ["meningococo", "nimenrix", "menquadfi", "bexsero"],
+      meningococo: ["meningococo", "nimenrix", "menquadfi", "bexsero"]
+    };
+
+    // 1. Tier 1: Buscar biológico específico de la categoría (evitando activar combinadas si hay monovalente)
+    const primaryKeywords = CATEGORIA_PRIMARY_KEYWORDS[fila.categoriaId] || [];
+    let invMatch = inventario.find(i => {
       const nom = norm(i.nombre);
       const enf = norm(i.enfermedad);
-      return fila.matchKeywords.some(kw => {
+      return primaryKeywords.some(kw => {
         const nkw = norm(kw);
         return nom.includes(nkw) || enf.includes(nkw);
       });
     });
+
+    let esComboMatch = false;
+
+    // 2. Tier 2: Si no hay biológico monovalente, buscar en las matchKeywords de la fila (ej. Hexa / Tetra)
+    if (!invMatch) {
+      invMatch = inventario.find(i => {
+        const nom = norm(i.nombre);
+        const enf = norm(i.enfermedad);
+        return fila.matchKeywords.some(kw => {
+          const nkw = norm(kw);
+          return nom.includes(nkw) || enf.includes(nkw);
+        });
+      });
+      if (invMatch) {
+        esComboMatch = true;
+      }
+    }
 
     if (invMatch) {
       setSelectedInventarioId(invMatch.id);
@@ -208,14 +250,17 @@ export default function CarneVacunacionModal({
       if (invMatch.via_admin) setViaAdmin(invMatch.via_admin);
       setDescontarStock(true);
 
-      const isHexa = invMatch.nombre.toLowerCase().includes("hexa");
-      const isTetra = invMatch.nombre.toLowerCase().includes("tetra") && !invMatch.nombre.toLowerCase().includes("fluarix");
-      if (isHexa) {
-        setEsCombinada(true);
-        setTipoCombinada("HEXAVALENTE");
-      } else if (isTetra) {
-        setEsCombinada(true);
-        setTipoCombinada("TETRAXIM");
+      // Solo si el match provino de Tier 2 (fallback combinado) o si el nombre es expresamente combinada
+      if (esComboMatch) {
+        const isHexa = invMatch.nombre.toLowerCase().includes("hexa");
+        const isTetra = invMatch.nombre.toLowerCase().includes("tetra") && !invMatch.nombre.toLowerCase().includes("fluarix");
+        if (isHexa) {
+          setEsCombinada(true);
+          setTipoCombinada("HEXAVALENTE");
+        } else if (isTetra) {
+          setEsCombinada(true);
+          setTipoCombinada("TETRAXIM");
+        }
       }
     }
 
@@ -260,6 +305,8 @@ export default function CarneVacunacionModal({
       } else if (isTetra) {
         setEsCombinada(true);
         setTipoCombinada("TETRAXIM");
+      } else {
+        setEsCombinada(false);
       }
     }
   };

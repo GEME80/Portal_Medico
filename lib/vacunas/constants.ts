@@ -86,7 +86,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "polio",
         edad: "2º Mes",
         dosis: "1ª",
-        biologicoSugerido: "Hexa / IPV",
+        biologicoSugerido: "Polio Inyectable (IPV)",
         matchKeywords: ["polio", "ipv", "opv", "poliomielitis", "hexa", "hexavalente", "hexaxim", "infanrix hexa"],
         dosisMatchKeywords: ["1", "1ª", "1ra", "primera", "2 mes", "2 meses", "2º mes"],
         enfermedadPrevenida: "POLIO I.M."
@@ -96,7 +96,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "polio",
         edad: "4º Mes",
         dosis: "2ª",
-        biologicoSugerido: "Hexa / IPV",
+        biologicoSugerido: "Polio Inyectable (IPV)",
         matchKeywords: ["polio", "ipv", "opv", "poliomielitis", "hexa", "hexavalente", "hexaxim", "infanrix hexa"],
         dosisMatchKeywords: ["2", "2ª", "2da", "segunda", "4 mes", "4 meses", "4º mes"],
         enfermedadPrevenida: "POLIO I.M."
@@ -106,7 +106,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "polio",
         edad: "6º Mes",
         dosis: "3ª",
-        biologicoSugerido: "Hexa / IPV",
+        biologicoSugerido: "Polio Inyectable (IPV)",
         matchKeywords: ["polio", "ipv", "opv", "poliomielitis", "hexa", "hexavalente", "hexaxim", "infanrix hexa"],
         dosisMatchKeywords: ["3", "3ª", "3ra", "tercera", "6 mes", "6 meses", "6º mes"],
         enfermedadPrevenida: "POLIO I.M."
@@ -116,7 +116,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "polio",
         edad: "1 Año después de la 3ª dosis",
         dosis: "1er Refuerzo",
-        biologicoSugerido: "Tetraxim / IPV",
+        biologicoSugerido: "Polio Inyectable (IPV)",
         matchKeywords: ["polio", "ipv", "opv", "tetraxim", "infanrix tetra"],
         dosisMatchKeywords: ["refuerzo 1", "1er refuerzo", "1 refuerzo", "ref 1", "18 meses", "1 año"],
         enfermedadPrevenida: "POLIO I.M."
@@ -126,7 +126,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "polio",
         edad: "5 Años",
         dosis: "2º Refuerzo",
-        biologicoSugerido: "Tetraxim / IPV",
+        biologicoSugerido: "Polio Inyectable (IPV)",
         matchKeywords: ["polio", "ipv", "opv", "tetraxim", "infanrix tetra"],
         dosisMatchKeywords: ["refuerzo 2", "2º refuerzo", "2do refuerzo", "2 refuerzo", "ref 2", "5 años"],
         enfermedadPrevenida: "POLIO I.M."
@@ -155,7 +155,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "hepb",
         edad: "2º Mes",
         dosis: "2ª",
-        biologicoSugerido: "Hexa / Pentavalente",
+        biologicoSugerido: "Hepatitis B Pediátrica",
         matchKeywords: ["hepatitis b", "hepb", "hep b", "hexa", "hexavalente", "hexaxim", "infanrix hexa", "pentavalente"],
         dosisMatchKeywords: ["2", "2ª", "2da", "segunda", "2 mes", "2 meses", "2º mes"],
         enfermedadPrevenida: "HEPATITIS B"
@@ -165,7 +165,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "hepb",
         edad: "6º Mes",
         dosis: "3ª",
-        biologicoSugerido: "Hexa / Pentavalente",
+        biologicoSugerido: "Hepatitis B Pediátrica",
         matchKeywords: ["hepatitis b", "hepb", "hep b", "hexa", "hexavalente", "hexaxim", "infanrix hexa", "pentavalente"],
         dosisMatchKeywords: ["3", "3ª", "3ra", "tercera", "6 mes", "6 meses", "6º mes"],
         enfermedadPrevenida: "HEPATITIS B"
@@ -184,7 +184,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "hib",
         edad: "2º Mes",
         dosis: "1ª",
-        biologicoSugerido: "Hexa / Hib",
+        biologicoSugerido: "Haemophilus Influenzae Tipo B (Hib)",
         matchKeywords: ["hib", "haemophilus", "hexa", "hexavalente", "hexaxim", "infanrix hexa", "pentavalente"],
         dosisMatchKeywords: ["1", "1ª", "1ra", "primera", "2 mes", "2 meses", "2º mes"],
         enfermedadPrevenida: "HAEMOPHILUS INFLUENZAE TIPO B (Hib)"
@@ -194,7 +194,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "hib",
         edad: "4º Mes",
         dosis: "2ª",
-        biologicoSugerido: "Hexa / Hib",
+        biologicoSugerido: "Haemophilus Influenzae Tipo B (Hib)",
         matchKeywords: ["hib", "haemophilus", "hexa", "hexavalente", "hexaxim", "infanrix hexa", "pentavalente"],
         dosisMatchKeywords: ["2", "2ª", "2da", "segunda", "4 mes", "4 meses", "4º mes"],
         enfermedadPrevenida: "HAEMOPHILUS INFLUENZAE TIPO B (Hib)"
@@ -204,7 +204,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "hib",
         edad: "6º Mes",
         dosis: "3ª",
-        biologicoSugerido: "Hexa / Hib",
+        biologicoSugerido: "Haemophilus Influenzae Tipo B (Hib)",
         matchKeywords: ["hib", "haemophilus", "hexa", "hexavalente", "hexaxim", "infanrix hexa", "pentavalente"],
         dosisMatchKeywords: ["3", "3ª", "3ra", "tercera", "6 mes", "6 meses", "6º mes"],
         enfermedadPrevenida: "HAEMOPHILUS INFLUENZAE TIPO B (Hib)"
@@ -214,7 +214,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "hib",
         edad: "1 Año después de la 3ª dosis",
         dosis: "Refuerzo",
-        biologicoSugerido: "Hib / Pentavalente",
+        biologicoSugerido: "Haemophilus Influenzae Tipo B (Hib)",
         matchKeywords: ["hib", "haemophilus", "pentavalente"],
         dosisMatchKeywords: ["refuerzo", "ref", "1er refuerzo", "18 meses", "1 año"],
         enfermedadPrevenida: "HAEMOPHILUS INFLUENZAE TIPO B (Hib)"
@@ -233,7 +233,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "dtp",
         edad: "2º Mes",
         dosis: "1ª",
-        biologicoSugerido: "Hexa / DTPa",
+        biologicoSugerido: "DTP Pediátrica",
         matchKeywords: ["dtp", "dtpa", "dpt", "difteria", "tos ferina", "tetano", "hexa", "hexavalente", "hexaxim", "infanrix hexa", "pentavalente"],
         dosisMatchKeywords: ["1", "1ª", "1ra", "primera", "2 mes", "2 meses", "2º mes"],
         enfermedadPrevenida: "DIFTERIA - TOS FERINA - TETANO (DTP)"
@@ -243,7 +243,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "dtp",
         edad: "4º Mes",
         dosis: "2ª",
-        biologicoSugerido: "Hexa / DTPa",
+        biologicoSugerido: "DTP Pediátrica",
         matchKeywords: ["dtp", "dtpa", "dpt", "difteria", "tos ferina", "tetano", "hexa", "hexavalente", "hexaxim", "infanrix hexa", "pentavalente"],
         dosisMatchKeywords: ["2", "2ª", "2da", "segunda", "4 mes", "4 meses", "4º mes"],
         enfermedadPrevenida: "DIFTERIA - TOS FERINA - TETANO (DTP)"
@@ -253,7 +253,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "dtp",
         edad: "6º Mes",
         dosis: "3ª",
-        biologicoSugerido: "Hexa / DTPa",
+        biologicoSugerido: "DTP Pediátrica",
         matchKeywords: ["dtp", "dtpa", "dpt", "difteria", "tos ferina", "tetano", "hexa", "hexavalente", "hexaxim", "infanrix hexa", "pentavalente"],
         dosisMatchKeywords: ["3", "3ª", "3ra", "tercera", "6 mes", "6 meses", "6º mes"],
         enfermedadPrevenida: "DIFTERIA - TOS FERINA - TETANO (DTP)"
@@ -263,7 +263,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "dtp",
         edad: "1 Año después de la 3ª dosis",
         dosis: "1er Refuerzo",
-        biologicoSugerido: "Tetraxim / DTPa",
+        biologicoSugerido: "DTP Pediátrica",
         matchKeywords: ["dtp", "dtpa", "dpt", "difteria", "tetraxim", "infanrix tetra"],
         dosisMatchKeywords: ["refuerzo 1", "1er refuerzo", "1 refuerzo", "ref 1", "18 meses", "1 año"],
         enfermedadPrevenida: "DIFTERIA - TOS FERINA - TETANO (DTP)"
@@ -273,7 +273,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         categoriaId: "dtp",
         edad: "5 Años",
         dosis: "2º Refuerzo",
-        biologicoSugerido: "Tetraxim / DTPa",
+        biologicoSugerido: "DTP Pediátrica",
         matchKeywords: ["dtp", "dtpa", "dpt", "difteria", "tetraxim", "infanrix tetra"],
         dosisMatchKeywords: ["refuerzo 2", "2º refuerzo", "2do refuerzo", "2 refuerzo", "ref 2", "5 años"],
         enfermedadPrevenida: "DIFTERIA - TOS FERINA - TETANO (DTP)"
