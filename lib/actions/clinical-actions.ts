@@ -4,7 +4,7 @@
 import { cookies } from 'next/headers';
 import { encryptClinicalData, decryptClinicalData } from '@/lib/crypto';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { HistoriaClinicaSchema, PacienteSchema } from '@/lib/validations/clinical';
 
 export interface ActionResponse<T = any> {
@@ -386,23 +386,28 @@ export async function getPuntosCrecimientoPaciente(pacienteId: string) {
   return merged;
 }
 
-export async function agregarMedicionHistorica(pacienteId: string, peso: string, talla: string, fecha: string) {
+export async function agregarMedicionHistorica(pacienteId: string, peso: string, talla: string, fecha: string, perimetro_cefalico?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('No autorizado');
 
   const { data: p } = await supabase.from('pacientes').select('tenant_id').eq('id', pacienteId).single();
   
+  const payload: any = {
+    tenant_id: p?.tenant_id,
+    paciente_id: pacienteId,
+    medico_id: user.id,
+    fecha_medicion: fecha,
+    peso: peso ? parseFloat(peso) : null,
+    talla: talla ? parseFloat(talla) : null,
+  };
+  if (perimetro_cefalico) {
+    payload.perimetro_cefalico = parseFloat(perimetro_cefalico);
+  }
+
   const { data, error } = await supabase
     .from('paciente_mediciones_antropometricas')
-    .insert([{
-      tenant_id: p?.tenant_id,
-      paciente_id: pacienteId,
-      medico_id: user.id,
-      fecha_medicion: fecha,
-      peso: peso,
-      talla: talla
-    }])
+    .insert([payload])
     .select()
     .single();
     
@@ -557,4 +562,104 @@ export async function getDiagnosticosMasUsados(slug: string) {
 
   return merged;
 }
+
+/**
+ * Obtener datos completos para el visor público de Curvas de Crecimiento OMS
+ * Acceso seguro mediante token_acceso del paciente
+ */
+export async function getCurvasDigitalPublico(slug: string, token: string) {
+  try {
+    const adminSupabase = createAdminClient();
+    const cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
+    const canonicalSlug = cleanSlug === 'dr-carlos-torres' ? 'dr-torres' : cleanSlug;
+
+    // 1. Resolver tenant
+    const { data: tenant, error: tErr } = await adminSupabase
+      .from('tenants')
+      .select('id, nombre, slug')
+      .or(`slug.eq.${canonicalSlug},slug.eq.${cleanSlug}`)
+      .maybeSingle();
+
+    if (tErr || !tenant) {
+      console.error('Tenant no encontrado para curvas:', slug, tErr);
+      return null;
+    }
+
+    // 2. Resolver configuración visual del portal del doctor
+    const { data: config } = await adminSupabase
+      .from('configuracion_portal')
+      .select('nombre_doctor, titulo_doctor, especialidad, logo_url, color_primario, color_acento, telefono, direccion')
+      .eq('tenant_id', tenant.id)
+      .maybeSingle();
+
+    // 3. Resolver paciente por token_acceso o id
+    const { data: paciente, error: pErr } = await adminSupabase
+      .from('pacientes')
+      .select('id, nombres, apellidos, documento, tipo_documento, fecha_nacimiento, genero, eps, tipo_sangre, telefono, token_acceso')
+      .or(`token_acceso.eq.${token},id.eq.${token}`)
+      .eq('tenant_id', tenant.id)
+      .maybeSingle();
+
+    if (pErr || !paciente) {
+      console.error('Paciente no encontrado para curvas:', token, pErr);
+      return null;
+    }
+
+    // 4. Obtener mediciones unificadas (historias clínicas + paciente_mediciones_antropometricas)
+    const { data: historias } = await adminSupabase
+      .from('historias_clinicas')
+      .select('id, created_at, signos_vitales, metadatos_atencion')
+      .eq('paciente_id', paciente.id)
+      .order('created_at', { ascending: true });
+
+    const { data: historicos } = await adminSupabase
+      .from('paciente_mediciones_antropometricas')
+      .select('*')
+      .eq('paciente_id', paciente.id)
+      .order('fecha_medicion', { ascending: true });
+
+    const merged: any[] = [];
+    if (historias) {
+      for (const h of historias) {
+        if (h.signos_vitales && (h.signos_vitales.peso || h.signos_vitales.talla)) {
+          merged.push({
+            id: h.id,
+            created_at: h.created_at,
+            fecha_medicion: h.created_at.split('T')[0],
+            signos_vitales: h.signos_vitales,
+            metadatos_atencion: h.metadatos_atencion,
+            tipo: 'consulta'
+          });
+        }
+      }
+    }
+    if (historicos) {
+      for (const m of historicos) {
+        merged.push({
+          id: m.id,
+          created_at: m.fecha_medicion,
+          fecha_medicion: m.fecha_medicion,
+          signos_vitales: { 
+            peso: m.peso, 
+            talla: m.talla, 
+            perimetro_cefalico: m.perimetro_cefalico 
+          },
+          tipo: 'registro_historico'
+        });
+      }
+    }
+    merged.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    return {
+      tenant,
+      config,
+      paciente,
+      mediciones: merged
+    };
+  } catch (err) {
+    console.error('Error obteniendo curvas digitales públicas:', err);
+    return null;
+  }
+}
+
 

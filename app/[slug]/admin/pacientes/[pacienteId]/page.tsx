@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Lock, ShieldCheck, Syringe } from "lucide-react";
-import { getHistoriasClinicas, getHistoriaClinicaDetalle, getCurvasOMS, getPuntosCrecimientoPaciente, agregarMedicionHistorica, getOmsChartCalibrations } from "@/lib/actions/clinical-actions";
-import OfficialGrowthChart from "@/components/OfficialGrowthChart";
+import { Lock, ShieldCheck, Syringe, Activity } from "lucide-react";
+import { getHistoriasClinicas, getHistoriaClinicaDetalle } from "@/lib/actions/clinical-actions";
 import CarneVacunacionModal from "./CarneVacunacionModal";
+import CurvasCrecimientoModal from "./CurvasCrecimientoModal";
 
 export default function PerfilPaciente() {
   const params = useParams();
@@ -42,96 +42,9 @@ export default function PerfilPaciente() {
   const [historiaDetails, setHistoriaDetails] = useState<any>(null);
   const [loadingHistoria, setLoadingHistoria] = useState(false);
 
-  // Curvas OMS
+  // Curvas OMS y Carné de Vacunación
   const [viewingCurvas, setViewingCurvas] = useState(false);
-  const [omsParam, setOmsParam] = useState("peso"); // peso o talla
-  const [omsData, setOmsData] = useState<any[]>([]);
-  const [omsPuntosPaciente, setOmsPuntosPaciente] = useState<any[]>([]);
-  const [loadingCurvas, setLoadingCurvas] = useState(false);
-  const [omsCalibrations, setOmsCalibrations] = useState<Record<string, any>>({});
-  
-  const [newPeso, setNewPeso] = useState("");
-  const [newTalla, setNewTalla] = useState("");
-  const [newFecha, setNewFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [savingMedicion, setSavingMedicion] = useState(false);
-
-  // Carné de Vacunación Digital
   const [viewingCarne, setViewingCarne] = useState(false);
-
-  const calcularMesesDiff = (fechaNacimiento: string, fechaAtencion: string) => {
-    if (!fechaNacimiento) return 0;
-    const nace = new Date(fechaNacimiento);
-    const ate = new Date(fechaAtencion);
-    let meses = (ate.getFullYear() - nace.getFullYear()) * 12 + ate.getMonth() - nace.getMonth();
-    if (ate.getDate() < nace.getDate()) meses--;
-    return meses < 0 ? 0 : meses;
-  };
-
-  const loadCurvas = async (param: string) => {
-    if (!paciente?.fecha_nacimiento || !paciente?.genero) return;
-    setLoadingCurvas(true);
-    const mesesActual = calcularMesesDiff(paciente.fecha_nacimiento, new Date().toISOString());
-    const esMayor24 = mesesActual > 24;
-    
-    const dbParam = param === "peso" ? "peso_edad" : param;
-    
-    const [dataOms, puntos, calibs] = await Promise.all([
-      getCurvasOMS(paciente.genero, esMayor24, dbParam),
-      getPuntosCrecimientoPaciente(pacienteId),
-      getOmsChartCalibrations()
-    ]);
-    
-    const joined = dataOms.map((ref: any) => {
-      let val = null;
-      if (dbParam === "peso_edad" || dbParam === "talla_edad" || dbParam === "longitud_edad" || dbParam === "imc_edad") {
-        const historicos = puntos.filter((p: any) => calcularMesesDiff(paciente.fecha_nacimiento, p.created_at) === Math.round(ref.eje_x));
-        if (historicos.length > 0) {
-          const sv = historicos[0].signos_vitales;
-          if (dbParam === "peso_edad") val = sv?.peso;
-          else if (dbParam === "talla_edad" || dbParam === "longitud_edad") val = sv?.talla;
-          else if (dbParam === "imc_edad" && sv?.peso && sv?.talla) {
-            const pesoKg = parseFloat(sv.peso);
-            const tallaM = parseFloat(sv.talla) / 100;
-            if (tallaM > 0) val = (pesoKg / (tallaM * tallaM)).toFixed(2);
-          }
-        }
-      } else if (dbParam === "peso_longitud" || dbParam === "peso_talla") {
-        const historicos = puntos.filter((p: any) => p.signos_vitales?.talla && Math.round(parseFloat(p.signos_vitales.talla)) === Math.round(ref.eje_x));
-        val = historicos.length > 0 ? historicos[0].signos_vitales?.peso : null;
-      }
-
-      return {
-        ...ref,
-        pacienteValor: val ? parseFloat(val) : null
-      };
-    });
-    
-    setOmsData(joined);
-    setOmsPuntosPaciente(puntos);
-    setOmsCalibrations(calibs);
-    setOmsParam(dbParam);
-    setLoadingCurvas(false);
-  };
-
-  const handleOpenCurvas = () => {
-    setViewingCurvas(true);
-    loadCurvas(omsParam);
-  };
-
-  const handleSaveMedicion = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingMedicion(true);
-    try {
-      await agregarMedicionHistorica(pacienteId, newPeso, newTalla, newFecha);
-      setNewPeso("");
-      setNewTalla("");
-      await loadCurvas(omsParam);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSavingMedicion(false);
-    }
-  };
 
   const calcularEdad = (fechaNacimiento: string) => {
     if (!fechaNacimiento) return "Edad desconocida";
@@ -284,8 +197,23 @@ export default function PerfilPaciente() {
                 <Syringe size={13} color="#00b28e" /> Carnet de Vacunación
               </button>
               {!isRecepcion && (
-                <button onClick={handleOpenCurvas} style={{ background: "#f0fdf4", border: "1px solid #00b28e", color: "#00b28e", fontWeight: "600", padding: "4px 12px", borderRadius: "16px", cursor: "pointer", fontSize: "12px" }}>
-                  Curvas OMS
+                <button
+                  onClick={() => setViewingCurvas(true)}
+                  style={{
+                    background: "#eff6ff",
+                    border: "1px solid #3b82f6",
+                    color: "#2563eb",
+                    fontWeight: "600",
+                    padding: "4px 12px",
+                    borderRadius: "16px",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px"
+                  }}
+                >
+                  <Activity size={13} color="#2563eb" /> Curvas OMS
                 </button>
               )}
               {!isEditing && (
@@ -644,74 +572,13 @@ export default function PerfilPaciente() {
         </div>
       )}
 
-      {viewingCurvas && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <div style={{ background: "white", padding: "32px", borderRadius: "16px", width: "90%", maxWidth: "900px", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
-            <button onClick={() => setViewingCurvas(false)} style={{ position: "absolute", top: "24px", right: "32px", background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#64748b" }}>&times;</button>
-            <h2 style={{ fontSize: "24px", fontWeight: "800", color: "#1e293b", margin: "0 0 24px 0" }}>Curvas de Crecimiento OMS</h2>
-            
-            <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
-              <button onClick={() => loadCurvas("peso_edad")} style={{ background: omsParam === "peso_edad" ? (paciente?.genero === 'Femenino' ? "#e879f9" : "#60a5fa") : "#e2e8f0", color: omsParam === "peso_edad" ? "white" : "#64748b", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>Peso para Edad</button>
-              
-              {paciente && calcularMesesDiff(paciente.fecha_nacimiento, new Date().toISOString()) > 24 ? (
-                <>
-                  <button onClick={() => loadCurvas("talla_edad")} style={{ background: omsParam === "talla_edad" ? (paciente?.genero === 'Femenino' ? "#e879f9" : "#60a5fa") : "#e2e8f0", color: omsParam === "talla_edad" ? "white" : "#64748b", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>Talla para Edad</button>
-                  <button onClick={() => loadCurvas("peso_talla")} style={{ background: omsParam === "peso_talla" ? (paciente?.genero === 'Femenino' ? "#e879f9" : "#60a5fa") : "#e2e8f0", color: omsParam === "peso_talla" ? "white" : "#64748b", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>Peso para Talla</button>
-                  <button onClick={() => loadCurvas("imc_edad")} style={{ background: omsParam === "imc_edad" ? (paciente?.genero === 'Femenino' ? "#e879f9" : "#60a5fa") : "#e2e8f0", color: omsParam === "imc_edad" ? "white" : "#64748b", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>IMC para Edad</button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => loadCurvas("longitud_edad")} style={{ background: omsParam === "longitud_edad" ? (paciente?.genero === 'Femenino' ? "#e879f9" : "#60a5fa") : "#e2e8f0", color: omsParam === "longitud_edad" ? "white" : "#64748b", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>Longitud para Edad</button>
-                  <button onClick={() => loadCurvas("peso_longitud")} style={{ background: omsParam === "peso_longitud" ? (paciente?.genero === 'Femenino' ? "#e879f9" : "#60a5fa") : "#e2e8f0", color: omsParam === "peso_longitud" ? "white" : "#64748b", padding: "8px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "bold" }}>Peso para Longitud</button>
-                </>
-              )}
-            </div>
-
-            {loadingCurvas ? (
-              <p>Cargando curvas...</p>
-            ) : (
-              <div style={{ width: "100%", background: "white", borderRadius: "4px", padding: "16px 0" }}>
-                {(omsParam === 'peso_talla' || omsParam === 'peso_edad' || omsParam === 'peso_longitud') && calcularMesesDiff(paciente.fecha_nacimiento, new Date().toISOString()) <= 24 ? (
-                  <OfficialGrowthChart 
-                    chartType={omsParam === 'peso_talla' || omsParam === 'peso_longitud' ? (paciente?.genero === 'M' ? 'peso_talla_ninos_0_2' : 'peso_talla_ninas_0_2') : (paciente?.genero === 'M' ? 'peso_edad_ninos_0_2' : 'peso_edad_ninas_0_2')}
-                    data={omsPuntosPaciente.map((pt: any) => ({
-                      x: (omsParam === 'peso_talla' || omsParam === 'peso_longitud') ? Number(pt.signos_vitales?.talla || 0) : calcularMesesDiff(paciente.fecha_nacimiento, pt.created_at),
-                      y: Number(pt.signos_vitales?.peso || 0),
-                      date: pt.fecha_medicion
-                    }))}
-                    dbCalibrations={omsCalibrations}
-                  />
-                ) : (
-                  <div style={{ padding: "20px", textAlign: "center", background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "8px" }}>
-                    <p style={{ color: "#64748b" }}>El modo "Gráfica Oficial en Imagen" está en fase POC. Actualmente disponible solo para <strong>Niños (0-2 años)</strong> en <strong>Peso para Talla/Longitud</strong> y <strong>Peso para Edad</strong>.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div style={{ marginTop: "32px", padding: "16px", background: "#f1f5f9", borderRadius: "12px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "16px" }}>Agregar Registro Histórico Manual</h3>
-              <form onSubmit={handleSaveMedicion} style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Fecha de Toma</label>
-                  <input type="date" required value={newFecha} onChange={e => setNewFecha(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Peso (kg)</label>
-                  <input type="number" step="0.1" required value={newPeso} onChange={e => setNewPeso(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Talla (cm)</label>
-                  <input type="number" step="0.1" required value={newTalla} onChange={e => setNewTalla(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }} />
-                </div>
-                <button type="submit" disabled={savingMedicion} style={{ background: "#00b28e", color: "white", fontWeight: "bold", border: "none", padding: "10px 24px", borderRadius: "8px", cursor: "pointer", height: "40px" }}>
-                  {savingMedicion ? "Guardando..." : "Agregar"}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL CURVAS DE CRECIMIENTO OMS */}
+      <CurvasCrecimientoModal
+        isOpen={viewingCurvas}
+        onClose={() => setViewingCurvas(false)}
+        paciente={paciente}
+        tenantSlug={tenantSlug}
+      />
 
       {/* MODAL CARNÉ DE VACUNACIÓN DIGITAL */}
       <CarneVacunacionModal

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import QRCode from "qrcode";
 import { 
   Printer, 
@@ -8,7 +9,8 @@ import {
   Check, 
   Copy, 
   ShieldCheck,
-  Download
+  Download,
+  Activity
 } from "lucide-react";
 import { 
   ESQUEMA_MATRIZ_CANONICO, 
@@ -415,6 +417,28 @@ export default function CarneDigitalClient({ data }: CarneDigitalClientProps) {
           </div>
 
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <Link
+              href={`/${tenant.slug}/crecimiento/${paciente.token_acceso}`}
+              className="action-btn-text"
+              style={{
+                background: "#f0fdf4",
+                color: "#166534",
+                border: "1px solid #bbf7d0",
+                padding: "8px 14px",
+                borderRadius: "8px",
+                fontSize: "12.5px",
+                fontWeight: 700,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px"
+              }}
+              title="Ver Curvas de Crecimiento OMS de este paciente"
+            >
+              <Activity size={15} color="#16a34a" />
+              Curvas OMS
+            </Link>
+
             <button
               onClick={handleShare}
               className="action-btn-text"
