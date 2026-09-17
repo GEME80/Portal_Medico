@@ -3,7 +3,35 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import CustomConfirmModal from "@/components/CustomConfirmModal";
-import { Package, Plus } from "lucide-react";
+import { 
+  Package, 
+  PackageOpen, 
+  PackagePlus, 
+  Plus, 
+  AlertTriangle, 
+  AlertCircle, 
+  Clock, 
+  ThermometerSnowflake, 
+  Thermometer, 
+  ArrowLeftRight, 
+  ArrowDownLeft, 
+  ArrowUpRight, 
+  Search, 
+  Download, 
+  Tag, 
+  Tags, 
+  Calendar, 
+  MapPin, 
+  Trash2, 
+  History, 
+  Pencil, 
+  ShieldCheck, 
+  Box, 
+  CheckCircle2, 
+  XCircle, 
+  FileText,
+  Layers
+} from "lucide-react";
 
 type EstadoStock = "ok" | "low" | "critical";
 type TipoMovimiento = "ENTRADA" | "SALIDA";
@@ -101,9 +129,9 @@ const parseCategory = (c: Categoria): ParsedCategoria => {
 };
 
 const stockChipLabel: Record<EstadoStock, string> = {
-  ok: "✓ OK",
-  low: "⚠️ Stock Bajo",
-  critical: "🔴 Agotado",
+  ok: "Disponible",
+  low: "Stock Bajo",
+  critical: "Agotado",
 };
 
 const stockChipClass: Record<EstadoStock, string> = {
@@ -550,7 +578,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
       usarRef.current?.close();
       if (newStock === 0) {
-        addToast(`⚠️ ${selectedVacuna?.nombre} agotado. Solicitar reabastecimiento.`, "error");
+        addToast(`${selectedVacuna?.nombre} agotado. Solicitar reabastecimiento.`, "error");
       } else {
         addToast(`Salida de "${selectedVacuna?.nombre}" registrada correctamente.`);
       }
@@ -727,117 +755,366 @@ export default function TenantAdminVacunasPage({ params }: Props) {
         </div>
       </div>
 
-      {/* ── HIGH IMPACT KPI CARDS HEADER ──────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-        
+      {/* ── COMPACT CORPORATE KPI CARDS ──────────────────────────── */}
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: "repeat(auto-fit, minmax(185px, 1fr))", 
+        gap: "12px", 
+        marginBottom: "20px" 
+      }}>
+        {/* CARD 1: TOTAL CATÁLOGO */}
         <div 
           onClick={() => { setQuickFilter("all"); setActiveTab("catalogo"); }}
-          className="kpi-card" 
-          style={{ cursor: "pointer", borderLeft: `4px solid ${primaryColor}`, transition: "transform 0.15s ease" }}
+          style={{ 
+            background: "#ffffff",
+            border: quickFilter === "all" && activeTab === "catalogo" ? `1px solid ${primaryColor}` : "1px solid #e2e8f0",
+            borderLeft: `3px solid ${primaryColor}`,
+            borderRadius: "10px",
+            padding: "12px 14px",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            minHeight: "84px"
+          }}
         >
-          <div className="kpi-card-header">
-            <div className="kpi-icon kpi-icon-teal">💊</div>
-            <span className="kpi-trend kpi-trend-neu">Catálogo</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              Total Catálogo
+            </span>
+            <div style={{ 
+              width: "28px", 
+              height: "28px", 
+              borderRadius: "6px", 
+              background: "rgba(10, 77, 92, 0.08)", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              flexShrink: 0
+            }}>
+              <Package size={15} color={primaryColor} />
+            </div>
           </div>
-          <div className="kpi-number">{totalItemsCount}</div>
-          <div className="kpi-label">Ítems Registrados</div>
-          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px", fontWeight: 600 }}>
-            Valor: ${totalValuation.toLocaleString("es-CO")}
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: "4px" }}>
+            <span style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", lineHeight: 1 }}>
+              {totalItemsCount}
+            </span>
+            <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>
+              ${totalValuation.toLocaleString("es-CO")}
+            </span>
           </div>
         </div>
 
+        {/* CARD 2: STOCK CRÍTICO */}
         <div 
           onClick={() => { setQuickFilter("critical"); setActiveTab("catalogo"); }}
-          className="kpi-card" 
-          style={{ cursor: "pointer", borderLeft: `4px solid ${criticasCount > 0 ? "#ef4444" : "#10b981"}`, transition: "transform 0.15s ease" }}
+          style={{ 
+            background: "#ffffff",
+            border: quickFilter === "critical" && activeTab === "catalogo" ? "1px solid #ef4444" : "1px solid #e2e8f0",
+            borderLeft: `3px solid ${criticasCount > 0 ? "#ef4444" : "#10b981"}`,
+            borderRadius: "10px",
+            padding: "12px 14px",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            minHeight: "84px"
+          }}
         >
-          <div className="kpi-card-header">
-            <div className="kpi-icon kpi-icon-rose">⚠️</div>
-            <span className={`kpi-trend ${criticasCount > 0 ? "kpi-trend-warn" : "kpi-trend-up"}`}>
-              {criticasCount > 0 ? "Reabastecer" : "Stock OK"}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              Stock Crítico
             </span>
+            <div style={{ 
+              width: "28px", 
+              height: "28px", 
+              borderRadius: "6px", 
+              background: criticasCount > 0 ? "rgba(239, 68, 68, 0.08)" : "rgba(16, 185, 129, 0.08)", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              flexShrink: 0
+            }}>
+              <AlertTriangle size={15} color={criticasCount > 0 ? "#ef4444" : "#10b981"} />
+            </div>
           </div>
-          <div className="kpi-number" style={{ color: criticasCount > 0 ? "#ef4444" : "inherit" }}>{criticasCount}</div>
-          <div className="kpi-label">Stock Crítico / Agotado</div>
-          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px" }}>
-            Ítems en umbral bajo
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: "4px" }}>
+            <span style={{ fontSize: "22px", fontWeight: 800, color: criticasCount > 0 ? "#ef4444" : "#0f172a", lineHeight: 1 }}>
+              {criticasCount}
+            </span>
+            <span style={{ 
+              fontSize: "10px", 
+              fontWeight: 700, 
+              padding: "2px 6px", 
+              borderRadius: "4px",
+              background: criticasCount > 0 ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
+              color: criticasCount > 0 ? "#dc2626" : "#059669"
+            }}>
+              {criticasCount > 0 ? "Agotados / Bajos" : "Stock Normal"}
+            </span>
           </div>
         </div>
 
+        {/* CARD 3: VENCIMIENTOS */}
         <div 
           onClick={() => { setQuickFilter("expiring"); setActiveTab("catalogo"); }}
-          className="kpi-card" 
-          style={{ cursor: "pointer", borderLeft: `4px solid ${expiringCount > 0 ? "#f59e0b" : "#3b82f6"}`, transition: "transform 0.15s ease" }}
+          style={{ 
+            background: "#ffffff",
+            border: quickFilter === "expiring" && activeTab === "catalogo" ? "1px solid #f59e0b" : "1px solid #e2e8f0",
+            borderLeft: `3px solid ${expiringCount > 0 ? "#f59e0b" : "#3b82f6"}`,
+            borderRadius: "10px",
+            padding: "12px 14px",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            minHeight: "84px"
+          }}
         >
-          <div className="kpi-card-header">
-            <div className="kpi-icon kpi-icon-amber">⏰</div>
-            <span className={`kpi-trend ${expiringCount > 0 ? "kpi-trend-warn" : "kpi-trend-neu"}`}>
-              {expiringCount > 0 ? "Atención" : "Al día"}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              Próximos a Vencer
+            </span>
+            <div style={{ 
+              width: "28px", 
+              height: "28px", 
+              borderRadius: "6px", 
+              background: expiringCount > 0 ? "rgba(245, 158, 11, 0.1)" : "rgba(59, 130, 246, 0.08)", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              flexShrink: 0
+            }}>
+              <Clock size={15} color={expiringCount > 0 ? "#d97706" : "#3b82f6"} />
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: "4px" }}>
+            <span style={{ fontSize: "22px", fontWeight: 800, color: expiringCount > 0 ? "#d97706" : "#0f172a", lineHeight: 1 }}>
+              {expiringCount}
+            </span>
+            <span style={{ 
+              fontSize: "10px", 
+              fontWeight: 700, 
+              padding: "2px 6px", 
+              borderRadius: "4px",
+              background: expiringCount > 0 ? "rgba(245, 158, 11, 0.1)" : "rgba(59, 130, 246, 0.08)",
+              color: expiringCount > 0 ? "#b45309" : "#2563eb"
+            }}>
+              {expiringCount > 0 ? "≤ 30 días" : "Al día"}
             </span>
           </div>
-          <div className="kpi-number" style={{ color: expiringCount > 0 ? "#d97706" : "inherit" }}>{expiringCount}</div>
-          <div className="kpi-label">Vencimientos (≤ 30 días)</div>
-          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px" }}>
-            Lotes próximos a vencer
-          </div>
         </div>
 
+        {/* CARD 4: CADENA DE FRÍO */}
         <div 
           onClick={() => { setQuickFilter("refrigerated"); setActiveTab("catalogo"); }}
-          className="kpi-card" 
-          style={{ cursor: "pointer", borderLeft: `4px solid #06b6d4`, transition: "transform 0.15s ease" }}
+          style={{ 
+            background: "#ffffff",
+            border: quickFilter === "refrigerated" && activeTab === "catalogo" ? "1px solid #06b6d4" : "1px solid #e2e8f0",
+            borderLeft: "3px solid #06b6d4",
+            borderRadius: "10px",
+            padding: "12px 14px",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            minHeight: "84px"
+          }}
         >
-          <div className="kpi-card-header">
-            <div className="kpi-icon" style={{ background: "rgba(6, 182, 212, 0.1)", color: "#0891b2" }}>❄️</div>
-            <span className="kpi-trend kpi-trend-neu">Frío 2-8°C</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              Cadena de Frío
+            </span>
+            <div style={{ 
+              width: "28px", 
+              height: "28px", 
+              borderRadius: "6px", 
+              background: "rgba(6, 182, 212, 0.1)", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              flexShrink: 0
+            }}>
+              <ThermometerSnowflake size={15} color="#0891b2" />
+            </div>
           </div>
-          <div className="kpi-number" style={{ color: "#0891b2" }}>{coldChainCount}</div>
-          <div className="kpi-label">Cadena de Frío</div>
-          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px" }}>
-            Biológicos y Vacunas
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: "4px" }}>
+            <span style={{ fontSize: "22px", fontWeight: 800, color: "#0891b2", lineHeight: 1 }}>
+              {coldChainCount}
+            </span>
+            <span style={{ 
+              fontSize: "10px", 
+              fontWeight: 700, 
+              padding: "2px 6px", 
+              borderRadius: "4px",
+              background: "rgba(6, 182, 212, 0.1)",
+              color: "#0891b2"
+            }}>
+              2°C a 8°C
+            </span>
           </div>
         </div>
 
+        {/* CARD 5: KARDEX MOVIMIENTOS */}
         <div 
           onClick={() => setActiveTab("movimientos")}
-          className="kpi-card" 
-          style={{ cursor: "pointer", borderLeft: `4px solid ${accentColor}`, transition: "transform 0.15s ease" }}
+          style={{ 
+            background: "#ffffff",
+            border: activeTab === "movimientos" ? `1px solid ${accentColor}` : "1px solid #e2e8f0",
+            borderLeft: `3px solid ${accentColor}`,
+            borderRadius: "10px",
+            padding: "12px 14px",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            minHeight: "84px"
+          }}
         >
-          <div className="kpi-card-header">
-            <div className="kpi-icon kpi-icon-emerald">📜</div>
-            <span className="kpi-trend kpi-trend-neu">Este Mes</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              Movimientos Kardex
+            </span>
+            <div style={{ 
+              width: "28px", 
+              height: "28px", 
+              borderRadius: "6px", 
+              background: "rgba(0, 212, 170, 0.1)", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              flexShrink: 0
+            }}>
+              <ArrowLeftRight size={15} color="#00a882" />
+            </div>
           </div>
-          <div className="kpi-number">{monthMovements}</div>
-          <div className="kpi-label">Movimientos Registrados</div>
-          <div style={{ fontSize: "11px", color: "var(--slate-500)", marginTop: "4px" }}>
-            Entradas, salidas y mermas
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: "4px" }}>
+            <span style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", lineHeight: 1 }}>
+              {monthMovements}
+            </span>
+            <span style={{ 
+              fontSize: "10px", 
+              fontWeight: 700, 
+              padding: "2px 6px", 
+              borderRadius: "4px",
+              background: "rgba(0, 212, 170, 0.1)",
+              color: "#00a882"
+            }}>
+              Este Mes
+            </span>
           </div>
         </div>
-
       </div>
 
       {/* ── MAIN TABS NAV ─────────────────────────────────────────── */}
-      <div className="admin-tabs" style={{ marginBottom: "20px" }}>
+      <div style={{ 
+        display: "flex", 
+        gap: "4px", 
+        borderBottom: "1px solid #e2e8f0", 
+        marginBottom: "18px" 
+      }}>
         <button 
           className={`tab-btn ${activeTab === "catalogo" ? "active" : ""}`} 
           onClick={() => setActiveTab("catalogo")}
-          style={{ padding: "12px 18px", background: "none", border: "none", borderBottom: activeTab === "catalogo" ? `3px solid ${primaryColor}` : "3px solid transparent", color: activeTab === "catalogo" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "catalogo" ? 700 : 500, cursor: "pointer" }}
+          style={{ 
+            display: "inline-flex", 
+            alignItems: "center", 
+            gap: "8px",
+            padding: "10px 16px", 
+            background: "none", 
+            border: "none", 
+            borderBottom: activeTab === "catalogo" ? `2px solid ${primaryColor}` : "2px solid transparent", 
+            color: activeTab === "catalogo" ? primaryColor : "#64748b", 
+            fontWeight: activeTab === "catalogo" ? 700 : 500, 
+            fontSize: "13px",
+            cursor: "pointer",
+            transition: "all 0.15s ease"
+          }}
         >
-          📦 Catálogo de Ítems ({filtered.length})
+          <Package size={15} />
+          <span>Catálogo de Ítems</span>
+          <span style={{
+            fontSize: "11px",
+            fontWeight: 700,
+            padding: "1px 6px",
+            borderRadius: "10px",
+            background: activeTab === "catalogo" ? "rgba(10, 77, 92, 0.1)" : "#f1f5f9",
+            color: activeTab === "catalogo" ? primaryColor : "#64748b"
+          }}>
+            {filtered.length}
+          </span>
         </button>
         <button 
           className={`tab-btn ${activeTab === "categorias" ? "active" : ""}`} 
           onClick={() => setActiveTab("categorias")}
-          style={{ padding: "12px 18px", background: "none", border: "none", borderBottom: activeTab === "categorias" ? `3px solid ${primaryColor}` : "3px solid transparent", color: activeTab === "categorias" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "categorias" ? 700 : 500, cursor: "pointer" }}
+          style={{ 
+            display: "inline-flex", 
+            alignItems: "center", 
+            gap: "8px",
+            padding: "10px 16px", 
+            background: "none", 
+            border: "none", 
+            borderBottom: activeTab === "categorias" ? `2px solid ${primaryColor}` : "2px solid transparent", 
+            color: activeTab === "categorias" ? primaryColor : "#64748b", 
+            fontWeight: activeTab === "categorias" ? 700 : 500, 
+            fontSize: "13px",
+            cursor: "pointer",
+            transition: "all 0.15s ease"
+          }}
         >
-          🏷️ Categorías ({categorias.length})
+          <Tags size={15} />
+          <span>Categorías</span>
+          <span style={{
+            fontSize: "11px",
+            fontWeight: 700,
+            padding: "1px 6px",
+            borderRadius: "10px",
+            background: activeTab === "categorias" ? "rgba(10, 77, 92, 0.1)" : "#f1f5f9",
+            color: activeTab === "categorias" ? primaryColor : "#64748b"
+          }}>
+            {categorias.length}
+          </span>
         </button>
         <button 
           className={`tab-btn ${activeTab === "movimientos" ? "active" : ""}`} 
           onClick={() => setActiveTab("movimientos")}
-          style={{ padding: "12px 18px", background: "none", border: "none", borderBottom: activeTab === "movimientos" ? `3px solid ${primaryColor}` : "3px solid transparent", color: activeTab === "movimientos" ? primaryColor : "var(--slate-500)", fontWeight: activeTab === "movimientos" ? 700 : 500, cursor: "pointer" }}
+          style={{ 
+            display: "inline-flex", 
+            alignItems: "center", 
+            gap: "8px",
+            padding: "10px 16px", 
+            background: "none", 
+            border: "none", 
+            borderBottom: activeTab === "movimientos" ? `2px solid ${primaryColor}` : "2px solid transparent", 
+            color: activeTab === "movimientos" ? primaryColor : "#64748b", 
+            fontWeight: activeTab === "movimientos" ? 700 : 500, 
+            fontSize: "13px",
+            cursor: "pointer",
+            transition: "all 0.15s ease"
+          }}
         >
-          📜 Historial de Movimientos ({allMovements.length})
+          <ArrowLeftRight size={15} />
+          <span>Historial de Movimientos</span>
+          <span style={{
+            fontSize: "11px",
+            fontWeight: 700,
+            padding: "1px 6px",
+            borderRadius: "10px",
+            background: activeTab === "movimientos" ? "rgba(10, 77, 92, 0.1)" : "#f1f5f9",
+            color: activeTab === "movimientos" ? primaryColor : "#64748b"
+          }}>
+            {allMovements.length}
+          </span>
         </button>
       </div>
 
@@ -845,16 +1122,17 @@ export default function TenantAdminVacunasPage({ params }: Props) {
         {activeTab === "catalogo" && (
           <>
             {/* ── FILTER BAR & QUICK PILLS ─────────────────────────── */}
-            <div className="card" style={{ padding: "16px 20px", marginBottom: "20px" }}>
-              <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
-                <div style={{ flex: 1, minWidth: "260px" }}>
+            <div className="card" style={{ padding: "14px 18px", marginBottom: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+                <div style={{ flex: 1, minWidth: "260px", position: "relative" }}>
+                  <Search size={15} color="#94a3b8" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
                   <input
                     type="search"
-                    placeholder="🔍 Buscar por nombre de ítem o número de lote..."
+                    placeholder="Buscar por nombre de ítem, laboratorio o lote..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     className="form-input"
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", paddingLeft: "36px", fontSize: "13px" }}
                   />
                 </div>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
@@ -874,15 +1152,15 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               </div>
 
               {/* QUICK PILLS */}
-              <div style={{ display: "flex", gap: "8px", marginTop: "14px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap", alignItems: "center" }}>
                 <button
                   type="button"
                   onClick={() => setQuickFilter("all")}
                   style={{
-                    padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700, cursor: "pointer", border: "1px solid",
-                    background: quickFilter === "all" ? primaryColor : "white",
-                    color: quickFilter === "all" ? "white" : "var(--slate-600)",
-                    borderColor: quickFilter === "all" ? primaryColor : "var(--slate-200)"
+                    padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
+                    background: quickFilter === "all" ? primaryColor : "#ffffff",
+                    color: quickFilter === "all" ? "#ffffff" : "#475569",
+                    borderColor: quickFilter === "all" ? primaryColor : "#cbd5e1"
                   }}
                 >
                   Todos ({vacunas.length})
@@ -891,37 +1169,43 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                   type="button"
                   onClick={() => setQuickFilter("critical")}
                   style={{
-                    padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700, cursor: "pointer", border: "1px solid",
-                    background: quickFilter === "critical" ? "#ef4444" : "white",
-                    color: quickFilter === "critical" ? "white" : "#dc2626",
+                    padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
+                    display: "inline-flex", alignItems: "center", gap: "6px",
+                    background: quickFilter === "critical" ? "#ef4444" : "#ffffff",
+                    color: quickFilter === "critical" ? "#ffffff" : "#dc2626",
                     borderColor: quickFilter === "critical" ? "#ef4444" : "#fca5a5"
                   }}
                 >
-                  🔴 Críticos / Agotados ({criticasCount})
+                  <AlertCircle size={13} />
+                  <span>Críticos / Agotados ({criticasCount})</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickFilter("expiring")}
                   style={{
-                    padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700, cursor: "pointer", border: "1px solid",
-                    background: quickFilter === "expiring" ? "#f59e0b" : "white",
-                    color: quickFilter === "expiring" ? "white" : "#d97706",
+                    padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
+                    display: "inline-flex", alignItems: "center", gap: "6px",
+                    background: quickFilter === "expiring" ? "#f59e0b" : "#ffffff",
+                    color: quickFilter === "expiring" ? "#ffffff" : "#d97706",
                     borderColor: quickFilter === "expiring" ? "#f59e0b" : "#fcd34d"
                   }}
                 >
-                  ⏰ Próximos a Vencer ({expiringCount})
+                  <Clock size={13} />
+                  <span>Próximos a Vencer ({expiringCount})</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickFilter("refrigerated")}
                   style={{
-                    padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700, cursor: "pointer", border: "1px solid",
-                    background: quickFilter === "refrigerated" ? "#0891b2" : "white",
-                    color: quickFilter === "refrigerated" ? "white" : "#0891b2",
+                    padding: "5px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "1px solid",
+                    display: "inline-flex", alignItems: "center", gap: "6px",
+                    background: quickFilter === "refrigerated" ? "#0891b2" : "#ffffff",
+                    color: quickFilter === "refrigerated" ? "#ffffff" : "#0891b2",
                     borderColor: quickFilter === "refrigerated" ? "#0891b2" : "#a5f3fc"
                   }}
                 >
-                  ❄️ Cadena de Frío ({coldChainCount})
+                  <ThermometerSnowflake size={13} />
+                  <span>Cadena de Frío ({coldChainCount})</span>
                 </button>
               </div>
             </div>
@@ -930,17 +1214,17 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             {selectedIds.length > 0 && (
               <div style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "12px 20px", background: "rgba(10, 77, 92, 0.05)",
-                border: `1px dashed ${primaryColor}`, borderRadius: "12px", marginBottom: "16px",
-                gap: "16px", flexWrap: "wrap"
+                padding: "10px 16px", background: "rgba(10, 77, 92, 0.04)",
+                border: `1px solid ${primaryColor}40`, borderRadius: "8px", marginBottom: "14px",
+                gap: "12px", flexWrap: "wrap"
               }}>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: primaryColor }}>
-                  Seleccionados: {selectedIds.length} ítems
+                <span style={{ fontSize: "12px", fontWeight: 600, color: primaryColor }}>
+                  Seleccionados: <strong>{selectedIds.length}</strong> ítems
                 </span>
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div style={{ display: "flex", gap: "8px" }}>
                   <button
                     className="btn btn-outline"
-                    style={{ padding: "6px 12px", fontSize: "12px", borderColor: primaryColor, color: primaryColor, background: "white" }}
+                    style={{ padding: "5px 12px", fontSize: "12px", borderColor: primaryColor, color: primaryColor, background: "white", display: "inline-flex", alignItems: "center", gap: "6px" }}
                     onClick={() => {
                       const selectedItems = vacunas.filter(v => selectedIds.includes(v.id));
                       const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
@@ -959,11 +1243,11 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                       document.body.removeChild(link);
                     }}
                   >
-                    📥 Exportar Selección (CSV)
+                    <Download size={13} /> Exportar Selección (CSV)
                   </button>
                   <button
                     className="btn btn-outline"
-                    style={{ padding: "6px 12px", fontSize: "12px", borderColor: "#ef4444", color: "#ef4444", background: "white" }}
+                    style={{ padding: "5px 12px", fontSize: "12px", borderColor: "#cbd5e1", color: "#64748b", background: "white" }}
                     onClick={() => setSelectedIds([])}
                   >
                     Desmarcar Todos
@@ -975,10 +1259,21 @@ export default function TenantAdminVacunasPage({ params }: Props) {
             {/* INVENTORY TABLE */}
             <div className="inv-table-wrap">
               {filtered.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-state-icon">💊</div>
-                  <div className="empty-state-title">No se encontraron ítems</div>
-                  <div className="empty-state-sub">
+                <div className="empty-state" style={{ padding: "40px 20px" }}>
+                  <div style={{
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "50%",
+                    background: "#f1f5f9",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 12px"
+                  }}>
+                    <PackageOpen size={24} color="#94a3b8" />
+                  </div>
+                  <div className="empty-state-title" style={{ fontSize: "15px", fontWeight: 700, color: "#1e293b" }}>No se encontraron ítems</div>
+                  <div className="empty-state-sub" style={{ fontSize: "12px", color: "#64748b" }}>
                     Intenta ajustar los términos de búsqueda o cambiar el filtro rápido.
                   </div>
                 </div>
@@ -1041,37 +1336,94 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                           </td>
                           <td>
                             {v.esRefrigerado ? (
-                              <div style={{ display: "inline-flex", flexDirection: "column", gap: "2px" }}>
-                                <span style={{ padding: "3px 8px", borderRadius: "12px", background: "rgba(6, 182, 212, 0.12)", color: "#0891b2", fontWeight: 700, fontSize: "11px" }}>
-                                  ❄️ {v.temperatura}
+                              <div style={{ display: "inline-flex", flexDirection: "column", gap: "3px" }}>
+                                <span style={{ 
+                                  padding: "2px 7px", 
+                                  borderRadius: "4px", 
+                                  background: "rgba(6, 182, 212, 0.1)", 
+                                  color: "#0891b2", 
+                                  fontWeight: 700, 
+                                  fontSize: "11px",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  width: "fit-content"
+                                }}>
+                                  <ThermometerSnowflake size={11} /> {v.temperatura}
                                 </span>
-                                <span style={{ fontSize: "11px", color: "var(--slate-500)" }}>📍 {v.ubicacion}</span>
+                                <span style={{ fontSize: "11px", color: "#64748b", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                                  <MapPin size={10} /> {v.ubicacion}
+                                </span>
                               </div>
                             ) : (
-                              <span style={{ fontSize: "12px", color: "var(--slate-500)" }}>
-                                🌡️ Amb. (📍 {v.ubicacion})
-                              </span>
+                              <div style={{ display: "inline-flex", flexDirection: "column", gap: "3px" }}>
+                                <span style={{ 
+                                  padding: "2px 7px", 
+                                  borderRadius: "4px", 
+                                  background: "#f1f5f9", 
+                                  color: "#475569", 
+                                  fontWeight: 600, 
+                                  fontSize: "11px",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  width: "fit-content"
+                                }}>
+                                  <Thermometer size={11} /> Ambiente
+                                </span>
+                                <span style={{ fontSize: "11px", color: "#64748b", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                                  <MapPin size={10} /> {v.ubicacion}
+                                </span>
+                              </div>
                             )}
                           </td>
                           <td>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
                               {v.loteActivo === "—" ? (
-                                <span style={{ color: "var(--slate-400)", fontSize: "12px" }}>Sin lote registrado</span>
+                                <span style={{ color: "#94a3b8", fontSize: "12px" }}>Sin lote registrado</span>
                               ) : (
                                 <span 
                                   className="lot-badge" 
-                                  style={{ background: `${accentColor}22`, color: primaryColor, cursor: "pointer", width: "fit-content" }}
+                                  style={{ 
+                                    background: "rgba(10, 77, 92, 0.08)", 
+                                    color: primaryColor, 
+                                    cursor: "pointer", 
+                                    width: "fit-content",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    fontWeight: 700,
+                                    fontSize: "11px",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px"
+                                  }}
                                   onClick={() => openLoteModal(v.id)}
                                 >
-                                  🏷️ {v.loteActivo}
+                                  <Tag size={10} /> {v.loteActivo}
                                 </span>
                               )}
                               {activeLot?.fechaVencimiento && (
                                 <span style={{
-                                  fontSize: "11px", fontWeight: 700,
-                                  color: isExpired ? "#ef4444" : isExpiringSoon ? "#d97706" : "var(--slate-500)"
+                                  fontSize: "11px", 
+                                  fontWeight: 600,
+                                  color: isExpired ? "#ef4444" : isExpiringSoon ? "#d97706" : "#64748b",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px"
                                 }}>
-                                  {isExpired ? "🔴 Vencido" : isExpiringSoon ? `⏰ Vence en ${daysToExp}d` : `📅 Vence: ${activeLot.fechaVencimiento}`}
+                                  {isExpired ? (
+                                    <>
+                                      <AlertCircle size={11} /> Vencido
+                                    </>
+                                  ) : isExpiringSoon ? (
+                                    <>
+                                      <Clock size={11} /> Vence en {daysToExp}d
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Calendar size={11} /> Vence: {activeLot.fechaVencimiento}
+                                    </>
+                                  )}
                                 </span>
                               )}
                             </div>
@@ -1124,25 +1476,25 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                                   }}>
                                     <button
                                       className="dropdown-item"
-                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "var(--slate-700)" }}
+                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#334155", display: "flex", alignItems: "center", gap: "8px" }}
                                       onClick={() => { setActiveDropdownId(null); openLoteModal(v.id); }}
                                     >
-                                      📦 Ingresar Lote
+                                      <PackagePlus size={14} color={primaryColor} /> Ingresar Lote
                                     </button>
                                     <button
                                       className="dropdown-item"
-                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: v.stockActual === 0 ? "var(--slate-400)" : "#ef4444" }}
+                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: v.stockActual === 0 ? "#94a3b8" : "#ef4444", display: "flex", alignItems: "center", gap: "8px" }}
                                       disabled={v.stockActual === 0}
                                       onClick={() => { setActiveDropdownId(null); openMermaModal(v.id); }}
                                     >
-                                      🗑️ Registrar Merma
+                                      <Trash2 size={14} color={v.stockActual === 0 ? "#94a3b8" : "#ef4444"} /> Registrar Merma
                                     </button>
                                     <button
                                       className="dropdown-item"
-                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "var(--slate-700)" }}
+                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#334155", display: "flex", alignItems: "center", gap: "8px" }}
                                       onClick={() => { setActiveDropdownId(null); openComprasHistoricasModal(v.id); }}
                                     >
-                                      📋 Historial Lotes
+                                      <History size={14} color="#64748b" /> Historial Lotes
                                     </button>
                                   </div>
                                 </>
@@ -1162,32 +1514,62 @@ export default function TenantAdminVacunasPage({ params }: Props) {
         {/* ── CATEGORÍAS TAB ──────────────────────────────────────── */}
         {activeTab === "categorias" && (
           <div className="categorias-section">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "16px" }}>
               {categorias.length === 0 ? (
-                <div style={{ gridColumn: "1/-1", padding: "40px", textAlign: "center", color: "var(--slate-500)", background: "white", borderRadius: "12px" }}>
+                <div style={{ gridColumn: "1/-1", padding: "40px", textAlign: "center", color: "var(--slate-500)", background: "white", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                   No hay categorías registradas. Presiona "Nueva Categoría" para crear la primera.
                 </div>
               ) : categorias.map(c => {
                 const pc = parseCategory(c);
                 const count = vacunas.filter(v => v.categoria_id === c.id).length;
                 return (
-                  <div key={c.id} className="card" style={{ padding: "20px", borderLeft: `4px solid ${c.color || primaryColor}`, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div key={c.id} className="card" style={{ padding: "14px 16px", borderLeft: `3px solid ${c.color || primaryColor}`, borderRadius: "10px", border: "1px solid #e2e8f0", borderLeftWidth: "3px", borderLeftColor: c.color || primaryColor, display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "135px" }}>
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
                         <div>
-                          <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--slate-900)" }}>{pc.nombre}</h3>
-                          <span style={{ fontSize: "11px", fontWeight: 700, color: pc.tipo === "v" ? primaryColor : "#64748b", background: "var(--slate-100)", padding: "2px 6px", borderRadius: "4px" }}>
-                            {pc.tipo === "v" ? "💉 Biológico / Vacuna" : "📦 Insumo General"}
+                          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", margin: "0 0 4px 0" }}>{pc.nombre}</h3>
+                          <span style={{ 
+                            fontSize: "11px", 
+                            fontWeight: 600, 
+                            color: pc.tipo === "v" ? primaryColor : "#475569", 
+                            background: pc.tipo === "v" ? "rgba(10, 77, 92, 0.08)" : "#f1f5f9", 
+                            padding: "2px 6px", 
+                            borderRadius: "4px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}>
+                            {pc.tipo === "v" ? <><ShieldCheck size={12} /> Biológico / Vacuna</> : <><Box size={12} /> Insumo General</>}
                           </span>
                         </div>
-                        <button type="button" onClick={() => openEditCategoria(c)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "16px" }} title="Editar categoría">✏️</button>
+                        <button 
+                          type="button" 
+                          onClick={() => openEditCategoria(c)} 
+                          style={{ 
+                            background: "#f8fafc", 
+                            border: "1px solid #e2e8f0", 
+                            borderRadius: "6px", 
+                            cursor: "pointer", 
+                            padding: "5px 7px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                          }} 
+                          title="Editar categoría"
+                        >
+                          <Pencil size={13} color="#64748b" />
+                        </button>
                       </div>
-                      <div style={{ marginTop: "16px", fontSize: "13px", color: "var(--slate-500)", marginBottom: "16px" }}>
-                        <strong>{count}</strong> {count === 1 ? "ítem registrado" : "ítems registrados"}
+                      <div style={{ marginTop: "10px", fontSize: "12px", color: "#64748b", marginBottom: "12px" }}>
+                        <strong style={{ color: "#0f172a" }}>{count}</strong> {count === 1 ? "ítem registrado" : "ítems registrados"}
                       </div>
                     </div>
-                    <button className="btn btn-outline" style={{ width: "100%", justifyContent: "center", fontSize: "12px" }} onClick={() => openNewItemForCategory(c.id)}>
-                      ➕ Añadir Ítem a esta categoría
+                    <button 
+                      className="btn btn-outline" 
+                      style={{ width: "100%", justifyContent: "center", fontSize: "12px", padding: "6px 10px", display: "inline-flex", alignItems: "center", gap: "6px", borderColor: "#cbd5e1" }} 
+                      onClick={() => openNewItemForCategory(c.id)}
+                    >
+                      <Plus size={13} /> Añadir Ítem
                     </button>
                   </div>
                 );
@@ -1198,8 +1580,11 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
         {/* ── HISTORIAL MOVIMIENTOS TAB ────────────────────────────── */}
         {activeTab === "movimientos" && (
-          <div className="card" style={{ padding: "20px" }}>
-            <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--slate-900)", marginBottom: "16px" }}>📜 Kardex de Movimientos de Inventario</h2>
+          <div className="card" style={{ padding: "18px 20px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+              <FileText size={18} color={primaryColor} />
+              <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", margin: 0 }}>Kardex de Movimientos de Inventario</h2>
+            </div>
             {allMovements.length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px", color: "var(--slate-500)" }}>
                 No hay movimientos registrados en el sistema.
@@ -1223,15 +1608,26 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                         <td style={{ fontSize: "12px", color: "var(--slate-600)" }}>{m.fecha}</td>
                         <td>
                           <span style={{
-                            padding: "3px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: 700,
-                            background: m.tipo === "ENTRADA" ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)",
-                            color: m.tipo === "ENTRADA" ? "#10b981" : "#ef4444"
+                            padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700,
+                            background: m.tipo === "ENTRADA" ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
+                            color: m.tipo === "ENTRADA" ? "#059669" : "#dc2626",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px"
                           }}>
-                            {m.tipo === "ENTRADA" ? "📥 ENTRADA" : "📤 SALIDA"}
+                            {m.tipo === "ENTRADA" ? (
+                              <>
+                                <ArrowDownLeft size={12} /> ENTRADA
+                              </>
+                            ) : (
+                              <>
+                                <ArrowUpRight size={12} /> SALIDA
+                              </>
+                            )}
                           </span>
                         </td>
                         <td style={{ fontWeight: 700 }}>{m.itemNombre}</td>
-                        <td style={{ fontWeight: 700, color: m.tipo === "ENTRADA" ? "#10b981" : "#ef4444" }}>
+                        <td style={{ fontWeight: 700, color: m.tipo === "ENTRADA" ? "#059669" : "#dc2626" }}>
                           {m.tipo === "ENTRADA" ? `+${m.cantidad}` : `-${m.cantidad}`}
                         </td>
                         <td style={{ fontSize: "13px" }}>{m.motivo}</td>
@@ -1252,7 +1648,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       <dialog ref={newVacunaRef} id="modal-nueva-vacuna">
         <div className="modal-header">
           <div>
-            <div className="modal-title">➕ Registrar Nuevo Ítem / Insumo</div>
+            <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <PackagePlus size={18} color={primaryColor} /> Registrar Nuevo Ítem / Insumo
+            </div>
             <div className="modal-subtitle">Ingrese las características principales del producto</div>
           </div>
           <button className="modal-close" onClick={() => newVacunaRef.current?.close()} type="button">✕</button>
@@ -1293,7 +1691,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               <div className="form-group full-width" style={{ padding: "12px", background: "rgba(6, 182, 212, 0.06)", borderRadius: "8px", border: "1px solid rgba(6, 182, 212, 0.2)" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: 700, color: "#0891b2" }}>
                   <input type="checkbox" name="esRefrigerado" checked={newForm.esRefrigerado} onChange={handleNewFormChange} style={{ width: "18px", height: "18px", accentColor: "#0891b2" }} />
-                  ❄️ Requiere Cadena de Frío (Refrigeración)
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    <ThermometerSnowflake size={15} /> Requiere Cadena de Frío (Refrigeración)
+                  </span>
                 </label>
                 {newForm.esRefrigerado && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "10px" }}>
@@ -1331,7 +1731,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={() => newVacunaRef.current?.close()}>Cancelar</button>
-            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>✓ Guardar Ítem</button>
+            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>Guardar Ítem</button>
           </div>
         </form>
       </dialog>
@@ -1342,7 +1742,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       <dialog ref={loteRef} id="modal-agregar-lote">
         <div className="modal-header">
           <div>
-            <div className="modal-title">📦 Registrar Nuevo Lote</div>
+            <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Layers size={18} color={primaryColor} /> Registrar Nuevo Lote
+            </div>
             <div className="modal-subtitle">{selectedVacuna ? `Ítem: ${selectedVacuna.nombre}` : ""}</div>
           </div>
           <button className="modal-close" onClick={() => loteRef.current?.close()} type="button">✕</button>
@@ -1389,7 +1791,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-outline" onClick={() => loteRef.current?.close()}>Cancelar</button>
-            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>✓ Registrar Lote</button>
+            <button type="submit" className="btn btn-primary" style={{ background: primaryColor }}>Registrar Lote</button>
           </div>
         </form>
       </dialog>
@@ -1397,7 +1799,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       {/* MODAL: USAR DOSIS */}
       <dialog ref={usarRef} id="dialog-usar-dosis" style={{ margin: "auto", maxWidth: "450px" }}>
         <div className="modal-body" style={{ padding: "28px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 800, color: "var(--slate-900)", marginBottom: "6px" }}>💉 Registrar Aplicación / Consumo</h2>
+          <h2 style={{ fontSize: "17px", fontWeight: 700, color: "var(--slate-900)", marginBottom: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <Package size={18} color={primaryColor} /> Registrar Consumo de Ítem
+          </h2>
           <p style={{ fontSize: "13px", color: "var(--slate-600)", marginBottom: "16px" }}>
             Ítem: <strong>{selectedVacuna?.nombre}</strong> (Stock actual: {selectedVacuna?.stockActual})
           </p>
@@ -1430,7 +1834,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
           <div className="modal-footer" style={{ marginTop: "24px", padding: 0 }}>
             <button type="button" className="btn btn-outline" onClick={() => usarRef.current?.close()}>Cancelar</button>
-            <button type="button" className="btn btn-primary" style={{ background: primaryColor }} onClick={handleUsarDosis}>✓ Registrar</button>
+            <button type="button" className="btn btn-primary" style={{ background: primaryColor }} onClick={handleUsarDosis}>Registrar</button>
           </div>
         </div>
       </dialog>
@@ -1438,7 +1842,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       {/* MODAL: MERMA */}
       <dialog ref={mermaRef} id="dialog-registrar-merma" style={{ margin: "auto", maxWidth: "450px" }}>
         <div className="modal-body" style={{ padding: "28px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#ef4444", marginBottom: "6px" }}>🗑️ Registrar Merma / Pérdida</h2>
+          <h2 style={{ fontSize: "17px", fontWeight: 700, color: "#dc2626", marginBottom: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <AlertTriangle size={18} color="#dc2626" /> Registrar Merma / Pérdida
+          </h2>
           <p style={{ fontSize: "13px", color: "var(--slate-600)", marginBottom: "16px" }}>
             Ítem: <strong>{selectedVacuna?.nombre}</strong>
           </p>
@@ -1462,7 +1868,7 @@ export default function TenantAdminVacunasPage({ params }: Props) {
 
             <div className="modal-footer" style={{ marginTop: "20px", padding: 0 }}>
               <button type="button" className="btn btn-outline" onClick={() => mermaRef.current?.close()}>Cancelar</button>
-              <button type="submit" className="btn btn-primary" style={{ background: "#ef4444" }}>Confirmar Merma</button>
+              <button type="submit" className="btn btn-primary" style={{ background: "#dc2626" }}>Confirmar Merma</button>
             </div>
           </form>
         </div>
@@ -1471,7 +1877,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       {/* MODAL: HISTORIAL LOTES */}
       <dialog ref={comprasHistoricasRef} style={{ maxWidth: "700px", width: "90%", margin: "auto" }}>
         <div className="modal-header">
-          <div className="modal-title">📋 Lotes Registrados</div>
+          <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <History size={18} color={primaryColor} /> Lotes Registrados
+          </div>
           <button className="modal-close" onClick={() => comprasHistoricasRef.current?.close()} type="button">✕</button>
         </div>
         <div className="modal-body">
@@ -1505,7 +1913,9 @@ export default function TenantAdminVacunasPage({ params }: Props) {
       {/* MODAL: CATEGORÍA */}
       <dialog ref={catRef} id="modal-categoria">
         <div className="modal-header">
-          <div className="modal-title">{catForm.id ? "✏️ Editar Categoría" : "➕ Nueva Categoría"}</div>
+          <div className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Tags size={18} color={primaryColor} /> {catForm.id ? "Editar Categoría" : "Nueva Categoría"}
+          </div>
           <button className="modal-close" onClick={() => catRef.current?.close()} type="button">✕</button>
         </div>
 
@@ -1523,8 +1933,8 @@ export default function TenantAdminVacunasPage({ params }: Props) {
               <div className="form-group full-width">
                 <label className="form-label">Tipo de Categoría</label>
                 <select className="form-select" value={catTipo} onChange={e => setCatTipo(e.target.value as "v" | "i")}>
-                  <option value="v">💉 Biológico / Vacuna / Medicamento</option>
-                  <option value="i">📦 Insumo Médico General</option>
+                  <option value="v">Biológico / Vacuna / Medicamento</option>
+                  <option value="i">Insumo Médico General</option>
                 </select>
               </div>
             </div>
@@ -1555,9 +1965,15 @@ function ToastContainer({ toasts }: { toasts: Toast[] }) {
   return (
     <div className="toast-container" aria-live="polite" aria-atomic="true">
       {toasts.map(t => (
-        <div key={t.id} className={`toast toast-${t.type}`} role="status">
-          {t.type === "success" ? "✅ " : t.type === "error" ? "❌ " : "ℹ️ "}
-          {t.msg}
+        <div key={t.id} className={`toast toast-${t.type}`} role="status" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {t.type === "success" ? (
+            <CheckCircle2 size={16} color="#10b981" />
+          ) : t.type === "error" ? (
+            <XCircle size={16} color="#ef4444" />
+          ) : (
+            <AlertCircle size={16} color="#3b82f6" />
+          )}
+          <span>{t.msg}</span>
         </div>
       ))}
     </div>
