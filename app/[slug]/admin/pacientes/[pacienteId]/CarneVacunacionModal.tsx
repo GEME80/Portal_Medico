@@ -77,56 +77,6 @@ function formatearFecha(fechaStr: string) {
   }
 }
 
-const VACUNAS_ESPECIALES_RAPIDAS = [
-  {
-    nombre: "Fluarix Tetra (Influenza Anual)",
-    enfermedad: "INFLUENZA (GRIPE)",
-    dosis: "Refuerzo Anual",
-    edad: "Cada Año",
-    laboratorio: "GSK",
-    icono: "💉"
-  },
-  {
-    nombre: "Shingrix (Herpes Zóster)",
-    enfermedad: "HERPES ZÓSTER",
-    dosis: "1ª Dosis",
-    edad: "Adultos / Indicada",
-    laboratorio: "GSK",
-    icono: "🦠"
-  },
-  {
-    nombre: "Shingrix 2ª (Herpes Zóster)",
-    enfermedad: "HERPES ZÓSTER",
-    dosis: "2ª Dosis",
-    edad: "2 a 6 meses",
-    laboratorio: "GSK",
-    icono: "🦠"
-  },
-  {
-    nombre: "Qdenga (Dengue)",
-    enfermedad: "DENGUE",
-    dosis: "1ª Dosis",
-    edad: "A partir de 4 Años",
-    laboratorio: "Takeda",
-    icono: "🦟"
-  },
-  {
-    nombre: "Spikevax (COVID-19 Actualizada)",
-    enfermedad: "COVID-19",
-    dosis: "Dosis Actualizada",
-    edad: "6 meses en adelante",
-    laboratorio: "Moderna",
-    icono: "🛡️"
-  },
-  {
-    nombre: "Bexsero (Meningococo B)",
-    enfermedad: "MENINGOCOCO B",
-    dosis: "1ª Dosis",
-    edad: "Lactantes / Niños",
-    laboratorio: "GSK",
-    icono: "🧪"
-  }
-];
 
 export default function CarneVacunacionModal({
   isOpen,
@@ -142,11 +92,10 @@ export default function CarneVacunacionModal({
   const [inventario, setInventario] = useState<any[]>([]);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Estados de Popups
+  // Estados del Popup Unificado de Registro
   const [isPopupRegistroOpen, setIsPopupRegistroOpen] = useState(false);
-  const [isPopupCombinadaOpen, setIsPopupCombinadaOpen] = useState(false);
 
-  // Form State Individual (Popup)
+  // Form State Vacuna (Individual / Inventario)
   const [selectedInventarioId, setSelectedInventarioId] = useState<string>("");
   const [descontarStock, setDescontarStock] = useState<boolean>(true);
   const [nombreVacuna, setNombreVacuna] = useState("");
@@ -166,17 +115,10 @@ export default function CarneVacunacionModal({
   const [successMsg, setSuccessMsg] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Form State Vacuna Combinada (Hexavalente / Tetraxim)
+  // Modo Vacuna Combinada (Multicomponente Hexavalente / Tetraxim) integrado
+  const [esCombinada, setEsCombinada] = useState<boolean>(false);
   const [tipoCombinada, setTipoCombinada] = useState<"HEXAVALENTE" | "TETRAXIM">("HEXAVALENTE");
   const [dosisCombinada, setDosisCombinada] = useState<"1" | "2" | "3" | "ref1" | "ref2">("1");
-  const [nombreComercialCombinada, setNombreComercialCombinada] = useState("Hexaxim");
-  const [loteCombinada, setLoteCombinada] = useState("");
-  const [laboratorioCombinada, setLaboratorioCombinada] = useState("Sanofi Pasteur");
-  const [fechaCombinada, setFechaCombinada] = useState(new Date().toISOString().split("T")[0]);
-  const [profesionalCombinada, setProfesionalCombinada] = useState("Dr. Carlos Torres");
-  const [selectedInvCombinadaId, setSelectedInvCombinadaId] = useState<string>("");
-  const [descontarStockCombinada, setDescontarStockCombinada] = useState(true);
-  const [savingCombinada, setSavingCombinada] = useState(false);
 
   useEffect(() => {
     if (isOpen && paciente?.id) {
@@ -193,14 +135,14 @@ export default function CarneVacunacionModal({
         tenantId ? getInventarioVacunasTenant(tenantId) : Promise.resolve({ success: true, data: [] })
       ]);
 
-      if (resVacunas.success && resVacunas.data) {
-        setVacunas(resVacunas.data);
+      if (resVacunas.success) {
+        setVacunas(resVacunas.data || []);
       }
-      if (resInv.success && resInv.data) {
-        setInventario(resInv.data);
+      if (resInv.success) {
+        setInventario(resInv.data || []);
       }
     } catch (err: any) {
-      setErrorMsg(err.message || "Error al cargar datos");
+      setErrorMsg("Error al cargar la información del carnét.");
     } finally {
       setLoading(false);
     }
@@ -208,8 +150,8 @@ export default function CarneVacunacionModal({
 
   const getPublicCarneUrl = () => {
     if (typeof window === "undefined") return "";
-    const origin = window.location.origin;
-    return origin + "/" + tenantSlug + "/carne/" + paciente.token_acceso;
+    const token = paciente.token_acceso || paciente.id;
+    return `${window.location.origin}/${tenantSlug}/carne/${token}`;
   };
 
   const handleCopyLink = () => {
@@ -220,18 +162,15 @@ export default function CarneVacunacionModal({
   };
 
   const handleShareWhatsApp = () => {
-    const url = getPublicCarneUrl();
-    const phone = paciente.telefono || paciente.telefono_madre || paciente.telefono_padre || paciente.telefono_acompanante || "";
+    const carnetUrl = getPublicCarneUrl();
+    const phone = paciente.telefono || paciente.telefono_madre || paciente.telefono_padre || paciente.telefono_contacto || "";
     const cleanPhone = phone.replace(/[^0-9]/g, "");
-    
     const message = encodeURIComponent(
-      `Hola, le compartimos el Carnét Oficial de Vacunación Digital de *${paciente.nombres} ${paciente.apellidos || ""}* emitido por el consultorio del *Dr. Carlos Torres Martínez*:\n\n🔗 ${url}\n\nPuede consultarlo, guardarlo o descargarlo en PDF en 1 sola hoja en cualquier momento.`
+      `Hola, le compartimos el Carnét Oficial de Vacunación Digital de *${paciente.nombres} ${paciente.apellidos || ""}* emitido por el consultorio del *Dr. Carlos Torres Martínez*:\n\n🔗 ${carnetUrl}\n\nPuede consultarlo, guardarlo o descargarlo en PDF en 1 sola hoja en cualquier momento.`
     );
-    
     const waUrl = cleanPhone 
-      ? "https://wa.me/" + cleanPhone + "?text=" + message
-      : "https://wa.me/?text=" + message;
-      
+      ? `https://wa.me/${cleanPhone}?text=${message}`
+      : `https://wa.me/?text=${message}`;
     window.open(waUrl, "_blank");
   };
 
@@ -246,6 +185,24 @@ export default function CarneVacunacionModal({
     setLaboratorio("");
     setFechaAplicacion(new Date().toISOString().split("T")[0]);
     setErrorMsg("");
+    setEsCombinada(false);
+
+    // Búsqueda inteligente de correspondencia en el inventario de vacunas
+    const query = fila.biologicoSugerido.toLowerCase();
+    const invMatch = inventario.find(i => {
+      const nom = i.nombre.toLowerCase();
+      return nom.includes(query) || query.includes(nom);
+    });
+
+    if (invMatch) {
+      setSelectedInventarioId(invMatch.id);
+      setNombreVacuna(invMatch.nombre);
+      setLaboratorio(invMatch.laboratorio || "");
+      setNumeroLote(invMatch.lote_activo || "");
+      if (invMatch.via_admin) setViaAdmin(invMatch.via_admin);
+      setDescontarStock(true);
+    }
+
     setIsPopupRegistroOpen(true);
   };
 
@@ -260,6 +217,7 @@ export default function CarneVacunacionModal({
     setLaboratorio("");
     setFechaAplicacion(new Date().toISOString().split("T")[0]);
     setErrorMsg("");
+    setEsCombinada(false);
     setIsPopupRegistroOpen(true);
   };
 
@@ -271,29 +229,22 @@ export default function CarneVacunacionModal({
     const item = inventario.find(i => i.id === invId);
     if (item) {
       setNombreVacuna(item.nombre);
-      setEnfermedadPrevenida(item.enfermedad_prevenida || "");
+      setEnfermedadPrevenida(item.enfermedad || item.nombre_generico || "");
       setLaboratorio(item.laboratorio || "");
       setNumeroLote(item.lote_activo || "");
+      if (item.via_admin) setViaAdmin(item.via_admin);
       setDescontarStock(true);
-    }
-  };
 
-  // Aplicar vacuna rápida (Influenza Anual, Zóster, etc.)
-  const handleSelectEspecialRapida = (v: typeof VACUNAS_ESPECIALES_RAPIDAS[0]) => {
-    setSelectedInventarioId("");
-    setNombreVacuna(v.nombre);
-    setEnfermedadPrevenida(v.enfermedad);
-    setDosis(v.dosis);
-    setEdadAplicacion(v.edad);
-    setLaboratorio(v.laboratorio);
-    // Verificar si hay match en inventario por nombre
-    const invMatch = inventario.find(i => i.nombre.toLowerCase().includes(v.nombre.toLowerCase().split(" ")[0]));
-    if (invMatch) {
-      setSelectedInventarioId(invMatch.id);
-      setNumeroLote(invMatch.lote_activo || "");
-      setDescontarStock(true);
-    } else {
-      setNumeroLote("");
+      // Si es una vacuna combinada común (Hexavalente o Tetraxim), sugerir esquema combinado
+      const isHexa = item.nombre.toLowerCase().includes("hexa");
+      const isTetra = item.nombre.toLowerCase().includes("tetra") && !item.nombre.toLowerCase().includes("fluarix");
+      if (isHexa) {
+        setEsCombinada(true);
+        setTipoCombinada("HEXAVALENTE");
+      } else if (isTetra) {
+        setEsCombinada(true);
+        setTipoCombinada("TETRAXIM");
+      }
     }
   };
 
@@ -307,10 +258,39 @@ export default function CarneVacunacionModal({
     setSaving(true);
     setErrorMsg("");
 
+    if (esCombinada) {
+      const res = await registrarVacunaCombinada({
+        paciente_id: paciente.id,
+        tipo_combinada: tipoCombinada,
+        dosis_numero: dosisCombinada,
+        nombre_comercial: nombreVacuna.trim() || (tipoCombinada === "HEXAVALENTE" ? "Hexaxim" : "Tetraxim"),
+        fecha_aplicacion: fechaAplicacion,
+        numero_lote: numeroLote,
+        laboratorio: laboratorio || "Sanofi Pasteur",
+        profesional_nombre: profesionalNombre,
+        origen,
+        vacuna_id: selectedInventarioId || null,
+        descontar_stock: descontarStock && !!selectedInventarioId,
+        observaciones: observaciones || `Esquema combinado ${tipoCombinada}`
+      }, tenantSlug);
+
+      setSaving(false);
+
+      if (res.success) {
+        setSuccessMsg(`✓ Vacuna combinada ${tipoCombinada} registrada con éxito. Esquema actualizado.`);
+        setTimeout(() => setSuccessMsg(""), 4000);
+        setIsPopupRegistroOpen(false);
+        loadData();
+      } else {
+        setErrorMsg(res.error || "No se pudo registrar la vacuna combinada.");
+      }
+      return;
+    }
+
     const res = await registrarAplicacionVacuna({
       paciente_id: paciente.id,
       vacuna_id: selectedInventarioId || null,
-      nombre_vacuna: nombreVacuna,
+      nombre_vacuna: nombreVacuna.trim(),
       enfermedad_prevenida: enfermedadPrevenida,
       dosis,
       edad_aplicacion: edadAplicacion,
@@ -335,38 +315,6 @@ export default function CarneVacunacionModal({
       loadData();
     } else {
       setErrorMsg(res.error || "No se pudo registrar la vacuna.");
-    }
-  };
-
-  const handleSubmitCombinada = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingCombinada(true);
-    setErrorMsg("");
-
-    const res = await registrarVacunaCombinada({
-      paciente_id: paciente.id,
-      tipo_combinada: tipoCombinada,
-      dosis_numero: dosisCombinada,
-      nombre_comercial: nombreComercialCombinada,
-      fecha_aplicacion: fechaCombinada,
-      numero_lote: loteCombinada,
-      laboratorio: laboratorioCombinada,
-      profesional_nombre: profesionalCombinada,
-      origen: "institucional",
-      vacuna_id: selectedInvCombinadaId || null,
-      descontar_stock: descontarStockCombinada && !!selectedInvCombinadaId,
-      observaciones: "Esquema combinado " + tipoCombinada
-    }, tenantSlug);
-
-    setSavingCombinada(false);
-
-    if (res.success) {
-      setSuccessMsg("✓ " + tipoCombinada + " registrada con éxito. Esquema actualizado.");
-      setTimeout(() => setSuccessMsg(""), 3500);
-      setIsPopupCombinadaOpen(false);
-      loadData();
-    } else {
-      setErrorMsg(res.error || "No se pudo registrar la vacuna combinada.");
     }
   };
 
@@ -508,26 +456,6 @@ export default function CarneVacunacionModal({
               + Registrar Vacuna
             </button>
 
-            <button
-              onClick={() => setIsPopupCombinadaOpen(true)}
-              style={{
-                background: "rgba(255,255,255,0.15)",
-                color: "#ffffff",
-                border: "1px solid rgba(255,255,255,0.25)",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px"
-              }}
-              title="Registrar Hexaxim o Tetraxim en 1 clic"
-            >
-              <Zap size={14} color="#facc15" />
-              ⚡ Combinada (Hexa/Tetra)
-            </button>
 
             <button
               onClick={handleShareWhatsApp}
@@ -1026,83 +954,185 @@ export default function CarneVacunacionModal({
               {/* Form Body Popup */}
               <form onSubmit={handleSubmitRegistroVacuna} style={{ padding: "18px 20px", overflowY: "auto", flex: 1 }}>
                 
-                {/* 1. SELECCIÓN DESDE STOCK DEL CONSULTORIO */}
+                {/* 1. SELECCIÓN DESDE STOCK DEL CONSULTORIO (ÚNICAMENTE VACUNAS / BIOLÓGICOS) */}
                 {inventario.length > 0 && (
                   <div style={{
-                    background: "#f0fdfa",
-                    border: "1px solid #99f6e4",
+                    background: "#f0fdf4",
+                    border: "1px solid #86efac",
                     borderRadius: "10px",
-                    padding: "10px 12px",
+                    padding: "12px",
                     marginBottom: "14px"
                   }}>
-                    <label style={{ fontSize: "11px", fontWeight: 800, color: "#0A4D5C", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "5px", marginBottom: "4px" }}>
-                      <Package size={13} /> Seleccionar Biológico del Inventario del Consultorio:
+                    <label style={{ fontSize: "11px", fontWeight: 800, color: "#166534", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                      <Package size={14} color="#16a34a" /> Biológico Disponible en Inventario (Auto-completar todo):
                     </label>
                     <select
                       value={selectedInventarioId}
                       onChange={handleSelectInventario}
                       style={{
                         width: "100%",
-                        padding: "7px 10px",
+                        padding: "8px 10px",
                         borderRadius: "6px",
-                        border: "1px solid #0A4D5C",
+                        border: "1px solid #16a34a",
                         fontSize: "12px",
                         fontWeight: 600,
                         background: "#ffffff",
                         color: "#0f172a"
                       }}
                     >
-                      <option value="">-- Seleccionar de Stock del Consultorio (opcional) --</option>
+                      <option value="">-- Seleccionar Vacuna de Stock del Consultorio --</option>
                       {inventario.map(item => (
                         <option key={item.id} value={item.id}>
-                          {item.nombre} ({item.laboratorio || "Lab"}) • Lote: {item.lote_activo || "S/L"} • Stock: {item.stock_actual} dosis disp.
+                          {item.nombre} ({item.laboratorio || "Sin laboratorio"}) • Lote: {item.lote_activo || "S/L"} • Stock: {item.stock_actual} dosis disp.
                         </option>
                       ))}
                     </select>
 
                     {selectedInventarioId && (
-                      <label style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", fontSize: "11.5px", color: "#065f46", fontWeight: 700 }}>
-                        <input
-                          type="checkbox"
-                          checked={descontarStock}
-                          onChange={(e) => setDescontarStock(e.target.checked)}
-                        />
-                        Descontar 1 dosis física del inventario automáticamente
-                      </label>
+                      <div style={{
+                        marginTop: "8px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: "8px",
+                        background: "#ffffff",
+                        padding: "6px 10px",
+                        borderRadius: "6px",
+                        border: "1px solid #bbf7d0"
+                      }}>
+                        <span style={{ fontSize: "11px", color: "#15803d", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
+                          ✓ Biológico cargado: {laboratorio ? `${laboratorio} • ` : ""}Lote: {numeroLote || "Sin lote"}
+                        </span>
+                        <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#166534", fontWeight: 700, cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={descontarStock}
+                            onChange={(e) => setDescontarStock(e.target.checked)}
+                          />
+                          Descontar 1 dosis física automáticamente
+                        </label>
+                      </div>
                     )}
                   </div>
                 )}
 
-                {/* 2. ATAJOS DE VACUNAS ESPECIALES / ANUALES (ZÓSTER, INFLUENZA, DENGUE, ETC.) */}
-                <div style={{ marginBottom: "14px" }}>
-                  <label style={{ fontSize: "11px", fontWeight: 800, color: "#64748b", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
-                    ⚡ Atajos para Vacunas Anuales / Especiales (Independientes de Edad):
+                {/* 2. ESQUEMA COMBINADO INTELIGENTE (HEXAVALENTE / TETRAXIM) */}
+                <div style={{
+                  background: esCombinada ? "#eff6ff" : "#f8fafc",
+                  border: "1px solid " + (esCombinada ? "#93c5fd" : "#e2e8f0"),
+                  borderRadius: "10px",
+                  padding: "10px 12px",
+                  marginBottom: "14px",
+                  transition: "all 0.2s ease"
+                }}>
+                  <label style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    color: esCombinada ? "#1e40af" : "#475569",
+                    cursor: "pointer",
+                    userSelect: "none"
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={esCombinada}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setEsCombinada(checked);
+                        if (checked && !nombreVacuna) {
+                          setNombreVacuna("Hexaxim");
+                          setLaboratorio("Sanofi Pasteur");
+                        }
+                      }}
+                      style={{ width: "16px", height: "16px", accentColor: "#2563eb" }}
+                    />
+                    <Zap size={14} color={esCombinada ? "#2563eb" : "#94a3b8"} />
+                    Aplicar como Vacuna Combinada Multicomponente (Hexavalente / Tetraxim)
                   </label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
-                    {VACUNAS_ESPECIALES_RAPIDAS.map((v, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => handleSelectEspecialRapida(v)}
-                        style={{
-                          background: nombreVacuna === v.nombre ? "#0A4D5C" : "#f1f5f9",
-                          color: nombreVacuna === v.nombre ? "#ffffff" : "#1e293b",
-                          border: "1px solid " + (nombreVacuna === v.nombre ? "#0A4D5C" : "#cbd5e1"),
-                          padding: "4px 9px",
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px"
-                        }}
-                      >
-                        <span>{v.icono}</span>
-                        <span>{v.nombre.split("(")[0].trim()}</span>
-                      </button>
-                    ))}
-                  </div>
+
+                  {esCombinada && (
+                    <div style={{ marginTop: "10px", borderTop: "1px solid #bfdbfe", paddingTop: "10px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "8px" }}>
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: 700, color: "#1e3a8a", display: "block", marginBottom: "3px" }}>
+                            Tipo de Combinada:
+                          </label>
+                          <select
+                            value={tipoCombinada}
+                            onChange={(e) => {
+                              const t = e.target.value as "HEXAVALENTE" | "TETRAXIM";
+                              setTipoCombinada(t);
+                              if (t === "HEXAVALENTE") {
+                                setNombreVacuna("Hexaxim");
+                                setLaboratorio("Sanofi Pasteur");
+                              } else {
+                                setNombreVacuna("Tetraxim");
+                                setLaboratorio("Sanofi Pasteur");
+                              }
+                            }}
+                            style={{
+                              width: "100%",
+                              padding: "6px 8px",
+                              borderRadius: "6px",
+                              border: "1px solid #93c5fd",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              background: "#ffffff"
+                            }}
+                          >
+                            <option value="HEXAVALENTE">Hexavalente (Polio + HepB + Hib + DTPa)</option>
+                            <option value="TETRAXIM">Tetraxim (Polio + Hib + DTPa)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: "11px", fontWeight: 700, color: "#1e3a8a", display: "block", marginBottom: "3px" }}>
+                            Dosis / Momento:
+                          </label>
+                          <select
+                            value={dosisCombinada}
+                            onChange={(e) => setDosisCombinada(e.target.value as any)}
+                            style={{
+                              width: "100%",
+                              padding: "6px 8px",
+                              borderRadius: "6px",
+                              border: "1px solid #93c5fd",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              background: "#ffffff"
+                            }}
+                          >
+                            {tipoCombinada === "HEXAVALENTE" ? (
+                              <>
+                                <option value="1">1ª Dosis — 2º Mes de Vida</option>
+                                <option value="2">2ª Dosis — 4º Mes de Vida</option>
+                                <option value="3">3ª Dosis — 6º Mes de Vida</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="ref1">1er Refuerzo — 18 Meses de Vida</option>
+                                <option value="ref2">2do Refuerzo — 5 Años</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{
+                        background: "#dbeafe",
+                        borderRadius: "6px",
+                        padding: "6px 10px",
+                        fontSize: "11px",
+                        color: "#1e40af",
+                        fontWeight: 600
+                      }}>
+                        ℹ️ Esta aplicación impactará y registrará automáticamente las 4 filas correspondientes en el carnét digital.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 3. CAMPOS DE DETALLE DE LA APLICACIÓN */}
@@ -1116,7 +1146,7 @@ export default function CarneVacunacionModal({
                       required
                       value={nombreVacuna}
                       onChange={(e) => setNombreVacuna(e.target.value)}
-                      placeholder="Ej: Fluarix Tetra, Shingrix, Prevenar-13..."
+                      placeholder="Ej: Pentavalente, Neumococo, Hexaxim..."
                       style={{
                         width: "100%",
                         padding: "7px 10px",
@@ -1131,13 +1161,13 @@ export default function CarneVacunacionModal({
 
                   <div>
                     <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
-                      Enfermedad Prevenida:
+                      Laboratorio Fabricante:
                     </label>
                     <input
                       type="text"
-                      value={enfermedadPrevenida}
-                      onChange={(e) => setEnfermedadPrevenida(e.target.value)}
-                      placeholder="Ej: INFLUENZA, HERPES ZÓSTER..."
+                      value={laboratorio}
+                      onChange={(e) => setLaboratorio(e.target.value)}
+                      placeholder="Ej: Sanofi, GSK, Pfizer, MSD..."
                       style={{
                         width: "100%",
                         padding: "7px 10px",
@@ -1151,20 +1181,20 @@ export default function CarneVacunacionModal({
 
                   <div>
                     <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
-                      Dosis: *
+                      Número de Lote:
                     </label>
                     <input
                       type="text"
-                      required
-                      value={dosis}
-                      onChange={(e) => setDosis(e.target.value)}
-                      placeholder="Ej: 1ª, Refuerzo Anual, Única..."
+                      value={numeroLote}
+                      onChange={(e) => setNumeroLote(e.target.value.toUpperCase())}
+                      placeholder="Ej: AHB4920A"
                       style={{
                         width: "100%",
                         padding: "7px 10px",
                         borderRadius: "6px",
                         border: "1px solid #cbd5e1",
                         fontSize: "12px",
+                        fontFamily: "monospace",
                         fontWeight: 700,
                         boxSizing: "border-box"
                       }}
@@ -1173,13 +1203,13 @@ export default function CarneVacunacionModal({
 
                   <div>
                     <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
-                      Edad de Aplicación:
+                      Enfermedad Prevenida:
                     </label>
                     <input
                       type="text"
-                      value={edadAplicacion}
-                      onChange={(e) => setEdadAplicacion(e.target.value)}
-                      placeholder="Ej: Cada Año, Adultos, 2º Mes..."
+                      value={enfermedadPrevenida}
+                      onChange={(e) => setEnfermedadPrevenida(e.target.value)}
+                      placeholder="Ej: Hepatitis B, Meningitis, Difteria..."
                       style={{
                         width: "100%",
                         padding: "7px 10px",
@@ -1190,6 +1220,52 @@ export default function CarneVacunacionModal({
                       }}
                     />
                   </div>
+
+                  {!esCombinada && (
+                    <>
+                      <div>
+                        <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
+                          Dosis: *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={dosis}
+                          onChange={(e) => setDosis(e.target.value)}
+                          placeholder="Ej: 1ª, 2ª, 3ª, Refuerzo, Única..."
+                          style={{
+                            width: "100%",
+                            padding: "7px 10px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            boxSizing: "border-box"
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
+                          Edad de Aplicación:
+                        </label>
+                        <input
+                          type="text"
+                          value={edadAplicacion}
+                          onChange={(e) => setEdadAplicacion(e.target.value)}
+                          placeholder="Ej: Recién Nacido, 2º Mes, 4º Mes..."
+                          style={{
+                            width: "100%",
+                            padding: "7px 10px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                            fontSize: "12px",
+                            boxSizing: "border-box"
+                          }}
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <div>
                     <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
@@ -1214,35 +1290,37 @@ export default function CarneVacunacionModal({
 
                   <div>
                     <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
-                      Número de Lote:
+                      Vía de Administración:
                     </label>
-                    <input
-                      type="text"
-                      value={numeroLote}
-                      onChange={(e) => setNumeroLote(e.target.value.toUpperCase())}
-                      placeholder="Ej: A21CP633A"
+                    <select
+                      value={viaAdmin}
+                      onChange={(e) => setViaAdmin(e.target.value)}
                       style={{
                         width: "100%",
                         padding: "7px 10px",
                         borderRadius: "6px",
                         border: "1px solid #cbd5e1",
                         fontSize: "12px",
-                        fontFamily: "monospace",
-                        fontWeight: 700,
+                        fontWeight: 600,
                         boxSizing: "border-box"
                       }}
-                    />
+                    >
+                      <option value="Intramuscular">Intramuscular</option>
+                      <option value="Subcutánea">Subcutánea</option>
+                      <option value="Oral">Oral</option>
+                      <option value="Intradérmica">Intradérmica</option>
+                    </select>
                   </div>
 
                   <div>
                     <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
-                      Laboratorio Fabricante:
+                      Sitio de Aplicación:
                     </label>
                     <input
                       type="text"
-                      value={laboratorio}
-                      onChange={(e) => setLaboratorio(e.target.value)}
-                      placeholder="Ej: Sanofi, GSK, Pfizer..."
+                      value={sitioAplicacion}
+                      onChange={(e) => setSitioAplicacion(e.target.value)}
+                      placeholder="Ej: Deltoides derecho, Vasto externo..."
                       style={{
                         width: "100%",
                         padding: "7px 10px",
@@ -1321,221 +1399,7 @@ export default function CarneVacunacionModal({
                     }}
                   >
                     <Check size={15} />
-                    {saving ? "Guardando..." : "Guardar y Registrar en Carnét"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================ */}
-        {/* POPUP MODAL 2: REGISTRAR VACUNA COMBINADA (HEXA / TETRA)     */}
-        {/* ============================================================ */}
-        {isPopupCombinadaOpen && (
-          <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(15, 23, 42, 0.65)",
-            backdropFilter: "blur(4px)",
-            zIndex: 1200,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "20px"
-          }}>
-            <div style={{
-              background: "#ffffff",
-              width: "100%",
-              maxWidth: "580px",
-              borderRadius: "16px",
-              boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
-              overflow: "hidden",
-              border: "1px solid #cbd5e1"
-            }}>
-              {/* Header Combinada */}
-              <div style={{
-                padding: "14px 20px",
-                background: "linear-gradient(135deg, #0A4D5C 0%, #083c48 100%)",
-                color: "white",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Zap size={18} color="#facc15" />
-                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#ffffff" }}>
-                    Registrar Vacuna Combinada Multicomponente
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setIsPopupCombinadaOpen(false)}
-                  style={{ background: "transparent", border: "none", color: "white", cursor: "pointer" }}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmitCombinada} style={{ padding: "18px 20px" }}>
-                <div style={{
-                  background: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
-                  padding: "8px 12px",
-                  borderRadius: "8px",
-                  marginBottom: "14px",
-                  fontSize: "11.5px",
-                  color: "#166534"
-                }}>
-                  💡 <strong>1 Solo Clic:</strong> Registra simultáneamente las 4 patologías (Polio, Hep B, Hib, DTP) y deduce solo 1 dosis física del inventario.
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
-                  <div>
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
-                      Tipo de Vacuna:
-                    </label>
-                    <select
-                      value={tipoCombinada}
-                      onChange={(e) => {
-                        const t = e.target.value as "HEXAVALENTE" | "TETRAXIM";
-                        setTipoCombinada(t);
-                        setNombreComercialCombinada(t === "HEXAVALENTE" ? "Hexaxim" : "Tetraxim");
-                        setDosisCombinada(t === "HEXAVALENTE" ? "1" : "ref1");
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "7px 10px",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "12px",
-                        fontWeight: 700
-                      }}
-                    >
-                      <option value="HEXAVALENTE">Hexavalente (Polio + HepB + Hib + DTP)</option>
-                      <option value="TETRAXIM">Tetraxim (Polio + DTP Refuerzo)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
-                      Dosis a Registrar:
-                    </label>
-                    <select
-                      value={dosisCombinada}
-                      onChange={(e) => setDosisCombinada(e.target.value as any)}
-                      style={{
-                        width: "100%",
-                        padding: "7px 10px",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "12px",
-                        fontWeight: 700
-                      }}
-                    >
-                      {tipoCombinada === "HEXAVALENTE" ? (
-                        <>
-                          <option value="1">1ª Dosis (2º Mes)</option>
-                          <option value="2">2ª Dosis (4º Mes)</option>
-                          <option value="3">3ª Dosis (6º Mes)</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="ref1">1er Refuerzo (18 Meses)</option>
-                          <option value="ref2">2º Refuerzo (5 Años)</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
-                      Fecha de Aplicación:
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={fechaCombinada}
-                      onChange={(e) => setFechaCombinada(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: "7px 10px",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "12px",
-                        fontWeight: 700
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: "#334155", display: "block", marginBottom: "3px" }}>
-                      Número de Lote:
-                    </label>
-                    <input
-                      type="text"
-                      value={loteCombinada}
-                      onChange={(e) => setLoteCombinada(e.target.value.toUpperCase())}
-                      placeholder="Ej: A21CP633A"
-                      style={{
-                        width: "100%",
-                        padding: "7px 10px",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "12px",
-                        fontFamily: "monospace",
-                        fontWeight: 700
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "8px",
-                  marginTop: "16px",
-                  paddingTop: "12px",
-                  borderTop: "1px solid #e2e8f0"
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => setIsPopupCombinadaOpen(false)}
-                    style={{
-                      background: "#f1f5f9",
-                      color: "#475569",
-                      border: "none",
-                      padding: "8px 16px",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      cursor: "pointer"
-                    }}
-                  >
-                    Cancelar
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={savingCombinada}
-                    style={{
-                      background: "#0A4D5C",
-                      color: "white",
-                      border: "none",
-                      padding: "8px 18px",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: 800,
-                      cursor: savingCombinada ? "not-allowed" : "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px"
-                    }}
-                  >
-                    <Zap size={14} color="#facc15" />
-                    {savingCombinada ? "Registrando..." : "Registrar Vacunas Combinadas"}
+                    {saving ? "Guardando..." : (esCombinada ? "Guardar Vacuna Combinada" : "Guardar y Registrar en Carnét")}
                   </button>
                 </div>
               </form>

@@ -66,19 +66,71 @@ export async function getVacunasPaciente(pacienteId: string): Promise<{ success:
 }
 
 /**
- * Obtener ítems del inventario del consultorio disponibles para aplicar
+ * Obtener ítems del inventario del consultorio disponibles para aplicar (Únicamente Vacunas)
  */
 export async function getInventarioVacunasTenant(tenantId: string) {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('inventario_medico')
-      .select('id, nombre, nombre_generico, laboratorio, enfermedad, via_admin, esquema_dosis, stock_actual, lote_activo')
+      .select(`
+        id,
+        nombre,
+        nombre_generico,
+        laboratorio,
+        enfermedad,
+        via_admin,
+        esquema_dosis,
+        stock_actual,
+        lote_activo,
+        categoria:categorias_inventario!inner(id, nombre),
+        lotes:lotes_inventario(id, numero_lote, fecha_vencimiento, cantidad, fecha_registro)
+      `)
       .eq('tenant_id', tenantId)
+      .ilike('categoria.nombre', '%vacuna%')
       .order('nombre');
 
-    if (error) throw error;
-    return { success: true, data: data || [] };
+    if (error) {
+      console.warn('Filtro por categorias_inventario fallo, usando fallback:', error.message);
+      const { data: fallbackData, error: fbErr } = await supabase
+        .from('inventario_medico')
+        .select('id, nombre, nombre_generico, laboratorio, enfermedad, via_admin, esquema_dosis, stock_actual, lote_activo, categoria_id')
+        .eq('tenant_id', tenantId)
+        .order('nombre');
+      
+      if (fbErr) throw fbErr;
+      
+      const filtered = (fallbackData || []).filter(item => {
+        const nom = item.nombre.toLowerCase();
+        return !nom.includes('jeringa') && !nom.includes('solución') && !nom.includes('solucion') && !nom.includes('suero') && !nom.includes('ringer') && !nom.includes('aguja') && !nom.includes('guante');
+      });
+      return { success: true, data: filtered };
+    }
+
+    // Normalizar lote activo para cada vacuna: si está vacío, usar el lote más reciente registrado
+    const processedData = (data || []).map((item: any) => {
+      let activeLot = item.lote_activo?.trim();
+      if ((!activeLot || activeLot === '—') && item.lotes && item.lotes.length > 0) {
+        const sortedLots = [...item.lotes].sort((a: any, b: any) => 
+          new Date(b.fecha_registro || 0).getTime() - new Date(a.fecha_registro || 0).getTime()
+        );
+        activeLot = sortedLots[0]?.numero_lote || '';
+      }
+      return {
+        id: item.id,
+        nombre: item.nombre,
+        nombre_generico: item.nombre_generico || '',
+        laboratorio: item.laboratorio || '',
+        enfermedad: item.enfermedad || item.nombre_generico || '',
+        via_admin: item.via_admin || 'Intramuscular',
+        esquema_dosis: item.esquema_dosis || '',
+        stock_actual: item.stock_actual ?? 0,
+        lote_activo: activeLot || '',
+        lotes: item.lotes || []
+      };
+    });
+
+    return { success: true, data: processedData };
   } catch (err: any) {
     console.error('Error fetching inventario vacunas:', err);
     return { success: false, data: [] };
