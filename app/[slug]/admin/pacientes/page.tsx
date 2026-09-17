@@ -302,28 +302,6 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             </p>
           </div>
         </div>
-        <div className="admin-topbar-right">
-          <button 
-            onClick={() => openNewHistory()}
-            style={{
-              background: "#00D4AA",
-              color: "#0f172a",
-              fontWeight: "700",
-              fontSize: "13px",
-              padding: "9px 18px",
-              borderRadius: "9px",
-              border: "none",
-              cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(0, 212, 170, 0.25)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "7px"
-            }}
-          >
-            <UserPlus size={15} />
-            <span>Nuevo Paciente</span>
-          </button>
-        </div>
       </div>
 
       <div style={{ padding: "32px", fontFamily: "'Outfit', sans-serif", minHeight: "calc(100vh - 64px)", background: "#f8fafc" }}>
@@ -464,9 +442,9 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                           gap: "5px",
                           fontSize: "13px"
                         }}
-                        title="Ver y Registrar Carné de Vacunación"
+                        title="Ver y Registrar Carnet de Vacunación"
                       >
-                        <Syringe size={14} color="#00b28e" /> Carné
+                        <Syringe size={14} color="#00b28e" /> Carnet
                       </button>
                       {!isRecepcion && (
                         <button 

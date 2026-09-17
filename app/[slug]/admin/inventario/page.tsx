@@ -1131,14 +1131,6 @@ export default function TenantAdminVacunasPage({ params }: Props) {
                                     </button>
                                     <button
                                       className="dropdown-item"
-                                      style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: v.stockActual === 0 ? "var(--slate-400)" : primaryColor }}
-                                      disabled={v.stockActual === 0}
-                                      onClick={() => { setActiveDropdownId(null); openUsarModal(v.id); }}
-                                    >
-                                      💉 Usar / Consumir
-                                    </button>
-                                    <button
-                                      className="dropdown-item"
                                       style={{ padding: "8px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: v.stockActual === 0 ? "var(--slate-400)" : "#ef4444" }}
                                       disabled={v.stockActual === 0}
                                       onClick={() => { setActiveDropdownId(null); openMermaModal(v.id); }}

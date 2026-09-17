@@ -281,7 +281,7 @@ export default function PerfilPaciente() {
                   gap: "5px"
                 }}
               >
-                <Syringe size={13} color="#00b28e" /> Carné de Vacunación
+                <Syringe size={13} color="#00b28e" /> Carnet de Vacunación
               </button>
               {!isRecepcion && (
                 <button onClick={handleOpenCurvas} style={{ background: "#f0fdf4", border: "1px solid #00b28e", color: "#00b28e", fontWeight: "600", padding: "4px 12px", borderRadius: "16px", cursor: "pointer", fontSize: "12px" }}>
