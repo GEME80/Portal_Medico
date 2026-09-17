@@ -351,7 +351,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         edad: "2 a 3 Meses",
         dosis: "1ª",
         biologicoSugerido: "Prevenar-13 / PCV13",
-        matchKeywords: ["neumococo", "prevenar", "pcv", "synflorix", "vaxneuvance"],
+        matchKeywords: ["neumococo", "prevenar", "pcv", "pcb", "pcv13", "pcb13", "synflorix", "vaxneuvance"],
         dosisMatchKeywords: ["1", "1ª", "1ra", "primera", "2 mes", "3 mes"],
         enfermedadPrevenida: "NEUMOCOCO"
       },
@@ -361,7 +361,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         edad: "4 a 5 Meses",
         dosis: "2ª",
         biologicoSugerido: "Prevenar-13 / PCV13",
-        matchKeywords: ["neumococo", "prevenar", "pcv", "synflorix", "vaxneuvance"],
+        matchKeywords: ["neumococo", "prevenar", "pcv", "pcb", "pcv13", "pcb13", "synflorix", "vaxneuvance"],
         dosisMatchKeywords: ["2", "2ª", "2da", "segunda", "4 mes", "5 mes"],
         enfermedadPrevenida: "NEUMOCOCO"
       },
@@ -371,7 +371,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         edad: "6 a 7 Meses",
         dosis: "3ª",
         biologicoSugerido: "Prevenar-13 / PCV13",
-        matchKeywords: ["neumococo", "prevenar", "pcv", "synflorix", "vaxneuvance"],
+        matchKeywords: ["neumococo", "prevenar", "pcv", "pcb", "pcv13", "pcb13", "synflorix", "vaxneuvance"],
         dosisMatchKeywords: ["3", "3ª", "3ra", "tercera", "6 mes", "7 mes"],
         enfermedadPrevenida: "NEUMOCOCO"
       },
@@ -381,7 +381,7 @@ export const ESQUEMA_MATRIZ_CANONICO: CategoriaCarne[] = [
         edad: "1 Año después de la 3ª dosis",
         dosis: "1er Refuerzo",
         biologicoSugerido: "Prevenar-13 / PCV13",
-        matchKeywords: ["neumococo", "prevenar", "pcv", "synflorix", "vaxneuvance"],
+        matchKeywords: ["neumococo", "prevenar", "pcv", "pcb", "pcv13", "pcb13", "synflorix", "vaxneuvance"],
         dosisMatchKeywords: ["refuerzo", "ref 1", "1er refuerzo", "1 año", "12 meses", "18 meses"],
         enfermedadPrevenida: "NEUMOCOCO"
       }
@@ -596,6 +596,7 @@ export function matchAplicacionFila(
   // Normalizador de texto
   const norm = (str?: string) => (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
+  // 1. Pase Prioritario: Coincidencia de biológico/categoría Y dosis/edad correspondiente
   for (const app of aplicaciones) {
     if (claimedIds.has(app.id)) continue;
 
@@ -604,7 +605,6 @@ export function matchAplicacionFila(
     const dosis = norm(app.dosis);
     const edad = norm(app.edad_aplicacion);
 
-    // 1. Coincidencia de categoría / biológico
     const matchCat = fila.matchKeywords.some(kw => {
       const nkw = norm(kw);
       return nombre.includes(nkw) || enf.includes(nkw);
@@ -612,13 +612,31 @@ export function matchAplicacionFila(
 
     if (!matchCat) continue;
 
-    // 2. Coincidencia de dosis
     const matchDos = fila.dosisMatchKeywords.some(kw => {
       const nkw = norm(kw);
       return dosis.includes(nkw) || edad.includes(nkw);
     });
 
     if (matchDos) {
+      claimedIds.add(app.id);
+      return app;
+    }
+  }
+
+  // 2. Pase Secuencial: Si la celda sigue vacía y existe una aplicación del mismo biológico/categoría
+  // no reclamada aún, asignarla secuencialmente a la siguiente dosis vacante de su esquema
+  for (const app of aplicaciones) {
+    if (claimedIds.has(app.id)) continue;
+
+    const nombre = norm(app.nombre_vacuna);
+    const enf = norm(app.enfermedad_prevenida);
+
+    const matchCat = fila.matchKeywords.some(kw => {
+      const nkw = norm(kw);
+      return nombre.includes(nkw) || enf.includes(nkw);
+    });
+
+    if (matchCat) {
       claimedIds.add(app.id);
       return app;
     }

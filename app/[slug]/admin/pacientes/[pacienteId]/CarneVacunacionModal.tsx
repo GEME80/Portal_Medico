@@ -174,7 +174,7 @@ export default function CarneVacunacionModal({
     window.open(waUrl, "_blank");
   };
 
-  // Abrir popup desde una fila específica del carnét
+  // Abrir popup desde una fila específica del carnét con auto-carga completa
   const handleOpenRegistroFila = (fila: FilaEsquema) => {
     setSelectedInventarioId("");
     setNombreVacuna(fila.biologicoSugerido);
@@ -187,11 +187,17 @@ export default function CarneVacunacionModal({
     setErrorMsg("");
     setEsCombinada(false);
 
-    // Búsqueda inteligente de correspondencia en el inventario de vacunas
-    const query = fila.biologicoSugerido.toLowerCase();
+    // Normalizador de texto para emparejamiento clínico
+    const norm = (str?: string) => (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+    // Búsqueda inteligente usando matchKeywords de la fila contra el inventario biológico
     const invMatch = inventario.find(i => {
-      const nom = i.nombre.toLowerCase();
-      return nom.includes(query) || query.includes(nom);
+      const nom = norm(i.nombre);
+      const enf = norm(i.enfermedad);
+      return fila.matchKeywords.some(kw => {
+        const nkw = norm(kw);
+        return nom.includes(nkw) || enf.includes(nkw);
+      });
     });
 
     if (invMatch) {
@@ -201,6 +207,16 @@ export default function CarneVacunacionModal({
       setNumeroLote(invMatch.lote_activo || "");
       if (invMatch.via_admin) setViaAdmin(invMatch.via_admin);
       setDescontarStock(true);
+
+      const isHexa = invMatch.nombre.toLowerCase().includes("hexa");
+      const isTetra = invMatch.nombre.toLowerCase().includes("tetra") && !invMatch.nombre.toLowerCase().includes("fluarix");
+      if (isHexa) {
+        setEsCombinada(true);
+        setTipoCombinada("HEXAVALENTE");
+      } else if (isTetra) {
+        setEsCombinada(true);
+        setTipoCombinada("TETRAXIM");
+      }
     }
 
     setIsPopupRegistroOpen(true);
@@ -434,29 +450,6 @@ export default function CarneVacunacionModal({
 
           {/* ACCIONES CLÍNICAS DEL DOCTOR */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <button
-              onClick={handleOpenRegistroGeneral}
-              style={{
-                background: "#00D4AA",
-                color: "#0f172a",
-                border: "none",
-                padding: "8px 14px",
-                borderRadius: "8px",
-                fontSize: "12.5px",
-                fontWeight: 800,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                boxShadow: "0 2px 8px rgba(0, 212, 170, 0.35)"
-              }}
-              title="Registrar vacuna desde inventario o manual"
-            >
-              <Plus size={15} strokeWidth={3} />
-              + Registrar Vacuna
-            </button>
-
-
             <button
               onClick={handleShareWhatsApp}
               style={{
@@ -787,45 +780,77 @@ export default function CarneVacunacionModal({
 
                   {/* SECCIÓN OTRAS VACUNAS (ZÓSTER, INFLUENZA ANUAL EXTRA, DENGUE, COVID, ETC.) */}
                   {vacunasOtras.length > 0 ? (
-                    vacunasOtras.map((otra, idx) => (
-                      <tr key={otra.id || idx} style={{ background: "#f0fdf4" }}>
-                        {idx === 0 && (
-                          <td
-                            rowSpan={vacunasOtras.length}
+                    <>
+                      {vacunasOtras.map((otra, idx) => (
+                        <tr key={otra.id || idx} style={{ background: "#f0fdf4" }}>
+                          {idx === 0 && (
+                            <td
+                              rowSpan={vacunasOtras.length + 1}
+                              style={{
+                                padding: "6px 8px",
+                                fontWeight: 800,
+                                verticalAlign: "middle",
+                                border: "1px solid #cbd5e1",
+                                background: "#f1f5f9",
+                                color: "#334155",
+                                fontSize: "11px"
+                              }}
+                            >
+                              OTRAS / ANUALES
+                            </td>
+                          )}
+                          <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center" }}>{otra.edad_aplicacion || "--"}</td>
+                          <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", fontWeight: 800 }}>{otra.dosis || "Única"}</td>
+                          <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", fontWeight: 800 }}>{formatearFecha(otra.fecha_aplicacion)}</td>
+                          <td style={{ padding: "6px 10px", border: "1px solid #cbd5e1", fontWeight: 800, color: "#065f46" }}>✓ {otra.nombre_vacuna}</td>
+                          <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", fontFamily: "monospace" }}>{otra.numero_lote || "S/L"}</td>
+                          <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                              <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "1px 6px", borderRadius: "4px" }}>
+                                ✓ {otra.profesional_nombre || "Dr. Carlos Torres"}
+                              </span>
+                              <button
+                                onClick={() => handleDeleteVacuna(otra.id)}
+                                title="Eliminar registro"
+                                style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", padding: "2px" }}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {/* Fila permanente para registrar vacunas adicionales en Otras / Anuales */}
+                      <tr style={{ background: "#ffffff" }}>
+                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", color: "#94a3b8" }}>--</td>
+                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", color: "#94a3b8" }}>--</td>
+                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", color: "#cbd5e1" }}>-- / -- / ----</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #cbd5e1", color: "#64748b", fontStyle: "italic", fontSize: "10.5px" }}>
+                          + Registrar otra dosis o vacuna adicional/anual...
+                        </td>
+                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", color: "#cbd5e1" }}>--</td>
+                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center" }}>
+                          <button
+                            onClick={handleOpenRegistroGeneral}
                             style={{
-                              padding: "6px 8px",
-                              fontWeight: 800,
-                              verticalAlign: "middle",
-                              border: "1px solid #cbd5e1",
-                              background: "#f1f5f9",
-                              color: "#334155",
-                              fontSize: "11px"
+                              background: "#0A4D5C",
+                              color: "#ffffff",
+                              border: "none",
+                              padding: "3px 8px",
+                              borderRadius: "5px",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px"
                             }}
                           >
-                            OTRAS / ANUALES
-                          </td>
-                        )}
-                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center" }}>{otra.edad_aplicacion || "--"}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", fontWeight: 800 }}>{otra.dosis || "Única"}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", fontWeight: 800 }}>{formatearFecha(otra.fecha_aplicacion)}</td>
-                        <td style={{ padding: "6px 10px", border: "1px solid #cbd5e1", fontWeight: 800, color: "#065f46" }}>✓ {otra.nombre_vacuna}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center", fontFamily: "monospace" }}>{otra.numero_lote || "S/L"}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #cbd5e1", textAlign: "center" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                            <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#065f46", background: "#d1fae5", padding: "1px 6px", borderRadius: "4px" }}>
-                              ✓ {otra.profesional_nombre || "Dr. Carlos Torres"}
-                            </span>
-                            <button
-                              onClick={() => handleDeleteVacuna(otra.id)}
-                              title="Eliminar registro"
-                              style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", padding: "2px" }}
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
+                            <Plus size={11} strokeWidth={3} /> Agregar
+                          </button>
                         </td>
                       </tr>
-                    ))
+                    </>
                   ) : (
                     <tr style={{ background: "#ffffff" }}>
                       <td style={{ padding: "6px 8px", fontWeight: 800, border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#475569" }}>
@@ -842,17 +867,20 @@ export default function CarneVacunacionModal({
                         <button
                           onClick={handleOpenRegistroGeneral}
                           style={{
-                            background: "#f1f5f9",
-                            color: "#0A4D5C",
-                            border: "1px solid #cbd5e1",
+                            background: "#0A4D5C",
+                            color: "#ffffff",
+                            border: "none",
                             padding: "3px 8px",
                             borderRadius: "5px",
                             fontSize: "11px",
                             fontWeight: 700,
-                            cursor: "pointer"
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px"
                           }}
                         >
-                          + Agregar Otra
+                          <Plus size={11} strokeWidth={3} /> Agregar
                         </button>
                       </td>
                     </tr>
@@ -983,7 +1011,7 @@ export default function CarneVacunacionModal({
                       <option value="">-- Seleccionar Vacuna de Stock del Consultorio --</option>
                       {inventario.map(item => (
                         <option key={item.id} value={item.id}>
-                          {item.nombre} ({item.laboratorio || "Sin laboratorio"}) • Lote: {item.lote_activo || "S/L"} • Stock: {item.stock_actual} dosis disp.
+                          {item.nombre} ({item.laboratorio || "Sin laboratorio"}) • Lote: {item.lote_activo || "S/L"}{item.fecha_vencimiento ? ` (Vence: ${formatearFecha(item.fecha_vencimiento)})` : ""} • Stock: {item.stock_actual} dosis disp.
                         </option>
                       ))}
                     </select>
@@ -1002,7 +1030,7 @@ export default function CarneVacunacionModal({
                         border: "1px solid #bbf7d0"
                       }}>
                         <span style={{ fontSize: "11px", color: "#15803d", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
-                          ✓ Biológico cargado: {laboratorio ? `${laboratorio} • ` : ""}Lote: {numeroLote || "Sin lote"}
+                          ✓ Biológico cargado: {laboratorio ? `${laboratorio} • ` : ""}Lote: {numeroLote || "Sin lote"}{inventario.find(i => i.id === selectedInventarioId)?.fecha_vencimiento ? ` • Vence: ${formatearFecha(inventario.find(i => i.id === selectedInventarioId)!.fecha_vencimiento)}` : ""}
                         </span>
                         <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#166534", fontWeight: 700, cursor: "pointer" }}>
                           <input

@@ -116,6 +116,14 @@ export async function getInventarioVacunasTenant(tenantId: string) {
         );
         activeLot = sortedLots[0]?.numero_lote || '';
       }
+
+      // Obtener fecha de vencimiento del lote activo
+      let fechaVenc = '';
+      if (item.lotes && item.lotes.length > 0) {
+        const foundLot = item.lotes.find((l: any) => l.numero_lote === activeLot) || item.lotes[0];
+        fechaVenc = foundLot?.fecha_vencimiento || '';
+      }
+
       return {
         id: item.id,
         nombre: item.nombre,
@@ -126,6 +134,7 @@ export async function getInventarioVacunasTenant(tenantId: string) {
         esquema_dosis: item.esquema_dosis || '',
         stock_actual: item.stock_actual ?? 0,
         lote_activo: activeLot || '',
+        fecha_vencimiento: fechaVenc,
         lotes: item.lotes || []
       };
     });
