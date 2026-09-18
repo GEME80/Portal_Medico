@@ -76,6 +76,7 @@ export default function VectorGrowthChart({
   const [selectedGraficaId, setSelectedGraficaId] = useState<string>(graficaPorDefectoId);
   const [etapaSeleccionada, setEtapaSeleccionada] = useState<EtapaEtaria>(etapaActual);
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(null);
+  const [mostrarEtiquetasPuntos, setMostrarEtiquetasPuntos] = useState<boolean>(true);
   const [vistaModo, setVistaModo] = useState<"vectorial" | "imagen">("vectorial");
 
   // Obtener la colección de gráficas según la etapa activa
@@ -166,10 +167,21 @@ export default function VectorGrowthChart({
     return pts.sort((a, b) => a.x - b.x);
   }, [config, mediciones, paciente.fecha_nacimiento]);
 
-  // Dimensiones del canvas SVG
-  const width = 860;
-  const height = 520;
-  const margin = { top: 30, right: 45, bottom: 50, left: 55 };
+  // Punto activo para barra de información superior (arriba del SVG - Cero Scroll)
+  const puntoActivo = useMemo(() => {
+    if (hoveredPointIndex !== null && puntosGrafica[hoveredPointIndex]) {
+      return { punto: puntosGrafica[hoveredPointIndex], origen: "hover" as const };
+    }
+    if (puntosGrafica.length > 0) {
+      return { punto: puntosGrafica[puntosGrafica.length - 1], origen: "ultimo" as const };
+    }
+    return null;
+  }, [hoveredPointIndex, puntosGrafica]);
+
+  // Dimensiones del canvas SVG optimizadas para visualización ergonómica sin scroll
+  const width = 840;
+  const height = 440;
+  const margin = { top: 32, right: 48, bottom: 46, left: 54 };
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom;
 
@@ -338,7 +350,7 @@ export default function VectorGrowthChart({
         <div style={{
           background: frameBgColor,
           borderBottom: `1px solid ${frameBorderColor}`,
-          padding: "12px 20px",
+          padding: "10px 20px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -346,19 +358,98 @@ export default function VectorGrowthChart({
           gap: "8px"
         }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#1e293b" }}>
+            <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "800", color: "#1e293b" }}>
               {config.nombre}
             </h3>
-            <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#64748b" }}>
+            <p style={{ margin: "1px 0 0 0", fontSize: "11px", color: "#64748b" }}>
               {config.subtitulo}
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "11px", fontWeight: "600", color: "#475569", background: "rgba(255,255,255,0.8)", padding: "4px 8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={() => setMostrarEtiquetasPuntos(!mostrarEtiquetasPuntos)}
+              style={{
+                background: mostrarEtiquetasPuntos ? (isGirl ? "#fdf2f8" : "#eff6ff") : "#ffffff",
+                color: mostrarEtiquetasPuntos ? (isGirl ? "#db2777" : "#0284c7") : "#64748b",
+                border: `1px solid ${mostrarEtiquetasPuntos ? (isGirl ? "#fbcfe8" : "#bfdbfe") : "#cbd5e1"}`,
+                padding: "3px 9px",
+                borderRadius: "6px",
+                fontSize: "11px",
+                fontWeight: "700",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px"
+              }}
+              title="Mostrar u ocultar los valores directamente sobre los puntos trazados"
+            >
+              <span>{mostrarEtiquetasPuntos ? "🏷️ Valores en puntos: ON" : "🏷️ Valores: OFF"}</span>
+            </button>
+
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "#475569", background: "rgba(255,255,255,0.85)", padding: "3px 8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
               Registros: <strong>{puntosGrafica.length}</strong>
             </span>
           </div>
+        </div>
+
+        {/* ── BARRA RESUMEN DE CONTROL ACTIVO (ARRIBA DEL SVG - CERO SCROLL) ── */}
+        <div style={{
+          background: puntoActivo ? (puntoActivo.origen === "hover" ? "#0f172a" : "#f8fafc") : "#f8fafc",
+          color: puntoActivo?.origen === "hover" ? "#ffffff" : "#1e293b",
+          borderBottom: `1px solid ${frameBorderColor}`,
+          padding: "9px 20px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "10px",
+          transition: "all 0.15s ease"
+        }}>
+          {puntoActivo ? (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <span style={{
+                  fontSize: "10.5px",
+                  fontWeight: "800",
+                  textTransform: "uppercase",
+                  padding: "2px 7px",
+                  borderRadius: "5px",
+                  background: puntoActivo.origen === "hover" ? "#6b21a8" : "#e2e8f0",
+                  color: puntoActivo.origen === "hover" ? "#ffffff" : "#334155"
+                }}>
+                  {puntoActivo.origen === "hover" ? "Punto Seleccionado" : "Último Control"}
+                </span>
+                <span style={{ fontSize: "12px", fontWeight: "600" }}>
+                  Fecha: <strong>{puntoActivo.punto.fecha}</strong> ({formatearEdadMeses(puntoActivo.punto.edadMeses)})
+                </span>
+                <span style={{ fontSize: "12.5px", fontWeight: "800", color: puntoActivo.origen === "hover" ? "#38bdf8" : "#0A4D5C" }}>
+                  {config.yLabel}: {puntoActivo.punto.y} {config.yUnit}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "11.5px", color: puntoActivo.origen === "hover" ? "#94a3b8" : "#64748b" }}>
+                  Z-Score: <strong>{puntoActivo.punto.zScoreAprox > 0 ? `+${puntoActivo.punto.zScoreAprox}` : puntoActivo.punto.zScoreAprox} DE</strong>
+                </span>
+                <span style={{
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  padding: "2px 8px",
+                  borderRadius: "5px",
+                  background: puntoActivo.punto.evalNutricional.color,
+                  color: "#ffffff"
+                }}>
+                  {puntoActivo.punto.evalNutricional.estado}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: "11.5px", color: "#64748b", fontStyle: "italic" }}>
+              Sin registros en el rango de esta gráfica todavía. Los controles aparecerán automáticamente.
+            </div>
+          )}
         </div>
 
         {/* SVG Interactivo */}
@@ -484,7 +575,7 @@ export default function VectorGrowthChart({
             {/* Títulos de Ejes */}
             <text
               x={margin.left + innerWidth / 2}
-              y={height - 12}
+              y={height - 10}
               fontSize="12"
               fontWeight="800"
               fill="#1e293b"
@@ -505,7 +596,7 @@ export default function VectorGrowthChart({
               {config.yLabel} ({config.yUnit})
             </text>
 
-            {/* ── TRAZADO DE PUNTOS REALES DEL PACIENTE ── */}
+            {/* ── TRAZADO DE LÍNEA ENTRE PUNTOS DEL PACIENTE ── */}
             {puntosGrafica.length > 1 && (
               <polyline
                 points={puntosGrafica.map(pt => `${scaleX(pt.x)},${scaleY(pt.y)}`).join(" ")}
@@ -517,91 +608,162 @@ export default function VectorGrowthChart({
               />
             )}
 
+            {/* ── PUNTOS REALES INTERACTIVOS ── */}
             {puntosGrafica.map((pt, i) => {
               const cx = scaleX(pt.x);
               const cy = scaleY(pt.y);
               const isHovered = hoveredPointIndex === i;
+              const isLast = i === puntosGrafica.length - 1;
 
               return (
                 <g 
-                  key={i} 
+                  key={`pt-${i}`} 
                   style={{ cursor: "pointer" }}
                   onMouseEnter={() => setHoveredPointIndex(i)}
                   onMouseLeave={() => setHoveredPointIndex(null)}
+                  onClick={() => setHoveredPointIndex(isHovered ? null : i)}
                 >
-                  {/* Círculo de interacción amplio */}
-                  <circle cx={cx} cy={cy} r="14" fill="transparent" />
+                  {/* Círculo de interacción amplio para fácil toque en móvil */}
+                  <circle cx={cx} cy={cy} r="16" fill="transparent" />
 
-                  {/* Círculo exterior con brillo si está seleccionado */}
-                  {isHovered && (
+                  {/* Halo dinámico al posarse o para el último punto */}
+                  {(isHovered || isLast) && (
                     <circle
                       cx={cx}
                       cy={cy}
-                      r="9"
-                      fill="rgba(107, 33, 168, 0.25)"
+                      r={isHovered ? "11" : "8"}
+                      fill={isHovered ? "rgba(107, 33, 168, 0.35)" : "rgba(107, 33, 168, 0.18)"}
                     />
                   )}
 
-                  {/* Punto púrpura con centro blanco */}
+                  {/* Punto púrpura con borde blanco */}
                   <circle
                     cx={cx}
                     cy={cy}
-                    r={isHovered ? "6" : "5"}
+                    r={isHovered ? "6.5" : "5"}
                     fill="#6b21a8"
                     stroke="#ffffff"
-                    strokeWidth="2"
+                    strokeWidth="2.2"
                   />
                 </g>
               );
             })}
+
+            {/* ── ETIQUETAS DIRECTAS SOBRE LOS PUNTOS (SVG DATA LABELS - CERO SCROLL) ── */}
+            {mostrarEtiquetasPuntos && puntosGrafica.map((pt, i) => {
+              const cx = scaleX(pt.x);
+              const cy = scaleY(pt.y);
+              const isHovered = hoveredPointIndex === i;
+              const isLast = i === puntosGrafica.length - 1;
+
+              // Posición vertical: si está muy cerca de la parte superior del canvas, invertir hacia abajo
+              const showBelow = cy < margin.top + 26;
+              const labelY = showBelow ? cy + 18 : cy - 14;
+              const labelText = `${pt.y} ${config.yUnit}`;
+              const textWidth = Math.max(40, labelText.length * 6.5 + 10);
+
+              return (
+                <g key={`datalabel-${i}`} pointerEvents="none">
+                  {/* Pequeña línea conectora al punto si está arriba */}
+                  <line
+                    x1={cx}
+                    y1={showBelow ? cy + 6 : cy - 6}
+                    x2={cx}
+                    y2={showBelow ? labelY - 7 : labelY + 7}
+                    stroke={isHovered ? "#0f172a" : (isLast ? "#6b21a8" : "#94a3b8")}
+                    strokeWidth="1"
+                    strokeDasharray="2,2"
+                  />
+                  {/* Pastilla / Badge del valor */}
+                  <rect
+                    x={cx - textWidth / 2}
+                    y={labelY - 8}
+                    width={textWidth}
+                    height="16"
+                    rx="4"
+                    fill={isHovered ? "#0f172a" : (isLast ? "#6b21a8" : "rgba(15, 23, 42, 0.82)")}
+                    stroke={isLast ? "#ffffff" : "none"}
+                    strokeWidth="1"
+                  />
+                  <text
+                    x={cx}
+                    y={labelY + 3.5}
+                    textAnchor="middle"
+                    fill="#ffffff"
+                    fontSize="10"
+                    fontWeight="700"
+                    letterSpacing="0.01em"
+                  >
+                    {labelText}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* ── TOOLTIP FLOTANTE IN-SITU DENTRO DEL SVG (Anclado al punto - CERO SCROLL) ── */}
+            {hoveredPointIndex !== null && puntosGrafica[hoveredPointIndex] && (() => {
+              const pt = puntosGrafica[hoveredPointIndex];
+              const cx = scaleX(pt.x);
+              const cy = scaleY(pt.y);
+
+              const tipW = 165;
+              const tipH = 58;
+
+              // Mantener el tooltip horizontalmente dentro de los márgenes visibles
+              let tipX = cx - tipW / 2;
+              if (tipX < margin.left + 4) tipX = margin.left + 4;
+              if (tipX + tipW > margin.left + innerWidth - 4) tipX = margin.left + innerWidth - 4 - tipW;
+
+              // Verticalmente: si el punto está muy arriba, mostrar el tooltip abajo
+              const showBelow = cy < margin.top + tipH + 20;
+              const tipY = showBelow ? cy + 15 : cy - tipH - 15;
+
+              return (
+                <g pointerEvents="none" style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.3))" }}>
+                  {/* Puntero triangular indicador */}
+                  <polygon
+                    points={showBelow 
+                      ? `${cx},${cy + 10} ${cx - 6},${tipY} ${cx + 6},${tipY}`
+                      : `${cx},${cy - 8} ${cx - 6},${tipY + tipH} ${cx + 6},${tipY + tipH}`
+                    }
+                    fill="#0f172a"
+                  />
+                  {/* Caja contenedora oscura con borde fino */}
+                  <rect
+                    x={tipX}
+                    y={tipY}
+                    width={tipW}
+                    height={tipH}
+                    rx="8"
+                    fill="#0f172a"
+                    stroke="#334155"
+                    strokeWidth="1"
+                  />
+                  {/* Fecha y edad */}
+                  <text x={tipX + 8} y={tipY + 16} fill="#94a3b8" fontSize="9.5" fontWeight="600">
+                    {pt.fecha} ({formatearEdadMeses(pt.edadMeses)})
+                  </text>
+                  {/* Valor grande */}
+                  <text x={tipX + 8} y={tipY + 34} fill="#ffffff" fontSize="13" fontWeight="800">
+                    {pt.y} {config.yUnit}
+                  </text>
+                  {/* Badge de diagnóstico nutricional */}
+                  <rect
+                    x={tipX + 8}
+                    y={tipY + 40}
+                    width={Math.min(tipW - 16, pt.evalNutricional.estado.length * 6 + 48)}
+                    height="13"
+                    rx="3"
+                    fill={pt.evalNutricional.color}
+                  />
+                  <text x={tipX + 12} y={tipY + 50} fill="#ffffff" fontSize="9" fontWeight="800">
+                    Z: {pt.zScoreAprox > 0 ? `+${pt.zScoreAprox}` : pt.zScoreAprox} DE • {pt.evalNutricional.estado}
+                  </text>
+                </g>
+              );
+            })()}
           </svg>
         </div>
-
-        {/* ── TOOLTIP INFORMATIVO INTERACTIVO (Al posar el mouse sobre un punto) ── */}
-        {hoveredPointIndex !== null && puntosGrafica[hoveredPointIndex] && (
-          <div style={{
-            padding: "12px 16px",
-            background: "#0f172a",
-            color: "#ffffff",
-            borderRadius: "10px",
-            margin: "12px 16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "12px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ background: "#6b21a8", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", fontWeight: "700" }}>
-                Control: {puntosGrafica[hoveredPointIndex].fecha}
-              </div>
-              <span style={{ fontSize: "13px" }}>
-                Edad: <strong>{formatearEdadMeses(puntosGrafica[hoveredPointIndex].edadMeses)}</strong>
-              </span>
-              <span>•</span>
-              <span style={{ fontSize: "13px" }}>
-                {config.yLabel}: <strong>{puntosGrafica[hoveredPointIndex].y} {config.yUnit}</strong>
-              </span>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "12px", color: "#94a3b8" }}>
-                Z-Score: <strong>{puntosGrafica[hoveredPointIndex].zScoreAprox > 0 ? `+${puntosGrafica[hoveredPointIndex].zScoreAprox}` : puntosGrafica[hoveredPointIndex].zScoreAprox} DE</strong>
-              </span>
-              <span style={{
-                fontSize: "12px",
-                fontWeight: "700",
-                padding: "2px 8px",
-                borderRadius: "6px",
-                background: puntosGrafica[hoveredPointIndex].evalNutricional.color,
-                color: "#ffffff"
-              }}>
-                {puntosGrafica[hoveredPointIndex].evalNutricional.estado}
-              </span>
-            </div>
-          </div>
-        )}
 
         {/* Leyenda Canónica Oficial OMS al pie */}
         <div style={{

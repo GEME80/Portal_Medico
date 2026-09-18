@@ -595,7 +595,7 @@ export async function getCurvasDigitalPublico(slug: string, token: string) {
     // 3. Resolver paciente por token_acceso o id
     const { data: paciente, error: pErr } = await adminSupabase
       .from('pacientes')
-      .select('id, nombres, apellidos, documento, tipo_documento, fecha_nacimiento, genero, eps, tipo_sangre, telefono, token_acceso')
+      .select('id, nombres, apellidos, documento, tipo_documento, fecha_nacimiento, genero, eps, telefono, token_acceso')
       .or(`token_acceso.eq.${token},id.eq.${token}`)
       .eq('tenant_id', tenant.id)
       .maybeSingle();
