@@ -18,7 +18,7 @@
 [![React](https://img.shields.io/badge/React-19.2.4-blue?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%2015-emerald?logo=supabase)](https://supabase.com/)
-[![Version](https://img.shields.io/badge/Version-v3.8.0-teal)](https://github.com/GEME80/Portal_Medico)
+[![Version](https://img.shields.io/badge/Version-v3.15.0-teal)](https://github.com/GEME80/Portal_Medico)
 [![License](https://img.shields.io/badge/License-Proprietary-red)]()
 
 ---
@@ -96,7 +96,7 @@
 * **Framework:** Next.js 16.2.9 (App Router)
 * **Frontend:** React 19.2.4, Tailwind CSS v4, Motion, Lucide React
 * **Editor Clínico:** TipTap (`@tiptap/react`) con sanitización XSS
-* **Antropometría & Somatometría:** Recharts 3.9 (Curvas de crecimiento OMS y percentiles z-scores)
+* **Antropometría & Somatometría:** Motor Vectorial SVG nativo (20 Curvas Oficiales OMS bajo Resolución 2465 de 2016 de MinSalud, Z-Scores -3 a +3 DE y Data Labels in-situ sin scroll)
 * **Base de Datos & Auth:** Supabase (PostgreSQL 15 administrado) con PgBouncer
 * **Criptografía:** `crypto` nativo de Node.js (AES-256-GCM) y Supabase Vault
 * **Validación de Datos:** Zod v4 (`lib/validations/clinical.ts`) con tipado estricto
@@ -108,10 +108,12 @@
 * 🧭 **Arquitectura de Navegación Persistente en Scroll:** Sidebar desktop fijo (`position: fixed`) y Topbar sticky con efecto glassmorphism (`backdrop-filter: blur(12px)`) en todo el Portal del Doctor, junto con submenús flotantes (`.sticky-subnav`) en formularios extensos y erradicación total de emojis informales con **Lucide Icons**.
 * 📊 **Centro de Comando RIPS MinSalud 2026 (`/[slug]/admin/reportes`):** Exportación interoperable en JSON bajo Resolución 000948/2026 y 2275/2023 con validación previa de folios cerrados vs borradores (soporte obligatorio de Factura Electrónica en Salud FEV ante la DIAN).
 * 📅 **Agenda de Citas (`/[slug]/admin/citas`):** Programación y control de estados (`programada`, `confirmada`, `cancelada`, `completada`) con persistencia multi-tenant y revalidación de caché.
-* 🪪 **Carné Vacunal Digital (`/[slug]/carne/[token]`):** Portal público interactivo accesible mediante Magic Token criptográfico (sin coste de usuarios MAU en Supabase Auth) con exportación nativa a PDF.
+* 🪪 **Carné Vacunal Digital (`/[slug]/carne/[token]`):** Portal público interactivo accesible mediante Magic Token criptográfico (sin coste de usuarios MAU en Supabase Auth) con exportación nativa a PDF y envío por WhatsApp.
+* 📈 **Curvas de Crecimiento OMS Vectoriales (`/[slug]/crecimiento/[token]`):** Visor público interactivo y modal clínico administrativo con 20 curvas oficiales OMS, Z-scores y percentiles bajo Resolución 2465/2016, filtrado automático por edad y sexo, etiquetas de datos directas sobre los puntos (cero scroll), código QR y firma médica caligráfica.
+* 🩺 **Gestión de Pacientes & Nueva Consulta:** Modales ergonómicos centrados, signos vitales opcionales, widget reactivo de Smart IMC con rangos de peso saludable sugeridos, chips de motivos y CIE-10 frecuentes.
+* 📦 **Inventario POS & Kardex Server-Side (`/[slug]/admin/inventario`):** Control de lotes FEFO con paginación server-side para optimizar rendimiento de base de datos y plantillas rápidas de insumos.
 * 👥 **Gestión de Equipo y Roles (`/[slug]/admin/equipo`):** Aprovisionamiento y asignación de roles (`admin`, `medico`, `recepcion`) protegiendo el acceso a historias clínicas confidenciales.
 * 💳 **Facturación y Finanzas SuperAdmin (`/superadmin/facturacion`):** Consola ejecutiva global con control de ingresos recurrentes (MRR), suspensiones y activaciones de consultorios.
-* 📈 **Somatometría & Curvas OMS (`/[slug]/admin/pacientes/[id]`):** Gráficos calibrados interactivos con percentiles y z-scores oficiales de la OMS.
 
 ---
 

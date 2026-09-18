@@ -16,6 +16,57 @@
 Todos los cambios notables en este proyecto se documentan en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.15.0] - 2026-09-17
+### Curvas de Crecimiento OMS Vectoriales (Res. 2465/2016), Visor Digital Público y Cero Scroll
+- **Reingeniería de Curvas OMS Pediátricas (Resolución 2465 de 2016 MinSalud)**:
+  - **Gráficos 100% Vectoriales SVG de Alta Fidelidad (`components/VectorGrowthChart.tsx`)**:
+    - Reemplazo total del sistema previo basado en imágenes JPG estáticas por renderizado vectorial milimétrico.
+    - Marco institucional clínico: Celeste (`#38bdf8`) para niños y Rosa (`#f472b6`) para niñas.
+    - Curvas oficiales Z-score OMS: Mediana verde sólido (0 DE), ±1 DE ámbar, ±2 DE roja discontinua y ±3 DE roja continua.
+    - Corredor de normalidad sombreado en verde suave entre -2 DE y +2 DE.
+    - Ejes duales numéricos a izquierda y derecha con cuadrícula milimétrica.
+  - **Ergonomía Visual sin Scroll (SVG Data Labels e In-Situ Tooltips)**:
+    - Etiquetas flotantes vectoriales directas sobre cada punto ploteado con su valor exacto (`9.2 kg`, `73 cm`, `16.5 IMC`, `45.8 cm`).
+    - Tooltip flotante in-situ anclado directamente sobre el punto dentro del área visible del SVG al pasar el mouse o tocar en pantalla móvil.
+    - Barra de control activo trasladada a la parte superior del gráfico con cálculo reactivo en tiempo real.
+    - Interruptor de cabecera para encender o apagar las etiquetas de datos a conveniencia.
+  - **Motor de Filtrado Inteligente por Edad y Género (`lib/oms/constants.ts`)**:
+    - Matriz canónica de las 20 curvas oficiales OMS (10 para niños y 10 para niñas) en 3 etapas: 0-24 meses, 2-5 años y 5-18 años.
+    - Detección automática: muestra estricta y exclusivamente las 2 a 4 gráficas pertinentes según la edad y sexo del paciente, eliminando sobrecarga cognitiva.
+    - Clasificación nutricional según Z-Scores de la Resolución 2465/2016 (Desnutrición aguda/global, Riesgo, Adecuado, Sobrepeso, Obesidad).
+  - **Visor Digital Público de Curvas (`app/[slug]/crecimiento/[token]`)**:
+    - Acceso criptográfico mediante `token_acceso` (UUID v4) del paciente sin requerir credenciales ni contraseñas.
+    - Tarjetas KPI con el último control, tabla histórica completa, código QR dinámico y firma médica caligráfica institucional.
+    - Botón de envío directo por WhatsApp a los acudientes y enlace cruzado con el Carné de Vacunación Digital.
+    - Corrección del error 404 por remoción de columna `tipo_sangre` en la consulta a la tabla `pacientes`.
+  - **Dataset de Validación con 6 Pacientes de Prueba**:
+    - Siembra en Supabase de 6 pacientes arquetípicos con historiales cronológicos continuos para comprobar el 100% de las 20 curvas oficiales.
+
+## [3.14.0] - 2026-09-17
+### Gestión de Pacientes y Consulta Médica Moderna
+- **Reingeniería de la Experiencia de Consulta y Admisión (`app/[slug]/admin/pacientes`)**:
+  - Reemplazo del drawer lateral derecho estrecho por modales centrados ergonómicos de alta legibilidad (~680px y ~940px).
+  - Flexibilización total de signos vitales (100% opcionales, sin campos bloqueantes obligatorios).
+  - Widget reactivo de Smart IMC con cálculo instantáneo, etiqueta nutricional OMS y rango de peso saludable sugerido para la talla digitada.
+  - Chips rápidos de motivo de consulta y diagnósticos frecuentes CIE-10 accesibles con un solo clic.
+  - Copia rápida de antecedentes previos desencriptados para ahorrar tiempo en controles sucesivos.
+  - Estructuración ágil en plan de manejo (`+ Recomendaciones`, `+ Signos de Alarma`, `+ Cita de Control`).
+
+## [3.13.0] - 2026-09-17
+### Rediseño Minimalista del Dashboard Principal
+- **Estandarización Visual Corporativa (`app/[slug]/admin/page.tsx`)**:
+  - Eliminación integral de emojis en títulos, botones y métricas, reemplazándolos por iconografía médica sobria de Lucide React.
+  - Tira superior de KPIs clínicos compactada con visualización de pacientes activos, citas del día, valor de inventario y estado general.
+  - Ajuste de espaciados, tipografías y bordes suaves acorde al estándar corporativo de HubMed.
+
+## [3.12.0] - 2026-09-17
+### Optimización de Inventario y Kardex Server-Side
+- **Mejoras en el Espacio de Inventario (`app/[slug]/admin/inventario`)**:
+  - Corrección de popup cortado mediante contención de scroll y posicionamiento relativo en diálogos.
+  - Plantillas inteligentes para registro ágil de nuevos biológicos e insumos, reduciendo pasos repetitivos.
+  - Estandarización de botones con bordes redondeados (`rounded-xl`).
+  - Optimización de base de datos en el Kardex: paginación server-side para escalar con el histórico de movimientos sin degradar memoria ni tiempo de respuesta.
+
 ## [3.11.0] - 2026-09-16
 ### Tarjetas y Carné de Vacunación Digital
 - **Módulo Integral de Inmunización y Carné Digital**:

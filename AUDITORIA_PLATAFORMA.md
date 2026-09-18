@@ -13,7 +13,7 @@
 
 # 🔍 AUDITORÍA INTEGRAL DE PLATAFORMA Y SCORECARD DE MADUREZ (AUDITORIA_PLATAFORMA.md)
 
-**Versión de Plataforma:** 3.8.0  
+**Versión de Plataforma:** 3.15.0  
 **Fecha de Auditoría:** Septiembre 2026  
 **Auditor Rector:** 🔐 QA, Seguridad & Cryptography Auditor  
 **Supervisión y Aprobación:** 🏛️ Principal Platform Architect  
@@ -49,6 +49,7 @@
 | **Espacio 3** | `/[slug]` | Server Component (`page.tsx`) | Landing page pública del médico | Pacientes / Público general |
 | **Espacio 3** | `/[slug]/citas` | Server + Client (`BookingForm.tsx`) | Agendamiento en línea para pacientes | Pacientes / Público general |
 | **Espacio 3** | `/[slug]/carne/[token]` | Server Component (`page.tsx`) | Carné vacunal digital público (token UUID) | Pacientes / Acudientes |
+| **Espacio 3** | `/[slug]/crecimiento/[token]` | Server Component (`page.tsx`) | Visor de Curvas de Crecimiento OMS con Z-scores y WhatsApp | Pacientes / Acudientes |
 | **Espacio 3** | `/[slug]/servicios` | Server Component (`page.tsx`) | Catálogo de servicios y especialidades | Pacientes / Público general |
 | **Espacio 3** | `/[slug]/noticias` | Server Component (`page.tsx`) | Blog y noticias divulgativas de salud | Pacientes / Público general |
 
@@ -62,6 +63,9 @@
 | `lib/actions/clinical-actions.ts` | `crearPacienteExpress` | `pacientes` | ✅ Valida `tenant_id` en sesión | ✅ `{ success, error, code }` |
 | `lib/actions/clinical-actions.ts` | `obtenerHistoriaClinica` | `historias_clinicas` | ✅ Valida `tenant_id` en sesión | ✅ `{ success, error, code }` |
 | `lib/actions/clinical-actions.ts` | `guardarMedicionOMS` | `oms_mediciones` | ✅ Valida `tenant_id` en sesión | ✅ `{ success, error, code }` |
+| `lib/actions/clinical-actions.ts` | `getCurvasDigitalPublico` | `pacientes`, `tenants`, `mediciones` | ✅ Resuelto por `token_acceso` y `tenant_id` | ✅ Objeto tipado o null |
+| `lib/actions/clinical-actions.ts` | `agregarMedicionHistorica` | `paciente_mediciones_antropometricas`| ✅ Valida `tenant_id` y sesión médica | ✅ Inserción con perímetro cefálico |
+| `lib/actions/vacunas-actions.ts` | `getCarneDigitalPublico` | `pacientes`, `tenants`, `aplicaciones_vacunas` | ✅ Resuelto por `token_acceso` y `tenant_id` | ✅ Objeto tipado o null |
 | `app/superadmin/actions.ts` | `createTenantAction` | `tenants`, `configuracion` | ✅ Creación atómica de tenant | ✅ Validación y códigos |
 | `app/superadmin/actions.ts` | `toggleTenantStatusAction`| `tenants` | ✅ Solo SuperAdmin | ✅ Validación y códigos |
 | `app/[slug]/admin/actions.ts` | `payInvoiceAction` | `tenants` | ✅ Valida slug | ✅ Retorno estandarizado |

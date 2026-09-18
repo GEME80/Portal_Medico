@@ -24,6 +24,7 @@
 > **Autoridad Emisora:** 🏛️ **Agente Principal & Oficial de Cumplimiento Normativo Clínico**  
 > **Marco Jurídico Vigente:**
 > * **Resolución 000948 de Mayo de 2026:** Estándares técnicos de interoperabilidad de HCE y generación del Registro Individual de Prestación de Servicios de Salud (RIPS).
+> * **Resolución 2465 de 2016:** Indicadores antropométricos, patrones de referencia de la OMS y clasificación del estado nutricional en menores de 18 años y gestantes.
 > * **Resolución 1995 de 1999:** Normas integrales para el diligenciamiento, administración, custodia y archivo de la Historia Clínica.
 > * **Resolución 839 de 2017:** Modificación y estandarización de los tiempos de retención y custodia documental de historias clínicas.
 > * **Ley 1751 de 2015:** Ley Estatutaria de Salud (derecho fundamental a la salud, reserva del acto médico e intimidad).
@@ -184,3 +185,34 @@ Conforme a la **Resolución 839 de 2017** de MinSalud:
 
 * **CIE-10 / CIE-11 & CUPS:** Validación contra tablas maestras compartidas por todos los clientes.
 * **Validación ReTHUS:** Solo profesionales de la salud debidamente acreditados en el Registro Único Nacional del Talento Humano en Salud pueden firmar folios médicos en cualquier consultorio de HubMed Platform.
+
+---
+
+## 📈 8. Evaluación Antropométrica y Curvas de Crecimiento OMS (Resolución 2465 de 2016)
+
+En concordancia estricta con la **Resolución 2465 de 2016 del Ministerio de Salud y Protección Social**, HubMed Platform implementa la evaluación del estado nutricional y crecimiento somatométrico de la población menor de 18 años mediante curvas vectoriales estandarizadas de la OMS:
+
+### A. Indicadores Antropométricos Obligatorios por Grupo Etario
+1. **0 a 2 años (0 a 24 meses):**
+   * **P/E:** Peso para la Edad.
+   * **T/E (L/E):** Longitud para la Edad (posición acostada).
+   * **P/T:** Peso para la Longitud.
+   * **PC/E:** Perímetro Cefálico para la Edad.
+2. **2 a 5 años (24 a 60 meses):**
+   * **P/E:** Peso para la Edad.
+   * **T/E:** Talla para la Edad (posición de pie).
+   * **P/T:** Peso para la Talla.
+   * **IMC/E:** Índice de Masa Corporal para la Edad.
+3. **5 a 18 años:**
+   * **T/E:** Talla para la Edad.
+   * **IMC/E:** Índice de Masa Corporal para la Edad.
+
+### B. Especificaciones Técnicas y Gráficas de las Curvas Vectoriales
+* **Puntuaciones Z-Score (Desviaciones Estándar):** Representación de las líneas canónicas de referencia en SVG:
+  * $+3\text{ DE}$, $+2\text{ DE}$, $+1\text{ DE}$ (Riesgo de sobrepeso / sobrepeso / obesidad o macrocefalia).
+  * $0\text{ DE}$ (Mediana estándar OMS — Línea base verde).
+  * $-1\text{ DE}$, $-2\text{ DE}$, $-3\text{ DE}$ (Riesgo de desnutrición / retraso en talla / desnutrición global o microcefalia).
+* **Filtrado Clínico Inteligente:** El motor evalúa automáticamente el sexo biológico y la edad exacta del paciente en meses para renderizar exclusivamente el subconjunto de 2 a 4 curvas aplicables, eliminando ruido visual y previniendo errores de interpretación clínica.
+* **Trazabilidad de Mediciones:** Cada punto graficado registra fecha, edad en meses, valor somatométrico y folio clínico o medición histórica asociada en la tabla `paciente_mediciones_antropometricas`.
+* **Entrega Segura y Custodia Digital:** El acceso familiar a las curvas se realiza mediante `token_acceso` (UUID v4) con canal seguro HTTPS (`/[slug]/crecimiento/[token]`), garantizando privacidad de datos sin requerir almacenamiento ni transmisión de credenciales por medios no seguros.
+
