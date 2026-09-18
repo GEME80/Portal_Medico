@@ -383,3 +383,46 @@
   color: var(--doc-primary);
   border: 1px solid rgba(10, 77, 92, 0.18);
 }
+
+/* ─── MOBILE ADAPTATIONS (< 640px) ─────────────────────────────────────── */
+@media (max-width: 640px) {
+  .admin-topbar {
+    padding: 0 16px !important;
+    height: 56px !important;
+  }
+
+  .admin-topbar-title {
+    font-size: 16px !important;
+  }
+
+  .doc-dashboard-header {
+    padding: 16px 18px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .doc-welcome-title {
+    font-size: 19px;
+  }
+
+  .doc-quick-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .doc-quick-actions .doc-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rips-kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .rips-card {
+    padding: 16px;
+  }
+}
+

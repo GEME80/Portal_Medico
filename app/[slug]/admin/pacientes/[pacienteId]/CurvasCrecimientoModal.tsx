@@ -139,7 +139,7 @@ export default function CurvasCrecimientoModal({
       alignItems: "center",
       justifyContent: "center",
       zIndex: 100,
-      padding: "16px",
+      padding: "8px",
       overflowY: "auto"
     }}>
       <div style={{
@@ -147,7 +147,7 @@ export default function CurvasCrecimientoModal({
         borderRadius: "16px",
         width: "100%",
         maxWidth: "980px",
-        maxHeight: "92vh",
+        maxHeight: "94vh",
         display: "flex",
         flexDirection: "column",
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -156,63 +156,64 @@ export default function CurvasCrecimientoModal({
       }}>
         {/* HEADER MODAL */}
         <div style={{
-          padding: "18px 24px",
+          padding: "14px 20px",
           borderBottom: "1px solid #e2e8f0",
           background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flexWrap: "wrap",
-          gap: "12px"
+          gap: "10px"
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div style={{
-              width: "42px",
-              height: "42px",
+              width: "38px",
+              height: "38px",
               borderRadius: "10px",
               background: esMasculino ? "#eff6ff" : "#fdf2f8",
               border: `1px solid ${esMasculino ? "#bfdbfe" : "#fbcfe8"}`,
               display: "flex",
               alignItems: "center",
-              justifyContent: "center"
+              justifyContent: "center",
+              flexShrink: 0
             }}>
-              <Activity size={22} color={esMasculino ? "#2563eb" : "#db2777"} />
+              <Activity size={20} color={esMasculino ? "#2563eb" : "#db2777"} />
             </div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                <h2 style={{ fontSize: "19px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                <h2 style={{ fontSize: "17px", fontWeight: 800, color: "#0f172a", margin: 0 }}>
                   Curvas de Crecimiento OMS
                 </h2>
                 <span style={{
-                  fontSize: "11px",
+                  fontSize: "10.5px",
                   fontWeight: 700,
-                  padding: "2px 8px",
+                  padding: "2px 7px",
                   borderRadius: "9999px",
                   background: esMasculino ? "#dbeafe" : "#fce7f3",
                   color: esMasculino ? "#1e40af" : "#9d174d",
                   border: `1px solid ${esMasculino ? "#bfdbfe" : "#fbcfe8"}`
                 }}>
-                  {esMasculino ? "Patrón Niños (Celeste)" : "Patrón Niñas (Rosado)"}
+                  {esMasculino ? "Niños" : "Niñas"}
                 </span>
                 <span style={{
-                  fontSize: "11px",
+                  fontSize: "10.5px",
                   fontWeight: 700,
-                  padding: "2px 8px",
+                  padding: "2px 7px",
                   borderRadius: "9999px",
                   background: "#f1f5f9",
                   color: "#475569"
                 }}>
-                  {meses < 24 ? `${meses} meses` : `${Math.floor(meses / 12)} años y ${meses % 12}m`}
+                  {meses < 24 ? `${meses} m` : `${Math.floor(meses / 12)}a ${meses % 12}m`}
                 </span>
               </div>
-              <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0" }}>
-                Paciente: <strong style={{ color: "#334155" }}>{paciente?.nombres} {paciente?.apellidos}</strong> • Resolución 2465 de 2016 MinSalud Colombia
+              <p style={{ fontSize: "11.5px", color: "#64748b", margin: "2px 0 0" }}>
+                Paciente: <strong style={{ color: "#334155" }}>{paciente?.nombres} {paciente?.apellidos}</strong> • Res. 2465/2016
               </p>
             </div>
           </div>
 
           {/* ACCIONES SUPERIORES */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
             {/* WHATSAPP */}
             <button
               onClick={handleWhatsAppShare}
@@ -220,20 +221,19 @@ export default function CurvasCrecimientoModal({
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "5px",
                 background: "#25D366",
                 color: "white",
                 border: "none",
-                padding: "7px 14px",
+                padding: "6px 12px",
                 borderRadius: "8px",
-                fontSize: "12px",
+                fontSize: "11.5px",
                 fontWeight: 700,
                 cursor: "pointer",
                 boxShadow: "0 2px 6px rgba(37, 211, 102, 0.25)"
               }}
             >
-              <MessageCircle size={14} />
-              Enviar WhatsApp
+              <MessageCircle size={14} /> WhatsApp
             </button>
 
             {/* COPIAR ENLACE */}
@@ -378,9 +378,8 @@ export default function CurvasCrecimientoModal({
                   )}
                 </div>
 
-                <form onSubmit={handleSaveMedicion} style={{
+                <form onSubmit={handleSaveMedicion} className="curvas-manual-form" style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr)) 140px",
                   gap: "12px",
                   alignItems: "end"
                 }}>
@@ -482,6 +481,7 @@ export default function CurvasCrecimientoModal({
                   <button
                     type="submit"
                     disabled={savingMedicion}
+                    className="curvas-manual-form-btn"
                     style={{
                       background: "#0A4D5C",
                       color: "white",
@@ -511,6 +511,26 @@ export default function CurvasCrecimientoModal({
           )}
         </div>
       </div>
+
+      <style>{`
+        .curvas-manual-form {
+          grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) 130px;
+        }
+        @media screen and (max-width: 768px) {
+          .curvas-manual-form {
+            grid-template-columns: 1fr 1fr !important;
+          }
+          .curvas-manual-form-btn {
+            grid-column: 1 / -1 !important;
+            width: 100% !important;
+          }
+        }
+        @media screen and (max-width: 420px) {
+          .curvas-manual-form {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

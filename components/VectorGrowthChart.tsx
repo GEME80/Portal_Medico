@@ -237,7 +237,7 @@ export default function VectorGrowthChart({
     <div style={{ width: "100%", fontFamily: "'Outfit', sans-serif" }}>
       
       {/* ── BARRA DE SELECCIÓN INTELIGENTE SEGÚN EDAD Y GÉNERO ── */}
-      <div style={{
+      <div className="vector-growth-selector-bar" style={{
         background: "#ffffff",
         border: "1px solid #e2e8f0",
         borderRadius: "14px",
@@ -270,7 +270,7 @@ export default function VectorGrowthChart({
           </div>
 
           {/* Selector discreto de etapa anterior (si el niño ya es mayor) */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
             <span style={{ fontSize: "11px", fontWeight: "600", color: "#64748b" }}>Etapa:</span>
             <div style={{ display: "flex", background: "#f1f5f9", padding: "2px", borderRadius: "8px" }}>
               {todasLasEtapas.map(et => {
@@ -347,7 +347,7 @@ export default function VectorGrowthChart({
         position: "relative"
       }}>
         {/* Cabecera de la Gráfica Oficial */}
-        <div style={{
+        <div className="vector-growth-header" style={{
           background: frameBgColor,
           borderBottom: `1px solid ${frameBorderColor}`,
           padding: "10px 20px",
@@ -366,7 +366,7 @@ export default function VectorGrowthChart({
             </p>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={() => setMostrarEtiquetasPuntos(!mostrarEtiquetasPuntos)}
@@ -395,7 +395,7 @@ export default function VectorGrowthChart({
         </div>
 
         {/* ── BARRA RESUMEN DE CONTROL ACTIVO (ARRIBA DEL SVG - CERO SCROLL) ── */}
-        <div style={{
+        <div className="vector-growth-summary-bar" style={{
           background: puntoActivo ? (puntoActivo.origen === "hover" ? "#0f172a" : "#f8fafc") : "#f8fafc",
           color: puntoActivo?.origen === "hover" ? "#ffffff" : "#1e293b",
           borderBottom: `1px solid ${frameBorderColor}`,
@@ -452,8 +452,22 @@ export default function VectorGrowthChart({
           )}
         </div>
 
+        {/* Aviso de desplazamiento táctil en pantallas móviles */}
+        <div className="vector-growth-swipe-hint" style={{
+          display: "none",
+          textAlign: "center",
+          fontSize: "11px",
+          fontWeight: 700,
+          color: isGirl ? "#be185d" : "#0284c7",
+          background: isGirl ? "#fdf2f8" : "#f0f9ff",
+          padding: "5px 10px",
+          borderBottom: `1px dashed ${frameBorderColor}`
+        }}>
+          ↔ Desliza horizontalmente sobre la gráfica para explorar la cuadrícula OMS
+        </div>
+
         {/* SVG Interactivo */}
-        <div style={{ width: "100%", overflowX: "auto", background: "#ffffff" }}>
+        <div style={{ width: "100%", overflowX: "auto", background: "#ffffff", WebkitOverflowScrolling: "touch" }}>
           <svg
             viewBox={`0 0 ${width} ${height}`}
             style={{ width: "100%", height: "auto", minWidth: "680px", display: "block" }}
@@ -806,6 +820,24 @@ export default function VectorGrowthChart({
           </div>
         </div>
       </div>
+
+      {/* Estilos Responsivos Específicos para Pantallas Táctiles */}
+      <style>{`
+        @media screen and (max-width: 768px) {
+          .vector-growth-swipe-hint {
+            display: block !important;
+          }
+          .vector-growth-header {
+            padding: 8px 12px !important;
+          }
+          .vector-growth-summary-bar {
+            padding: 8px 12px !important;
+          }
+          .vector-growth-selector-bar {
+            padding: 12px 14px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

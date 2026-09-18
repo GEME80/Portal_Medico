@@ -578,13 +578,13 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
         </div>
       </div>
 
-      <div style={{ padding: "32px", fontFamily: "'Outfit', sans-serif", minHeight: "calc(100vh - 64px)", background: "#f8fafc" }}>
+      <div className="p-4 sm:p-6 md:p-8" style={{ fontFamily: "'Outfit', sans-serif", minHeight: "calc(100vh - 64px)", background: "#f8fafc" }}>
         
         {/* Cabecera & Barra de Búsqueda */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "32px", flexWrap: "wrap", gap: "16px" }}>
-          <div style={{ flex: 1, minWidth: "320px", maxWidth: "600px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "28px", flexWrap: "wrap", gap: "16px" }}>
+          <div style={{ flex: 1, minWidth: 0, width: "100%", maxWidth: "600px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-              <h1 style={{ fontSize: "28px", fontWeight: "800", color: "#1e293b", margin: 0, letterSpacing: "-0.02em" }}>
+              <h1 style={{ fontSize: "24px", fontWeight: "800", color: "#1e293b", margin: 0, letterSpacing: "-0.02em" }}>
                 Directorio de Pacientes
               </h1>
               <span style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", background: "#e2e8f0", padding: "3px 10px", borderRadius: "12px" }}>
@@ -638,6 +638,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
           
           <button 
             onClick={openNewPatientModal}
+            className="w-full sm:w-auto justify-center"
             style={{
               background: "#00D4AA",
               color: "#0f172a",
@@ -904,7 +905,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
           justifyContent: "center",
           background: "rgba(15, 23, 42, 0.65)",
           backdropFilter: "blur(4px)",
-          padding: "16px"
+          padding: "8px"
         }}>
           <div style={{ position: "absolute", inset: 0 }} onClick={closeNewPatientModal} />
 
@@ -912,7 +913,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             position: "relative",
             width: "100%",
             maxWidth: "700px",
-            maxHeight: "90vh",
+            maxHeight: "94vh",
             background: "#ffffff",
             borderRadius: "16px",
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -929,32 +930,26 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             `}</style>
 
             {/* Header */}
-            <div style={{
-              padding: "20px 24px",
-              borderBottom: "1px solid #e2e8f0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              background: "#ffffff"
-            }}>
+            <div className="p-4 sm:px-6 sm:py-5 border-b border-slate-200 flex justify-between items-center bg-white">
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <div style={{
-                  width: "40px",
-                  height: "40px",
+                  width: "38px",
+                  height: "38px",
                   borderRadius: "10px",
                   background: "rgba(0, 212, 170, 0.12)",
                   color: "#00b28e",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center"
+                  justifyContent: "center",
+                  flexShrink: 0
                 }}>
-                  <UserPlus size={20} strokeWidth={2.2} />
+                  <UserPlus size={18} strokeWidth={2.2} />
                 </div>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#0f172a" }}>
+                  <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0f172a" }}>
                     Registrar Nuevo Paciente
                   </h2>
-                  <p style={{ margin: "2px 0 0 0", fontSize: "13px", color: "#64748b" }}>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#64748b" }}>
                     {isRecepcion 
                       ? "Datos demográficos y de admisión básica para sala de espera." 
                       : "Ingresa los datos del paciente para su expediente e historial clínico."}
@@ -984,7 +979,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             </div>
 
             {/* Body */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               {errorMsg && (
                 <div style={{
                   background: "rgba(239, 68, 68, 0.1)",
@@ -1046,15 +1041,15 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                 background: "#f8fafc",
                 border: "1px solid #e2e8f0",
                 borderRadius: "12px",
-                padding: "20px",
-                marginBottom: "20px"
+                padding: "16px",
+                marginBottom: "16px"
               }}>
-                <div style={{ fontSize: "13px", fontWeight: "700", color: "#0A4D5C", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "16px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#0A4D5C", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
                   <User size={15} /> 1. Datos Personales e Identificación
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "16px", marginBottom: "16px" }}>
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                  <div className="col-span-1">
                     <label style={labelStyle}>Tipo Doc *</label>
                     <select 
                       value={newPatientData.tipo_documento}
@@ -1073,7 +1068,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                       <option value="NU">NU - Número Único</option>
                     </select>
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <label style={labelStyle}>Número de Documento *</label>
                     <input 
                       value={newPatientData.documento}
@@ -1085,7 +1080,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                   <div>
                     <label style={labelStyle}>Nombres *</label>
                     <input 
@@ -1108,7 +1103,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
                       <label style={{ ...labelStyle, margin: 0 }}>Fecha de Nacimiento *</label>
@@ -1147,14 +1142,14 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                 background: "#f8fafc",
                 border: "1px solid #e2e8f0",
                 borderRadius: "12px",
-                padding: "20px",
-                marginBottom: "20px"
+                padding: "16px",
+                marginBottom: "16px"
               }}>
-                <div style={{ fontSize: "13px", fontWeight: "700", color: "#0A4D5C", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "16px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#0A4D5C", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
                   <Building2 size={15} /> 2. Aseguramiento & Contacto
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                   <div>
                     <label style={labelStyle}>EPS / Entidad Administradora</label>
                     <input 
@@ -1175,7 +1170,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label style={labelStyle}>Tipo de Sangre</label>
                     <select 
@@ -1210,10 +1205,10 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                 background: "#f8fafc",
                 border: "1px solid #e2e8f0",
                 borderRadius: "12px",
-                padding: "20px"
+                padding: "16px"
               }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-                  <div style={{ fontSize: "13px", fontWeight: "700", color: "#0A4D5C", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", flexWrap: "wrap", gap: "6px" }}>
+                  <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#0A4D5C", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "6px" }}>
                     <Phone size={15} /> 3. Acudiente o Contacto de Emergencia
                   </div>
                   {nuevoPacienteEdad.anios < 18 && (
@@ -1223,7 +1218,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                   )}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "12px" }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3">
                   <div>
                     <label style={labelStyle}>Nombre Padre / Acudiente 1</label>
                     <input 
@@ -1244,7 +1239,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label style={labelStyle}>Nombre Madre / Acudiente 2</label>
                     <input 
@@ -1268,15 +1263,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             </div>
 
             {/* Footer */}
-            <div style={{
-              padding: "16px 24px",
-              borderTop: "1px solid #e2e8f0",
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              gap: "12px",
-              background: "#ffffff"
-            }}>
+            <div className="p-3 sm:px-6 sm:py-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end items-stretch sm:items-center gap-2 sm:gap-3 bg-white">
               <button 
                 type="button" 
                 onClick={closeNewPatientModal}
@@ -1288,7 +1275,8 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                   borderRadius: "8px",
                   fontWeight: "600",
                   fontSize: "13px",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  textAlign: "center"
                 }}
               >
                 Cancelar
@@ -1309,6 +1297,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                   cursor: savingForm ? "not-allowed" : "pointer",
                   display: "inline-flex",
                   alignItems: "center",
+                  justifyContent: "center",
                   gap: "6px"
                 }}
               >
@@ -1331,6 +1320,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                     cursor: savingForm ? "not-allowed" : "pointer",
                     display: "inline-flex",
                     alignItems: "center",
+                    justifyContent: "center",
                     gap: "6px",
                     boxShadow: "0 2px 8px rgba(10, 77, 92, 0.25)"
                   }}
@@ -1348,24 +1338,14 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
           MODAL 2: NUEVA CONSULTA MÉDICA (Centrado, Amplio ~940px)
       ───────────────────────────────────────────────────────────── */}
       {isConsultaModalOpen && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "rgba(15, 23, 42, 0.7)",
-          backdropFilter: "blur(5px)",
-          padding: "16px"
-        }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-2 sm:p-4">
           <div style={{ position: "absolute", inset: 0 }} onClick={closeConsultaModal} />
 
           <div style={{
             position: "relative",
             width: "100%",
             maxWidth: "960px",
-            maxHeight: "92vh",
+            maxHeight: "94vh",
             background: "#ffffff",
             borderRadius: "16px",
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -1375,47 +1355,30 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             animation: "modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
           }}>
             {/* Header: Ficha del Paciente */}
-            <div style={{
-              padding: "16px 24px",
-              borderBottom: "1px solid #e2e8f0",
-              background: "#ffffff",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                <div style={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "12px",
-                  background: "rgba(10, 77, 92, 0.08)",
-                  color: "#0A4D5C",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: "800",
-                  fontSize: "15px"
-                }}>
+            <div className="p-3 sm:px-6 sm:py-4 border-b border-slate-200 bg-white flex justify-between items-center gap-2 sm:gap-4">
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-teal-900/10 text-[#0A4D5C] flex items-center justify-center font-extrabold text-xs sm:text-sm shrink-0">
                   {selectedPacienteData?.nombres?.[0]}{selectedPacienteData?.apellidos?.[0]}
                 </div>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <h2 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#0f172a" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <h2 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
                       {selectedPacienteData?.nombres} {selectedPacienteData?.apellidos}
                     </h2>
                     <span style={{
-                      fontSize: "11px",
+                      fontSize: "10px",
                       fontWeight: "700",
-                      padding: "2px 8px",
+                      padding: "2px 6px",
                       borderRadius: "6px",
                       background: "rgba(0, 212, 170, 0.12)",
                       color: "#00b28e",
-                      letterSpacing: "0.04em"
+                      letterSpacing: "0.04em",
+                      whiteSpace: "nowrap"
                     }}>
                       CONSULTA ACTIVA
                     </span>
                   </div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginTop: "3px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div className="text-xs text-slate-500 mt-0.5 flex items-center flex-wrap gap-x-2 gap-y-0.5">
                     <span><strong>{selectedPacienteData?.tipo_documento}</strong> {selectedPacienteData?.documento}</span>
                     <span>•</span>
                     <span>Edad: {getEdadDetallada(selectedPacienteData?.fecha_nacimiento).texto || "N/A"}</span>
@@ -1444,7 +1407,8 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                   borderRadius: "8px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center"
+                  justifyContent: "center",
+                  flexShrink: 0
                 }}
                 onMouseOver={e => e.currentTarget.style.background = "#f1f5f9"}
                 onMouseOut={e => e.currentTarget.style.background = "transparent"}
@@ -1453,17 +1417,15 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
               </button>
             </div>
 
-            {/* Stepped Tabs Navigation */}
-            <div style={{
-              display: "flex",
-              borderBottom: "1px solid #e2e8f0",
-              background: "#f8fafc",
-              padding: "0 24px"
-            }}>
+            {/* Stepped Tabs Navigation (Scrollable on small devices) */}
+            <div 
+              className="flex border-b border-slate-200 bg-slate-50 px-2 sm:px-6 overflow-x-auto whitespace-nowrap"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
               {[
-                { id: 1, label: "1. Motivo & Signos Vitales", icon: Activity },
+                { id: 1, label: "1. Motivo & Signos", icon: Activity },
                 { id: 2, label: "2. Evolución & Examen", icon: FileText },
-                { id: 3, label: "3. Diagnóstico CIE-10 & Plan", icon: Stethoscope }
+                { id: 3, label: "3. Diagnóstico & Plan", icon: Stethoscope }
               ].map(tab => {
                 const Icon = tab.icon;
                 const isActive = consultaTab === tab.id;
@@ -1472,19 +1434,14 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                     key={tab.id}
                     type="button"
                     onClick={() => setConsultaTab(tab.id)}
+                    className="flex-shrink-0 text-xs sm:text-sm py-3 px-3 sm:px-5 font-semibold transition-all inline-flex items-center gap-1.5 sm:gap-2"
                     style={{
-                      padding: "14px 20px",
                       background: "transparent",
                       color: isActive ? "#0A4D5C" : "#64748b",
                       border: "none",
                       borderBottom: isActive ? "3px solid #00D4AA" : "3px solid transparent",
                       fontWeight: isActive ? "700" : "500",
-                      fontSize: "14px",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      transition: "all 0.15s"
+                      cursor: "pointer"
                     }}
                   >
                     <Icon size={16} color={isActive ? "#00D4AA" : "#94a3b8"} />
@@ -1495,7 +1452,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             </div>
 
             {/* Modal Body */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+            <div className="flex-1 overflow-y-auto p-3.5 sm:p-6">
               {errorMsg && (
                 <div style={{
                   background: "rgba(239, 68, 68, 0.1)",
@@ -1583,7 +1540,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                   </div>
 
                   {/* Causa Externa & Finalidad de Consulta (RIPS) */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <label style={labelStyle}>Causa Externa <RipsBadge /></label>
                       <select 
@@ -1616,10 +1573,10 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                     background: "#f8fafc",
                     border: "1px solid #e2e8f0",
                     borderRadius: "14px",
-                    padding: "20px",
+                    padding: "16px sm:padding:20px",
                     marginTop: "8px"
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  }} className="p-3 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4">
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <div style={{
                           width: "28px",
@@ -1637,13 +1594,13 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                           Signos Vitales y Somatometría
                         </h3>
                       </div>
-                      <span style={{ fontSize: "11px", fontWeight: "600", color: "#64748b", background: "#e2e8f0", padding: "2px 8px", borderRadius: "6px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: "600", color: "#64748b", background: "#e2e8f0", padding: "2px 8px", borderRadius: "6px", alignSelf: "flex-start" }}>
                         Opcional • No bloquea el guardado
                       </span>
                     </div>
 
                     {/* Grilla de Signos Vitales */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "14px", marginBottom: "16px" }}>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3.5 mb-4">
                       <div>
                         <label style={{ ...labelStyle, fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
                           <Heart size={12} color="#e11d48" /> T.A. (mmHg)
@@ -1740,18 +1697,14 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
 
                     {/* SMART IMC CARD (Componente Clínico Inteligente) */}
                     {imcData ? (
-                      <div style={{
-                        background: imcData.bg,
-                        border: `1px solid ${imcData.border}`,
-                        borderRadius: "10px",
-                        padding: "12px 16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: "10px"
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div 
+                        className="p-3 sm:px-4 sm:py-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                        style={{
+                          background: imcData.bg,
+                          border: `1px solid ${imcData.border}`
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                           <div style={{
                             background: imcData.color,
                             color: "#ffffff",
@@ -1794,7 +1747,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
               {consultaTab === 2 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
                       <div>
                         <label style={{ ...labelStyle, margin: 0 }}>
                           Antecedentes Clínicos Permanentes
@@ -1820,7 +1773,8 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                           cursor: loadingAntecedentes ? "wait" : "pointer",
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "6px"
+                          gap: "6px",
+                          alignSelf: "flex-start"
                         }}
                       >
                         <Copy size={13} color="#00b28e" />
@@ -1855,20 +1809,23 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                         padding: "12px 16px",
                         background: "rgba(0, 212, 170, 0.08)",
                         border: "1px solid #00D4AA",
-                        borderRadius: "10px"
+                        borderRadius: "10px",
+                        gap: "10px",
+                        flexWrap: "wrap"
                       }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                           <span style={{
                             background: "#00b28e",
                             color: "#ffffff",
                             fontWeight: "800",
                             fontSize: "12px",
                             padding: "3px 8px",
-                            borderRadius: "6px"
+                            borderRadius: "6px",
+                            flexShrink: 0
                           }}>
                             {cieSelected.codigo}
                           </span>
-                          <span style={{ fontSize: "14px", fontWeight: "600", color: "#1e293b" }}>
+                          <span style={{ fontSize: "14px", fontWeight: "600", color: "#1e293b", wordBreak: "break-word" }}>
                             {cieSelected.descripcion}
                           </span>
                         </div>
@@ -1883,7 +1840,8 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                             fontSize: "12px",
                             color: "#64748b",
                             cursor: "pointer",
-                            fontWeight: "600"
+                            fontWeight: "600",
+                            flexShrink: 0
                           }}
                         >
                           Cambiar
@@ -1948,7 +1906,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                       <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", display: "block", marginBottom: "8px" }}>
                         Diagnósticos frecuentes sugeridos:
                       </span>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "8px" }}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                         {cieFrecuentes.slice(0, 6).map(item => (
                           <button
                             key={item.codigo}
@@ -1998,11 +1956,11 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
 
                   {/* Plan de Manejo Clínico */}
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-2">
                       <label style={{ ...labelStyle, margin: 0 }}>
                         Plan de Manejo Clínico
                       </label>
-                      <div style={{ display: "flex", gap: "6px" }}>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         <button
                           type="button"
                           onClick={() => handleAddPlanSection('recomendaciones')}
@@ -2067,19 +2025,13 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             </div>
 
             {/* Footer de la Consulta */}
-            <div style={{
-              padding: "16px 24px",
-              borderTop: "1px solid #e2e8f0",
-              background: "#ffffff",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <div>
+            <div className="p-3 sm:px-6 sm:py-4 border-t border-slate-200 bg-white flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2.5 sm:gap-3">
+              <div className="w-full sm:w-auto">
                 {consultaTab > 1 && (
                   <button
                     type="button"
                     onClick={() => setConsultaTab(prev => prev - 1)}
+                    className="w-full sm:w-auto text-center"
                     style={{
                       background: "#f1f5f9",
                       border: "1px solid #cbd5e1",
@@ -2096,11 +2048,12 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                 )}
               </div>
 
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center w-full sm:w-auto">
                 {consultaTab < 3 ? (
                   <button
                     type="button"
                     onClick={() => setConsultaTab(prev => prev + 1)}
+                    className="w-full sm:w-auto justify-center"
                     style={{
                       background: "#0A4D5C",
                       color: "#ffffff",
@@ -2124,6 +2077,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                       type="button"
                       disabled={savingForm}
                       onClick={() => handleConsultaSubmit("borrador")}
+                      className="w-full sm:w-auto text-center"
                       style={{
                         background: "#ffffff",
                         border: "1px solid #cbd5e1",
@@ -2148,6 +2102,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
                         }
                         setShowConfirmCerrar(true);
                       }}
+                      className="w-full sm:w-auto justify-center"
                       style={{
                         background: "#059669",
                         color: "#ffffff",

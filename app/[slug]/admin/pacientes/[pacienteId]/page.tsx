@@ -162,20 +162,20 @@ export default function PerfilPaciente() {
   if (!paciente) return <div style={{ padding: "40px", textAlign: "center" }}>Paciente no encontrado.</div>;
 
   return (
-    <div style={{ padding: "40px", fontFamily: "'Outfit', sans-serif", minHeight: "100vh", background: "#f8fafc" }}>
+    <div className="p-4 sm:p-6 md:p-8" style={{ fontFamily: "'Outfit', sans-serif", minHeight: "100vh", background: "#f8fafc" }}>
       
       {/* HEADER & NAV */}
-      <div style={{ marginBottom: "30px", display: "flex", gap: "16px", alignItems: "center" }}>
-        <Link href={`/${tenantSlug}/admin/pacientes`} style={{ color: "#64748b", textDecoration: "none", fontWeight: "600" }}>
+      <div style={{ marginBottom: "24px", display: "flex", gap: "16px", alignItems: "center" }}>
+        <Link href={`/${tenantSlug}/admin/pacientes`} style={{ color: "#64748b", textDecoration: "none", fontWeight: "600", fontSize: "14px" }}>
           ← Volver a Historias
         </Link>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "32px", alignItems: "start" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
         
         {/* COL 1: DEMOGRAFICOS */}
-        <div style={{ background: "white", padding: "32px", borderRadius: "16px", boxShadow: "0 10px 30px rgba(0,0,0,0.05)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+        <div className="lg:col-span-1 p-4 sm:p-6 md:p-8 bg-white rounded-2xl shadow-sm border border-slate-200/80">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
             <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: 0 }}>Perfil del Paciente</h2>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
               <button
@@ -236,7 +236,7 @@ export default function PerfilPaciente() {
               
               <div style={{ fontSize: "14px" }}>
                 <p style={{ margin: "8px 0" }}><strong>Fecha Nacimiento:</strong> {paciente.fecha_nacimiento} ({calcularEdad(paciente.fecha_nacimiento)})</p>
-                <p style={{ margin: "8px 0", display: "flex", alignItems:"center", gap:"8px" }}><strong>Teléfono:</strong> <WaButton phone={paciente.telefono} /></p>
+                <p style={{ margin: "8px 0", display: "flex", alignItems:"center", gap:"8px", flexWrap: "wrap" }}><strong>Teléfono:</strong> <WaButton phone={paciente.telefono} /></p>
                 <p style={{ margin: "8px 0" }}><strong>Género:</strong> {paciente.genero}</p>
                 <p style={{ margin: "8px 0" }}><strong>Tipo de Sangre:</strong> {paciente.tipo_sangre || "No registrado"}</p>
                 <p style={{ margin: "8px 0" }}><strong>EPS:</strong> {paciente.eps}</p>
@@ -269,8 +269,8 @@ export default function PerfilPaciente() {
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Apellidos</label>
                 <input required value={editForm.apellidos} onChange={e => setEditForm({...editForm, apellidos: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
               </div>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <div style={{ flex: 1 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="sm:col-span-1">
                   <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Tipo</label>
                   <select value={editForm.tipo_documento} onChange={e => setEditForm({...editForm, tipo_documento: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
                     <option value="RC">RC</option>
@@ -280,7 +280,7 @@ export default function PerfilPaciente() {
                     <option value="PAS">PAS</option>
                   </select>
                 </div>
-                <div style={{ flex: 2 }}>
+                <div className="sm:col-span-2">
                   <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Documento</label>
                   <input required value={editForm.documento} onChange={e => setEditForm({...editForm, documento: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                 </div>
@@ -289,17 +289,15 @@ export default function PerfilPaciente() {
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Fecha de Nacimiento</label>
                 <input type="date" required value={editForm.fecha_nacimiento} onChange={e => setEditForm({...editForm, fecha_nacimiento: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
               </div>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Género</label>
-                  <select value={editForm.genero} onChange={e => setEditForm({...editForm, genero: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-                    <option value="F">Femenino</option>
-                    <option value="M">Masculino</option>
-                  </select>
-                </div>
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Género</label>
+                <select value={editForm.genero} onChange={e => setEditForm({...editForm, genero: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                  <option value="F">Femenino</option>
+                  <option value="M">Masculino</option>
+                </select>
               </div>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <div style={{ flex: 1 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
                   <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Tipo de Sangre</label>
                   <select value={editForm.tipo_sangre || ""} onChange={e => setEditForm({...editForm, tipo_sangre: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
                     <option value="">Seleccione...</option>
@@ -313,17 +311,17 @@ export default function PerfilPaciente() {
                     <option value="AB-">AB-</option>
                   </select>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div>
                   <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Teléfono Principal</label>
                   <input value={editForm.telefono || ""} onChange={e => setEditForm({...editForm, telefono: e.target.value})} placeholder="+57300..." style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <div style={{ flex: 1 }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
                   <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>EPS</label>
                   <input value={editForm.eps || ""} onChange={e => setEditForm({...editForm, eps: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div>
                   <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Prepagada / Seguro</label>
                   <input value={editForm.prepagada || ""} onChange={e => setEditForm({...editForm, prepagada: e.target.value})} placeholder="Ej. Colsanitas" style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                 </div>
@@ -331,34 +329,34 @@ export default function PerfilPaciente() {
 
               {/* Nuevos Campos Familiares */}
               <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px", marginTop: "8px" }}>
-                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                  <div style={{ flex: 1 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
+                  <div>
                     <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Nombre Padre</label>
                     <input value={editForm.padre || ""} onChange={e => setEditForm({...editForm, padre: e.target.value})} placeholder="Ej. Carlos Torres" style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div>
                     <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Teléfono Padre</label>
                     <input value={editForm.telefono_padre || ""} onChange={e => setEditForm({...editForm, telefono_padre: e.target.value})} placeholder="+57..." style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                   </div>
                 </div>
                 
-                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                  <div style={{ flex: 1 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
+                  <div>
                     <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Nombre Madre</label>
                     <input value={editForm.madre || ""} onChange={e => setEditForm({...editForm, madre: e.target.value})} placeholder="Ej. Maria Perez" style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div>
                     <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Teléfono Madre</label>
                     <input value={editForm.telefono_madre || ""} onChange={e => setEditForm({...editForm, telefono_madre: e.target.value})} placeholder="+57..." style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                   </div>
                 </div>
                 
-                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                  <div style={{ flex: 1 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
+                  <div>
                     <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Acompañante Habitual</label>
                     <input value={editForm.acompanante || ""} onChange={e => setEditForm({...editForm, acompanante: e.target.value})} placeholder="Nombre" style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div>
                     <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b" }}>Tel. Acompañante</label>
                     <input value={editForm.telefono_acompanante || ""} onChange={e => setEditForm({...editForm, telefono_acompanante: e.target.value})} placeholder="+57..." style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
                   </div>
@@ -376,13 +374,14 @@ export default function PerfilPaciente() {
         </div>
 
         {/* COL 2: LINEA DE TIEMPO / HISTORIAS */}
-        <div style={{ background: "white", padding: "32px", borderRadius: "16px", boxShadow: "0 10px 30px rgba(0,0,0,0.05)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+        <div className="lg:col-span-2 p-4 sm:p-6 md:p-8 bg-white rounded-2xl shadow-sm border border-slate-200/80">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6">
             <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: 0 }}>Historial de Consultas</h2>
             
             {!isRecepcion && (
               <Link 
                 href={`/${tenantSlug}/admin/pacientes?action=new&pid=${paciente.id}`}
+                className="w-full sm:w-auto text-center"
                 style={{
                   background: "rgba(0, 212, 170, 0.1)",
                   color: "#00b28e",
@@ -457,7 +456,7 @@ export default function PerfilPaciente() {
                       background: hist.estado === 'cerrado' ? "#10b981" : "#f59e0b", 
                       borderRadius: "50%", border: "3px solid white" 
                     }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px", flexWrap: "wrap", gap: "6px" }}>
                       <div>
                         <h4 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "700", color: "#1e293b" }}>
                           Consulta General
@@ -502,25 +501,25 @@ export default function PerfilPaciente() {
 
       {/* VISOR MODAL DE HISTORIA CLÍNICA */}
       {viewingHistoriaId && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "flex-start", overflowY: "auto", padding: "40px 20px" }}>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex justify-center items-start overflow-y-auto p-2 sm:p-6">
           <div style={{ background: "white", width: "100%", maxWidth: "800px", borderRadius: "20px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden", position: "relative" }}>
             {/* Header Modal */}
-            <div style={{ padding: "24px 32px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
-              <h2 style={{ margin: 0, fontSize: "22px", color: "#0f172a", fontWeight: "800" }}>Historia Clínica</h2>
+            <div className="p-4 sm:px-8 sm:py-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <h2 style={{ margin: 0, fontSize: "20px sm:fontSize:22px", color: "#0f172a", fontWeight: "800" }} className="text-lg sm:text-xl">Historia Clínica</h2>
               <button onClick={() => setViewingHistoriaId(null)} style={{ background: "none", border: "none", fontSize: "28px", color: "#94a3b8", cursor: "pointer", lineHeight: "1" }}>×</button>
             </div>
             
             {/* Body Modal */}
-            <div style={{ padding: "32px" }}>
+            <div className="p-4 sm:p-8">
               {loadingHistoria ? (
                 <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Desencriptando y cargando historia...</div>
               ) : historiaDetails ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "32px", fontSize: "15px", color: "#334155" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "28px", fontSize: "14px sm:fontSize:15px", color: "#334155" }}>
                   
                   {/* Fila 1: Signos Vitales y RIPS */}
                   <div>
-                    <h3 style={{ fontSize: "16px", color: "#00b28e", margin: "0 0 16px 0", borderBottom: "2px solid #e2e8f0", paddingBottom: "8px" }}>Signos Vitales y Medidas</h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", background: "#f8fafc", padding: "16px", borderRadius: "12px" }}>
+                    <h3 style={{ fontSize: "16px", color: "#00b28e", margin: "0 0 14px 0", borderBottom: "2px solid #e2e8f0", paddingBottom: "8px", fontWeight: "700" }}>Signos Vitales y Medidas</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 bg-slate-50 p-3 sm:p-4 rounded-xl text-sm">
                       <div><strong>FR:</strong> {historiaDetails.signos_vitales?.frecuencia_respiratoria || '--'} rpm</div>
                       <div><strong>SatO2:</strong> {historiaDetails.signos_vitales?.saturacion || '--'} %</div>
                       <div><strong>Temp:</strong> {historiaDetails.signos_vitales?.temperatura || '--'} °C</div>
