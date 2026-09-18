@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -152,6 +153,9 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
   const tenantSlug = pathname.split('/')[1];
 
   const [currentUserRole, setCurrentUserRole] = useState<string>("medico");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => { setIsMounted(true); }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -896,7 +900,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
       {/* ─────────────────────────────────────────────────────────────
           MODAL 1: REGISTRAR NUEVO PACIENTE (Centrado, Ergonómico 680px)
       ───────────────────────────────────────────────────────────── */}
-      {isNewPatientModalOpen && (
+      {isMounted && isNewPatientModalOpen && createPortal(
         <div
           style={{
             position: "fixed",
@@ -1334,12 +1338,12 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* ─────────────────────────────────────────────────────────────
           MODAL 2: NUEVA CONSULTA MÉDICA (Centrado, Amplio ~940px)
       ───────────────────────────────────────────────────────────── */}
-      {isConsultaModalOpen && (
+      {isMounted && isConsultaModalOpen && createPortal(
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-2 sm:p-4"
           onClick={(e) => { if (e.target === e.currentTarget) closeConsultaModal(); }}
@@ -2130,21 +2134,23 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Modal de confirmación legal para firma y cierre */}
-      <CustomConfirmModal
-        isOpen={showConfirmCerrar}
-        title="Firmar y Cerrar Historia Clínica"
-        message="¿Estás seguro de FIRMAR y CERRAR esta historia clínica? Una vez firmada, según la normativa médica colombiana (Resolución 1995 de 1999 de MinSalud), no podrá ser alterada ni eliminada."
-        confirmText="Firmar y Cerrar 🔒"
-        cancelText="Volver a revisar"
-        onConfirm={handleConfirmCerrar}
-        onCancel={() => setShowConfirmCerrar(false)}
-      />
+      {isMounted && createPortal(
+        <CustomConfirmModal
+          isOpen={showConfirmCerrar}
+          title="Firmar y Cerrar Historia Clínica"
+          message="¿Estás seguro de FIRMAR y CERRAR esta historia clínica? Una vez firmada, según la normativa médica colombiana (Resolución 1995 de 1999 de MinSalud), no podrá ser alterada ni eliminada."
+          confirmText="Firmar y Cerrar 🔒"
+          cancelText="Volver a revisar"
+          onConfirm={handleConfirmCerrar}
+          onCancel={() => setShowConfirmCerrar(false)}
+        />
+      , document.body)}
 
       {/* MODAL CARNÉ DE VACUNACIÓN DIRECTO */}
-      {carneModalPaciente && (
+      {isMounted && carneModalPaciente && createPortal(
         <CarneVacunacionModal
           isOpen={!!carneModalPaciente}
           onClose={() => setCarneModalPaciente(null)}
@@ -2153,7 +2159,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
           tenantId={carneModalPaciente.tenant_id}
           currentUserRole={currentUserRole}
         />
-      )}
+      , document.body)}
     </>
   );
 }
