@@ -121,6 +121,7 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_APP_URL
 | `createAdminClient()` en rutas públicas | Si la clave se revoca, la web pública cae a fallbacks | Usar `createClient()` (anon key bajo RLS) |
 | Proyectar columnas inventadas en `configuracion_portal` | Error Postgres 42703 (columna inexistente) | Parsear datos de UI desde el JSON `hero_badge_texto` |
 | Usar parámetro `slug` sin normalizar | Causa falsos 404 por encoding o mayúsculas | `cleanSlug = decodeURIComponent(slug).trim().toLowerCase()` |
+| Layouts estáticos rígidos en modales o perfiles | Aplasta elementos y fuerza scroll horizontal en móviles (<640px) | Usar grillas fluidas Tailwind, overlay `p-2 sm:p-4` y `flex-col` en móviles |
 
 ---
 

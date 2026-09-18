@@ -13,7 +13,7 @@
 
 # 🔍 AUDITORÍA INTEGRAL DE PLATAFORMA Y SCORECARD DE MADUREZ (AUDITORIA_PLATAFORMA.md)
 
-**Versión de Plataforma:** 3.15.0  
+**Versión de Plataforma:** 3.16.0  
 **Fecha de Auditoría:** Septiembre 2026  
 **Auditor Rector:** 🔐 QA, Seguridad & Cryptography Auditor  
 **Supervisión y Aprobación:** 🏛️ Principal Platform Architect  
@@ -100,6 +100,7 @@
 | **Higiene del Repositorio** | ⭐⭐⭐⭐⭐ (5.0) | Scripts ad-hoc aislados de la raíz, TypeScript en 0 errores, build de producción limpio. | Consolidar suite de tests en CI/CD. |
 | **Seguridad de Red y HTTP** | ⭐⭐⭐⭐⭐ (5.0) | Security Headers HTTP de grado médico (CSP, HSTS, X-Frame-Options) configurados en `next.config.ts`. | Monitorear compatibilidad de scripts en futuras dependencias. |
 | **Gobernanza y Documentación** | ⭐⭐⭐⭐⭐ (5.0) | Conjunto documental canónico completo (`BITACORA_MAESTRA`, `ADR/`, `SECURITY.md`, `CHANGELOG.md`). | Mantener sincronización con cada hito productivo. |
+| **Diseño Responsivo y Ergonomía** | ⭐⭐⭐⭐⭐ (5.0) | Optimización integral en móviles (360-430px), tablets (768-1024px) y desktop: modales elásticos, curvas OMS con touch hint, grillas fluidas y doctor-portal. | Mantener testing en resoluciones móviles para nuevos componentes. |
 
 ---
 

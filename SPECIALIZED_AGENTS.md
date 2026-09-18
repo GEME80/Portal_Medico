@@ -371,7 +371,11 @@ async function PacientesPage({ params }) {
 - PROHIBIDO usar useEffect para fetch de datos que pueden ser Server Components.
 - PROHIBIDO .select('*') en llamadas Supabase desde el cliente.
 - OBLIGATORIO sanitizar con TipTap toda entrada de texto enriquecido antes de persistir.
-- OBLIGATORIO que toda UI de administración sea responsive para tablet (768px mínimo).
+- OBLIGATORIO diseño 100% responsivo y ergonómico verificado en pantallas móviles (360-430px), tabletas (768-1024px) y escritorio (1280px+).
+- PROHIBIDO usar columnas fijas estáticas rígidas (como `1fr 2fr` sin media query o `minmax(..., 1fr) [px_fijo]`) que aplasten elementos o provoquen scroll horizontal involuntario en teléfonos móviles.
+- OBLIGATORIO que todos los modales utilicen overlay responsivo (`p-2 sm:p-4`, `maxHeight: 94vh`) y formularios con grillas fluidas (`grid-cols-1 sm:grid-cols-2` o `grid-cols-1 sm:grid-cols-3`).
+- OBLIGATORIO que las acciones principales y botones de guardado en modales y footers se apilen verticalmente a ancho completo en móviles (`flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3`) para garantizar toques ergonómicos.
+- OBLIGATORIO que componentes con alto volumen horizontal (tablas clínicas, lienzos SVG de curvas OMS, barras de pestañas) incorporen contenedores con `overflow-x-auto`, inercia táctil (`-webkit-overflow-scrolling: touch`), avisos de deslizamiento (`↔ Desliza horizontalmente...`) y data labels in-situ sobre puntos vectoriales.
 - PROHIBIDO exponer CLINICAL_ENCRYPTION_KEY o SUPABASE_SERVICE_ROLE_KEY en código cliente ('use client').
 - OBLIGATORIO en Server Components y layouts resolver la existencia de tenants con el cliente de sesión autenticada (`createClient()`) y fallback seguro antes de invocar `notFound()`, evitando pantallas 404 falsas.
 - PROHIBIDO depender silenciosamente de fallbacks estáticos genéricos (`defaultHeroData`) en el portal público sin garantizar que la base de datos sea leída bajo RLS anónimo.

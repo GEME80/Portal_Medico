@@ -184,3 +184,5 @@ SUPABASE_SERVICE_ROLE_KEY, CLINICAL_ENCRYPTION_KEY
 8. **PROHIBIDO** acoplar rutas públicas a `createAdminClient()`; las lecturas públicas deben operar siempre bajo RLS anónimo con `createClient()`.
 9. **PROHIBIDO** proyectar columnas inexistentes en `configuracion_portal` (como `nombre_menu_vacunas`); los metadatos de configuración residen en `hero_badge_texto` (JSON).
 10. **PROHIBIDO** usar parámetros de ruta `slug` sin normalizar; aplicar siempre `cleanSlug = decodeURIComponent(slug).trim().toLowerCase()`.
+11. **PROHIBIDO** emplear layouts rígidos de columnas estáticas (`1fr 2fr` o columnas fijas en píxeles sin media queries) que rompan la legibilidad o fuercen scroll horizontal en teléfonos móviles (< 640px). Todo componente clínico y administrativo DEBE ser responsivo en móviles (360px+), tabletas y escritorio.
+12. **PROHIBIDO** diseñar modales clínicos con paddings fijos que atrapen el viewport en pantallas pequeñas; emplear siempre overlays elásticos (`p-2 sm:p-4`), contención de altura (`maxHeight: 94vh`), grillas fluidas y botones de acción apilables a ancho completo.

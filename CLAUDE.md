@@ -99,6 +99,12 @@ NEXT_PUBLIC_SUPABASE_URL=https://nstiomejmhmcasxqxnbf.supabase.co
 NEXT_PUBLIC_APP_URL=https://portal-medico-five.vercel.app
 ```
 
+### 7. Diseño Responsivo y Ergonomía Móvil (Obligatorio)
+- **Móvil (360-430px) & Tablet (768-1024px)**: Toda pantalla y modal debe ser 100% operable en touch sin scroll horizontal forzado.
+- **Modales Clínicos**: Overlay `p-2 sm:p-4`, `maxHeight: 94vh`, formularios en grillas fluidas (`grid-cols-1 sm:grid-cols-2`) y botones de acción apilables a ancho completo en móviles (`flex-col-reverse sm:flex-row items-stretch sm:items-center`).
+- **Gráficos y Tablas Anchas**: Contenedor `overflow-x-auto`, inercia táctil `-webkit-overflow-scrolling: touch`, aviso visual de desplazamiento (`↔ Desliza...`) y data labels directos sobre puntos vectoriales para evitar scroll vertical innecesario.
+- **Layouts de Dos Columnas**: Usar `grid grid-cols-1 lg:grid-cols-3` (ej. Perfil Paciente) para colapsar en 1 columna en móviles y prevenir aplastamiento demográfico.
+
 ## Anti-Patterns Prohibidos
 | Prohibición | Alternativa |
 |-------------|-------------|
@@ -107,6 +113,7 @@ NEXT_PUBLIC_APP_URL=https://portal-medico-five.vercel.app
 | SQL con concatenación de strings | Parámetros `$1` de Supabase |
 | Texto plano en campos clínicos sensibles | `encryptClinicalData()` |
 | `SERVICE_ROLE_KEY` en código cliente | Solo en Server Actions |
+| Layouts fijos rígidos (`1fr 2fr`, `padding: 32px` en modal) | Grillas responsivas Tailwind + overlay `p-2 sm:p-4` |
 
 ## Fuentes de Verdad
 - **Bitácora Maestra:** `BITACORA_MAESTRA.md` — Single Source of Truth

@@ -858,7 +858,8 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
 
                             {!isRecepcion && (
                               <button 
-                                onClick={() => openConsultaModal(paciente.id, paciente)}
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); openConsultaModal(paciente.id, paciente); }}
                                 style={{
                                   background: "#0A4D5C",
                                   color: "#ffffff",
@@ -896,19 +897,20 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
           MODAL 1: REGISTRAR NUEVO PACIENTE (Centrado, Ergonómico 680px)
       ───────────────────────────────────────────────────────────── */}
       {isNewPatientModalOpen && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "rgba(15, 23, 42, 0.65)",
-          backdropFilter: "blur(4px)",
-          padding: "8px"
-        }}>
-          <div style={{ position: "absolute", inset: 0 }} onClick={closeNewPatientModal} />
-
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(4px)",
+            padding: "8px"
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeNewPatientModal(); }}
+        >
           <div style={{
             position: "relative",
             width: "100%",
@@ -979,7 +981,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6" style={{ WebkitOverflowScrolling: "touch" }}>
               {errorMsg && (
                 <div style={{
                   background: "rgba(239, 68, 68, 0.1)",
@@ -1338,9 +1340,10 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
           MODAL 2: NUEVA CONSULTA MÉDICA (Centrado, Amplio ~940px)
       ───────────────────────────────────────────────────────────── */}
       {isConsultaModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-2 sm:p-4">
-          <div style={{ position: "absolute", inset: 0 }} onClick={closeConsultaModal} />
-
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-2 sm:p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) closeConsultaModal(); }}
+        >
           <div style={{
             position: "relative",
             width: "100%",
@@ -1452,7 +1455,7 @@ export default function PacientesPage({ params }: { params: { slug: string } }) 
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-3.5 sm:p-6">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-6" style={{ WebkitOverflowScrolling: "touch" }}>
               {errorMsg && (
                 <div style={{
                   background: "rgba(239, 68, 68, 0.1)",

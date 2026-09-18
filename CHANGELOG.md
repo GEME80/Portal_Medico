@@ -16,6 +16,28 @@
 Todos los cambios notables en este proyecto se documentan en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [3.16.0] - 2026-09-17
+### Auditoría y Optimización Responsiva Multi-Dispositivo (Móvil, Tablet, Desktop)
+- **Visor Digital de Curvas OMS (`components/CurvasDigitalClient.tsx` y `components/VectorGrowthChart.tsx`)**:
+  - Reemplazo de espaciados rígidos (`padding: 32px`) por hoja clínica responsiva (`.curvas-sheet`, `18px 14px` en móviles `< 768px`).
+  - Barra de acciones superior flexible (`.curvas-topbar` y `.curvas-action-btn`) con botones compactos y texto adaptable.
+  - Indicador de desplazamiento táctil (`.vector-growth-swipe-hint` / `.mobile-swipe-hint`) con texto guía (`↔ Desliza horizontalmente sobre la gráfica...`) y scroll inercial suave (`-webkit-overflow-scrolling: touch`).
+  - Tarjeta de diagnóstico nutricional y bloque de firma médica / QR reorganizados en columna en pantallas reducidas para evitar cortes o scroll horizontal.
+- **Modales de Gestión de Pacientes (`app/[slug]/admin/pacientes/page.tsx`)**:
+  - **Modal 1 (Nuevo Paciente)**: Overlay reducido a `padding: 8px` en móviles con `maxHeight: 94vh`, formularios con grillas fluidas (`grid-cols-1 sm:grid-cols-2` y `grid-cols-1 sm:grid-cols-3`) y botones de guardado apilados a ancho completo en móviles.
+  - **Modal 2 (Nueva Consulta Médica)**:
+    - Barra de pestañas escalonadas con scroll horizontal táctil y sin quiebres de línea (`overflow-x-auto whitespace-nowrap`).
+    - Grilla somatométrica de 7 signos vitales adaptable (`grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7`).
+    - Tarjeta inteligente de IMC adaptable a visualización vertical en pantallas móviles.
+    - Grilla de diagnósticos CIE-10 sugeridos y botones de plan de manejo con wrapping automático.
+    - Pie de modal ergonómico con acciones principales apilables a ancho completo en móviles.
+- **Perfil del Paciente y Visor de Historias (`app/[slug]/admin/pacientes/[pacienteId]/page.tsx`)**:
+  - Reestructuración del layout principal de `1fr 2fr` a `grid grid-cols-1 lg:grid-cols-3`, eliminando el aplastamiento demográfico en pantallas móviles.
+  - Formulario de edición demográfica con campos emparejados en grilla fluida (`grid-cols-1 sm:grid-cols-2`).
+  - Visor modal de historia clínica completa y grilla de signos vitales históricos adaptada a `grid-cols-2 sm:grid-cols-4`.
+- **Estilos Globales del Portal Administrativo (`app/[slug]/admin/doctor-portal.css`)**:
+  - Incorporación de `@media (max-width: 640px)` para la topbar administrativa (56px de altura y padding compacto), banner de bienvenida (`.doc-dashboard-header`), botones de acción rápida a ancho completo (`.doc-quick-actions .doc-btn`) y grilla de KPIs de RIPS en 1 columna.
+
 ## [3.15.0] - 2026-09-17
 ### Curvas de Crecimiento OMS Vectoriales (Res. 2465/2016), Visor Digital Público y Cero Scroll
 - **Reingeniería de Curvas OMS Pediátricas (Resolución 2465 de 2016 MinSalud)**:
